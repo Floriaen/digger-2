@@ -4,7 +4,9 @@
  */
 
 import { Component } from '../core/component.base.js';
-import { DIG_INTERVAL_MS, PLAYER_RADIUS, GRAVITY, FALL_SPEED_MAX } from '../utils/config.js';
+import {
+  DIG_INTERVAL_MS, PLAYER_RADIUS, GRAVITY, FALL_SPEED_MAX,
+} from '../utils/config.js';
 import { BLOCK_TYPES, isDiggable, isTraversable } from '../terrain/block-registry.js';
 import { eventBus } from '../utils/event-bus.js';
 
@@ -37,6 +39,7 @@ export class PlayerComponent extends Component {
     this.digTimer = 0;
     this.currentDigTarget = null; // { x, y, hp, maxHp }
     this.hasStarted = false; // Requires down arrow to start
+    this.dead = false;
 
     // Input subscription
     this.unsubscribeLeft = eventBus.on('input:move-left', () => this._tryMoveLateral(-1));
@@ -44,11 +47,20 @@ export class PlayerComponent extends Component {
     this.unsubscribeDown = eventBus.on('input:move-down', () => {
       this.hasStarted = true;
     });
+    this.unsubscribeDeath = eventBus.on('player:death', () => {
+      this.dead = true;
+    });
   }
 
   update(deltaTime) {
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
     if (!terrain) return;
+
+    // Stop updating if dead
+    if (this.dead) {
+      this.state = PLAYER_STATE.IDLE;
+      return;
+    }
 
     // Wait for down arrow to start
     if (!this.hasStarted) {
@@ -145,6 +157,7 @@ export class PlayerComponent extends Component {
     this.unsubscribeLeft();
     this.unsubscribeRight();
     this.unsubscribeDown();
+    this.unsubscribeDeath();
   }
 
   /**
@@ -157,8 +170,11 @@ export class PlayerComponent extends Component {
   _digBlock(terrain, gridX, gridY) {
     if (this.digTimer < DIG_INTERVAL_MS) {
       // Still digging, track progress
-      if (!this.currentDigTarget || this.currentDigTarget.x !== gridX || this.currentDigTarget.y !== gridY) {
-        const block = terrain.getBlock(gridX, gridY);
+      const isNewTarget = !this.currentDigTarget
+        || this.currentDigTarget.x !== gridX
+        || this.currentDigTarget.y !== gridY;
+
+      if (isNewTarget) {
         const blockData = { hp: 1, maxHp: 1 }; // Pure mud HP=1
         this.currentDigTarget = { x: gridX, y: gridY, ...blockData };
       }
@@ -168,19 +184,14 @@ export class PlayerComponent extends Component {
     // Dig complete
     this.digTimer = 0;
     terrain.setBlock(gridX, gridY, BLOCK_TYPES.EMPTY);
-    console.log(`Destroyed block at (${gridX}, ${gridY})`);
-
-    // Verify it was set
-    const verify = terrain.getBlock(gridX, gridY);
-    console.log(`Block after setBlock: ${verify}`);
-
     this.currentDigTarget = null;
+
+    // Emit event for falling blocks system
+    eventBus.emit('block:destroyed', { x: gridX, y: gridY });
 
     // Move player down
     this.gridY += 1;
     this.y = this.gridY * 25 + 17; // Sit on fake-3D cap
-
-    eventBus.emit('block:destroyed', { x: gridX, y: gridY });
   }
 
   /**
@@ -195,17 +206,14 @@ export class PlayerComponent extends Component {
     const targetX = this.gridX + direction;
     const block = terrain.getBlock(targetX, this.gridY);
 
+    // Only dig lateral if block is diggable (ignore empty and indestructible)
     if (isDiggable(block)) {
       // Dig lateral block
       terrain.setBlock(targetX, this.gridY, BLOCK_TYPES.EMPTY);
-      console.log(`Lateral dig at (${targetX}, ${this.gridY})`);
       this.gridX = targetX;
       this.x = this.gridX * 16 + 8; // Center on new tile
       eventBus.emit('block:destroyed', { x: targetX, y: this.gridY });
-    } else if (isTraversable(block)) {
-      // Move into empty space (shouldn't happen per spec, but handle it)
-      this.gridX = targetX;
-      this.x = this.gridX * 16 + 8; // Center on new tile
     }
+    // Ignore empty/traversable blocks - no movement into empty space
   }
 }

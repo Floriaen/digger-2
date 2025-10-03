@@ -35,7 +35,6 @@ export class TerrainComponent extends Component {
     if (!camera) return;
 
     const transform = camera.getTransform();
-    console.log(`Camera transform: x=${transform.x.toFixed(1)}, y=${transform.y.toFixed(1)}`);
 
     // Calculate visible chunk range
     // World coordinates visible: from -transform to (canvasSize - transform)
@@ -48,8 +47,6 @@ export class TerrainComponent extends Component {
     const endChunkX = Math.floor(worldEndX / (CHUNK_SIZE * TILE_WIDTH));
     const startChunkY = Math.floor(worldStartY / (CHUNK_SIZE * TILE_HEIGHT));
     const endChunkY = Math.floor(worldEndY / (CHUNK_SIZE * TILE_HEIGHT));
-
-    console.log(`Visible chunks: X[${startChunkX} to ${endChunkX}], Y[${startChunkY} to ${endChunkY}]`);
 
     // Render visible chunks
     for (let cy = startChunkY; cy <= endChunkY; cy += 1) {
@@ -91,7 +88,6 @@ export class TerrainComponent extends Component {
    */
   _renderChunk(ctx, chunkX, chunkY, transform) {
     const chunk = this.cache.getChunk(chunkX, chunkY);
-    console.log(`Rendering chunk(${chunkX},${chunkY}), cache size: ${this.cache.chunks.size}, chunk instance: ${chunk ? chunk.getKey() : 'null'}`);
     if (!chunk) return;
 
     const worldOffsetX = chunkX * CHUNK_SIZE * TILE_WIDTH;
@@ -167,10 +163,7 @@ export class TerrainComponent extends Component {
 
     const chunk = this.cache.getChunk(chunkX, chunkY);
     if (chunk) {
-      console.log(`setBlock(${gridX},${gridY}): chunk(${chunkX},${chunkY}) local(${localX},${localY})`);
-      console.log(`chunk.blocks[${localY}][${localX}] BEFORE: ${chunk.blocks[localY][localX]}`);
       chunk.setBlock(localX, localY, blockId);
-      console.log(`chunk.blocks[${localY}][${localX}] AFTER: ${chunk.blocks[localY][localX]}`);
     }
   }
 

@@ -8,6 +8,8 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from './utils/config.js';
 import { BackgroundComponent } from './components/background.component.js';
 import { TerrainComponent } from './components/terrain.component.js';
 import { PlayerComponent } from './components/player.component.js';
+import { NavigationComponent } from './components/navigation.component.js';
+import { FallingBlocksComponent } from './components/falling-blocks.component.js';
 import { CameraComponent } from './components/camera.component.js';
 import { HUDComponent } from './components/hud.component.js';
 import { DebugComponent } from './components/debug.component.js';
@@ -40,6 +42,8 @@ function init() {
   // Add components (order matters for rendering)
   game.addComponent(new BackgroundComponent(game));
   game.addComponent(new TerrainComponent(game));
+  game.addComponent(new FallingBlocksComponent(game));
+  game.addComponent(new NavigationComponent(game));
   game.addComponent(new PlayerComponent(game));
   game.addComponent(new CameraComponent(game));
   game.addComponent(new HUDComponent(game));
@@ -53,8 +57,6 @@ function init() {
 
   // Start game loop
   game.start();
-
-  console.log('Digger 2 initialized successfully');
 }
 
 // Wait for DOM to be ready

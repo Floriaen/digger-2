@@ -45,7 +45,6 @@ export class Game {
    * Initialize game and all components
    */
   init() {
-    console.log('Initializing Digger 2...');
     // Components will be added in main.js
     this.running = true;
     this.lastTime = performance.now();
@@ -92,7 +91,6 @@ export class Game {
    * Start the game loop
    */
   start() {
-    console.log('Starting game loop...');
     this.running = true;
     requestAnimationFrame((time) => this.loop(time));
   }
@@ -101,7 +99,6 @@ export class Game {
    * Stop the game loop
    */
   stop() {
-    console.log('Stopping game loop...');
     this.running = false;
   }
 
