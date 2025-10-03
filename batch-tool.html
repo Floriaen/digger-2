@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digger 2 - Batch Generator Tool</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: monospace;
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    label {
+      min-width: 150px;
+    }
+
+    input, select, button {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #333;
+      color: #fff;
+      font-family: monospace;
+    }
+
+    button {
+      cursor: pointer;
+      background: #4CAF50;
+      border-color: #45a049;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .output {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    #canvas-container {
+      overflow: auto;
+      max-height: 600px;
+      border: 1px solid #444;
+      background: #000;
+    }
+
+    #metadata {
+      white-space: pre-wrap;
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .download-btn {
+      background: #2196F3;
+      border-color: #1976D2;
+      margin-top: 10px;
+    }
+
+    .download-btn:hover {
+      background: #1976D2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Digger 2 - Batch Generator Tool</h1>
+
+    <div class="controls">
+      <h2>Generation Settings</h2>
+      <div class="control-group">
+        <label>Seed:</label>
+        <input type="number" id="seed" value="12345">
+      </div>
+      <div class="control-group">
+        <label>Start Chunk X:</label>
+        <input type="number" id="start-x" value="0">
+      </div>
+      <div class="control-group">
+        <label>Start Chunk Y:</label>
+        <input type="number" id="start-y" value="0">
+      </div>
+      <div class="control-group">
+        <label>Block Size (px):</label>
+        <input type="number" id="block-size" value="2" min="1" max="8">
+      </div>
+      <div class="control-group">
+        <button onclick="generateBatch()">Generate Batch</button>
+        <button class="download-btn" onclick="downloadImage()">Download PNG</button>
+        <button class="download-btn" onclick="downloadJSON()">Download JSON</button>
+      </div>
+    </div>
+
+    <div class="output">
+      <h2>10×10 Chunk Composite</h2>
+      <div id="canvas-container"></div>
+      <div id="metadata"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { BatchGenerator } from './src/utils/batch-generator.js';
+
+    let currentGenerator = null;
+    let currentBatch = null;
+    let currentDataURL = null;
+
+    window.generateBatch = function() {
+      const seed = parseInt(document.getElementById('seed').value);
+      const startX = parseInt(document.getElementById('start-x').value);
+      const startY = parseInt(document.getElementById('start-y').value);
+      const blockSize = parseInt(document.getElementById('block-size').value);
+
+      currentGenerator = new BatchGenerator(seed);
+      currentBatch = currentGenerator.generateBatch(startX, startY);
+      currentDataURL = currentGenerator.generateImage(startX, startY, blockSize);
+
+      // Display image
+      const container = document.getElementById('canvas-container');
+      container.innerHTML = `<img src="${currentDataURL}" alt="Batch Composite" style="display: block;">`;
+
+      // Display metadata
+      const metadata = document.getElementById('metadata');
+      metadata.textContent = JSON.stringify(currentBatch.metadata, null, 2);
+    };
+
+    window.downloadImage = function() {
+      if (!currentDataURL) {
+        alert('Generate a batch first!');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.download = `digger2-batch-${Date.now()}.png`;
+      link.href = currentDataURL;
+      link.click();
+    };
+
+    window.downloadJSON = function() {
+      if (!currentBatch) {
+        alert('Generate a batch first!');
+        return;
+      }
+
+      const json = JSON.stringify(currentBatch, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.download = `digger2-batch-${Date.now()}.json`;
+      link.href = url;
+      link.click();
+
+      URL.revokeObjectURL(url);
+    };
+
+    // Auto-generate on load
+    generateBatch();
+  </script>
+</body>
+</html>

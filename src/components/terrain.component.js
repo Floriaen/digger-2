@@ -9,17 +9,26 @@ import { TerrainGenerator } from '../terrain/terrain-generator.js';
 import { ChunkCache } from '../terrain/chunk-cache.js';
 import { drawTile } from '../rendering/tile-renderer.js';
 import { BLOCK_TYPES } from '../terrain/block-registry.js';
+import { loadSpriteSheet } from '../rendering/sprite-atlas.js';
 
 /**
  * TerrainComponent
  * Manages terrain chunks, procedural generation, and block queries
  */
 export class TerrainComponent extends Component {
-  init() {
+  async init() {
     this.seed = 12345; // Default seed, controllable via dat.GUI
     this.generator = new TerrainGenerator(this.seed);
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded
+
+    // Load sprite sheet
+    try {
+      this.spriteSheet = await loadSpriteSheet();
+      console.log('Sprite sheet loaded successfully');
+    } catch (error) {
+      console.error('Failed to load sprite sheet:', error);
+    }
   }
 
   update(deltaTime) {
@@ -48,8 +57,8 @@ export class TerrainComponent extends Component {
     const startChunkY = Math.floor(worldStartY / (CHUNK_SIZE * TILE_HEIGHT));
     const endChunkY = Math.floor(worldEndY / (CHUNK_SIZE * TILE_HEIGHT));
 
-    // Render visible chunks
-    for (let cy = startChunkY; cy <= endChunkY; cy += 1) {
+    // Render visible chunks (bottom to top for proper overlap)
+    for (let cy = endChunkY; cy >= startChunkY; cy -= 1) {
       for (let cx = startChunkX; cx <= endChunkX; cx += 1) {
         this._renderChunk(ctx, cx, cy, transform);
       }
@@ -93,7 +102,8 @@ export class TerrainComponent extends Component {
     const worldOffsetX = chunkX * CHUNK_SIZE * TILE_WIDTH;
     const worldOffsetY = chunkY * CHUNK_SIZE * TILE_HEIGHT;
 
-    for (let localY = 0; localY < CHUNK_SIZE; localY += 1) {
+    // Render tiles bottom to top for proper overlap
+    for (let localY = CHUNK_SIZE - 1; localY >= 0; localY -= 1) {
       for (let localX = 0; localX < CHUNK_SIZE; localX += 1) {
         const blockId = chunk.getBlock(localX, localY);
         if (blockId === BLOCK_TYPES.EMPTY) continue;
@@ -102,35 +112,8 @@ export class TerrainComponent extends Component {
         const screenY = worldOffsetY + localY * TILE_HEIGHT + transform.y;
 
         drawTile(ctx, this.spriteSheet, blockId, screenX, screenY);
-
-        // Draw grass on top of surface blocks (worldY = 4)
-        const worldY = chunkY * CHUNK_SIZE + localY;
-        if (worldY === 4) {
-          this._drawGrass(ctx, screenX, screenY);
-        }
       }
     }
-  }
-
-  /**
-   * Draw grass layer on top of a block
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {number} screenX - Screen X position
-   * @param {number} screenY - Screen Y position
-   * @private
-   */
-  _drawGrass(ctx, screenX, screenY) {
-    // Light green top
-    ctx.fillStyle = '#7CB342';
-    ctx.fillRect(screenX, screenY, TILE_WIDTH, 3);
-
-    // Darker mid
-    ctx.fillStyle = '#558B2F';
-    ctx.fillRect(screenX, screenY + 3, TILE_WIDTH, 2);
-
-    // Shadow line
-    ctx.fillStyle = '#33691E';
-    ctx.fillRect(screenX, screenY + 5, TILE_WIDTH, 1);
   }
 
   /**

@@ -84,11 +84,18 @@ export class DebugComponent extends Component {
     if (terrainComponent) {
       const seedControl = {
         seed: terrainComponent.seed,
+        lavaDepth: terrainComponent.generator.lavaDepth,
         regenerate: () => {
           terrainComponent.setSeed(seedControl.seed);
+          terrainComponent.generator.lavaDepth = seedControl.lavaDepth;
         },
       };
       terrainFolder.add(seedControl, 'seed').name('Seed');
+      terrainFolder.add(seedControl, 'lavaDepth', 100, 2000).step(50).name('Lava Depth')
+        .onChange((val) => {
+          terrainComponent.generator.lavaDepth = val;
+          terrainComponent.generator.clearCache();
+        });
       terrainFolder.add(seedControl, 'regenerate').name('Regenerate');
     }
     terrainFolder.open();

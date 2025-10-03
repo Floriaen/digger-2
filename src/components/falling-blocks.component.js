@@ -69,9 +69,19 @@ export class FallingBlocksComponent extends Component {
         return false;
       }
 
-      // Check collision with player (lethal)
+      // Check collision with player (lethal) - same grid position
       if (fb.gridX === player.gridX && fb.gridY === player.gridY) {
         eventBus.emit('player:death', { cause: 'falling_rock' });
+        // Stop falling block
+        terrain.setBlock(fb.gridX, fb.gridY, fb.blockId);
+        return false;
+      }
+
+      // Check if falling block is directly above player (will hit next frame)
+      if (fb.gridX === player.gridX && fb.gridY + 1 === player.gridY) {
+        eventBus.emit('player:death', { cause: 'falling_rock' });
+        // Stop falling block
+        terrain.setBlock(fb.gridX, fb.gridY, fb.blockId);
         return false;
       }
 

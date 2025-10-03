@@ -15,6 +15,7 @@ export const BLOCK_TYPES = {
   MUD_CORE: 5,
   ROCK: 6,
   RED_FRAME: 7,
+  LAVA: 8,
 };
 
 /**
@@ -27,6 +28,8 @@ const REGISTRY = {
     diggable: false,
     color: null,
     name: 'empty',
+    spriteX: null,
+    spriteY: null,
   },
   [BLOCK_TYPES.MUD_LIGHT]: {
     hp: 1,
@@ -34,6 +37,8 @@ const REGISTRY = {
     diggable: true,
     color: '#A67C52',
     name: 'mud_light',
+    spriteX: 16, // Classic mud sprite
+    spriteY: 0,
   },
   [BLOCK_TYPES.MUD_MEDIUM]: {
     hp: 2,
@@ -41,6 +46,8 @@ const REGISTRY = {
     diggable: true,
     color: '#8B6444',
     name: 'mud_medium',
+    spriteX: 16, // Classic mud sprite
+    spriteY: 0,
   },
   [BLOCK_TYPES.MUD_DARK]: {
     hp: 3,
@@ -48,6 +55,8 @@ const REGISTRY = {
     diggable: true,
     color: '#6F4E37',
     name: 'mud_dark',
+    spriteX: 16, // Classic mud sprite
+    spriteY: 0,
   },
   [BLOCK_TYPES.MUD_DENSE]: {
     hp: 4,
@@ -55,6 +64,8 @@ const REGISTRY = {
     diggable: true,
     color: '#5C4033',
     name: 'mud_dense',
+    spriteX: 16, // Classic mud sprite
+    spriteY: 0,
   },
   [BLOCK_TYPES.MUD_CORE]: {
     hp: 5,
@@ -62,6 +73,8 @@ const REGISTRY = {
     diggable: true,
     color: '#3E2723',
     name: 'mud_core',
+    spriteX: 16, // Classic mud sprite
+    spriteY: 0,
   },
   [BLOCK_TYPES.ROCK]: {
     hp: Infinity,
@@ -69,6 +82,8 @@ const REGISTRY = {
     diggable: false,
     color: '#9E9E9E',
     name: 'rock',
+    spriteX: 48, // Rock sprite
+    spriteY: 0,
   },
   [BLOCK_TYPES.RED_FRAME]: {
     hp: 5,
@@ -76,6 +91,17 @@ const REGISTRY = {
     diggable: true,
     color: '#D32F2F',
     name: 'red_frame',
+    spriteX: 32, // Torus sprite
+    spriteY: 0,
+  },
+  [BLOCK_TYPES.LAVA]: {
+    hp: Infinity,
+    traversable: true, // Player can fall through lava (game over)
+    diggable: false,
+    color: '#FF6D00',
+    name: 'lava',
+    spriteX: 64, // Lava sprite (5th position)
+    spriteY: 0,
   },
 };
 

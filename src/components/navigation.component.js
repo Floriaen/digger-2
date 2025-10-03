@@ -60,21 +60,21 @@ export class NavigationComponent extends Component {
     // Left triangle
     if (this.validDirections.left) {
       const x = (player.gridX - 1) * 16 + 8 + transform.x;
-      const y = player.gridY * 25 + 12 + transform.y;
+      const y = player.gridY * 16 + 8 + transform.y;
       this._drawTriangle(ctx, x, y, 'left');
     }
 
     // Right triangle
     if (this.validDirections.right) {
       const x = (player.gridX + 1) * 16 + 8 + transform.x;
-      const y = player.gridY * 25 + 12 + transform.y;
+      const y = player.gridY * 16 + 8 + transform.y;
       this._drawTriangle(ctx, x, y, 'right');
     }
 
     // Down triangle
     if (this.validDirections.down) {
       const x = player.gridX * 16 + 8 + transform.x;
-      const y = (player.gridY + 1) * 25 + 4 + transform.y;
+      const y = (player.gridY + 1) * 16 + 8 + transform.y;
       this._drawTriangle(ctx, x, y, 'down');
     }
   }

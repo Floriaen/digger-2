@@ -10,12 +10,14 @@ export const TARGET_FPS = 60;
 
 // Tile Dimensions (from spec: 16x25px with 16x9px cap)
 export const TILE_WIDTH = 16;
-export const TILE_HEIGHT = 25;
+export const TILE_HEIGHT = 16; // Collision box height (square base only)
+export const SPRITE_HEIGHT = 25; // Full sprite height (16px base + 9px cap)
 export const TILE_CAP_HEIGHT = 9;
+export const TILE_BASE_HEIGHT = 16; // Collision box height (excludes cap)
 
 // Player
-export const DIG_INTERVAL_MS = 600;
-export const PLAYER_RADIUS = 8;
+export const DIG_INTERVAL_MS = 200; // Time per HP point (200ms = 1 second for HP=5)
+export const PLAYER_RADIUS = 6;
 
 // Terrain
 export const CHUNK_SIZE = 32; // 32x32 blocks per chunk

@@ -41,6 +41,7 @@ This document tracks AI-assisted development sessions for Digger 2, including to
    - Functions/variables: `camelCase`
    - Constants: `SCREAMING_SNAKE_CASE`
    - Private members: `_prefixedUnderscore`
+6. **NO FALLBACKS**: Never add fallback code unless explicitly specified. Fallbacks hide bugs during development and make debugging harder. Let errors surface immediately.
 
 #### Files Created
 - `package.json` - Dependencies (dat.gui) and scripts
