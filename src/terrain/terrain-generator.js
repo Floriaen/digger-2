@@ -32,8 +32,11 @@ export class TerrainGenerator {
     // For now, fill with light mud for testing
     for (let y = 0; y < CHUNK_SIZE; y += 1) {
       for (let x = 0; x < CHUNK_SIZE; x += 1) {
-        // Surface layer (y = 0-2) is empty
-        if (chunkY === 0 && y < 3) {
+        // Calculate world Y coordinate
+        const worldY = chunkY * CHUNK_SIZE + y;
+
+        // Surface layer: empty above world Y = 4 (where green strip ends)
+        if (worldY < 4) {
           chunk.setBlock(x, y, BLOCK_TYPES.EMPTY);
         } else {
           chunk.setBlock(x, y, BLOCK_TYPES.MUD_LIGHT);

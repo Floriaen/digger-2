@@ -4,6 +4,8 @@
  */
 
 import { Component } from '../core/component.base.js';
+import { CAMERA_LERP_FACTOR, CAMERA_OFFSET_Y, CANVAS_WIDTH } from '../utils/config.js';
+import { lerp } from '../utils/math.js';
 
 /**
  * CameraComponent
@@ -18,7 +20,16 @@ export class CameraComponent extends Component {
   }
 
   update(deltaTime) {
-    // TODO: Implement smooth camera follow in Milestone 0
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    if (!player) return;
+
+    // Target: center player horizontally, offset vertically
+    this.targetX = CANVAS_WIDTH / 2 - player.x;
+    this.targetY = CAMERA_OFFSET_Y - player.y;
+
+    // Smooth lerp
+    this.x = lerp(this.x, this.targetX, CAMERA_LERP_FACTOR);
+    this.y = lerp(this.y, this.targetY, CAMERA_LERP_FACTOR);
   }
 
   render(ctx) {

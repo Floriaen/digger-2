@@ -36,6 +36,8 @@ export class InputSystem {
       eventBus.emit('input:move-left');
     } else if (event.code === 'ArrowRight') {
       eventBus.emit('input:move-right');
+    } else if (event.code === 'ArrowDown') {
+      eventBus.emit('input:move-down');
     }
   }
 
