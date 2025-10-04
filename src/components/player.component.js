@@ -26,9 +26,9 @@ const PLAYER_STATE = {
  */
 export class PlayerComponent extends Component {
   init() {
-    // Grid position (tiles) - start position
+    // Grid position (tiles) - start position (in grass layer, first line)
     this.gridX = 12;
-    this.gridY = 3;
+    this.gridY = 2;
 
     // World position (pixels) - centered on tile
     this.x = this.gridX * 16 + 8; // Center horizontally (16/2)
@@ -43,6 +43,10 @@ export class PlayerComponent extends Component {
     this.requestedDirection = null; // Pending direction change request
     this.hasStarted = false; // Requires down arrow to start
     this.dead = false;
+
+    // Coyote time: delay before falling
+    this.coyoteTime = 0;
+    this.coyoteTimeMax = 150; // 150ms grace period
 
     // Input subscription
     this.unsubscribeLeft = eventBus.on('input:move-left', () => this._requestDirection(-1, 0));
@@ -96,36 +100,87 @@ export class PlayerComponent extends Component {
     }
 
     // Unified directional digging
-    this._updateDirectionalDig(terrain);
+    this._updateDirectionalDig(terrain, deltaTime);
   }
 
   render(ctx) {
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
     if (!camera) return;
 
     const transform = camera.getTransform();
 
-    // Draw red ball
+    // Check if there's a block above that should occlude the player
+    const blockAbove = terrain ? terrain.getBlock(this.gridX, this.gridY - 1) : null;
+    const shouldClip = blockAbove && !isTraversable(blockAbove);
+
+    ctx.save();
+
+    if (shouldClip) {
+      // Clip the player to only render below the block above
+      // Block above starts at (gridY - 1) * 16, cap extends 9px up, so block bottom is at gridY * 16
+      const clipTop = this.gridY * 16 + transform.y;
+      ctx.beginPath();
+      ctx.rect(0, clipTop, ctx.canvas.width, ctx.canvas.height - clipTop);
+      ctx.clip();
+    }
+
+    // Draw Pac-Man style ball
+    const centerX = this.x + transform.x;
+    const centerY = this.y - 5 + transform.y; // -5 for 3D Fake
+
     ctx.fillStyle = '#E53935';
-    ctx.beginPath();
-    ctx.arc(this.x + transform.x, this.y - 5 + transform.y, PLAYER_RADIUS, 0, Math.PI * 2); // -5 for 3D Fake
-    ctx.fill();
 
-    // Subtle shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.beginPath();
-    ctx.ellipse(
-      this.x + transform.x,
-      this.y + PLAYER_RADIUS + transform.y - 4, // -4 for 3D Fake
-      PLAYER_RADIUS * 0.8,
-      PLAYER_RADIUS * 0.3,
-      0,
-      0,
-      Math.PI * 2,
-    );
-    ctx.fill();
+    // Calculate mouth angle based on dig timer (animated)
+    let mouthAngle = 0;
+    let directionAngle = 0;
 
-    // Render dig progress (white outline fade)
+    // Show mouth while digging OR during coyote time (but not when falling)
+    const isEating = (this.currentDigTarget || (this.coyoteTime > 0 && this.coyoteTime < this.coyoteTimeMax))
+      && this.state !== PLAYER_STATE.FALLING;
+
+    if (isEating) {
+      // 3-frame animation like original Pac-Man: open -> half -> closed -> half -> open
+      const frameTime = 100; // Time per frame in ms
+      const frame = Math.floor(this.digTimer / frameTime) % 4;
+
+      // Frame sequence: 0=open, 1=half, 2=closed, 3=half
+      if (frame === 0) mouthAngle = Math.PI / 4; // Fully open (45°)
+      else if (frame === 1) mouthAngle = Math.PI / 8; // Half open (22.5°)
+      else if (frame === 2) mouthAngle = 0; // Closed
+      else if (frame === 3) mouthAngle = Math.PI / 8; // Half open (22.5°)
+
+      // Direction based on dig direction
+      const { dx, dy } = this.digDirection;
+      if (dx > 0) directionAngle = 0; // Right
+      else if (dx < 0) directionAngle = Math.PI; // Left
+      else if (dy > 0) directionAngle = Math.PI / 2; // Down
+      else if (dy < 0) directionAngle = -Math.PI / 2; // Up
+    }
+
+    if (isEating && mouthAngle > 0) {
+      // Draw Pac-Man with mouth
+      ctx.beginPath();
+      ctx.arc(
+        centerX,
+        centerY,
+        PLAYER_RADIUS,
+        directionAngle + mouthAngle,
+        directionAngle - mouthAngle + Math.PI * 2,
+      );
+      ctx.lineTo(centerX, centerY);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // Draw full circle when not digging
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, PLAYER_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+
+    // Render dig progress (white outline fade) - always on top
     if (this.currentDigTarget) {
       const progress = 1 - (this.currentDigTarget.hp / this.currentDigTarget.maxHp);
       const alpha = 0.3 + progress * 0.5;
@@ -154,6 +209,8 @@ export class PlayerComponent extends Component {
    */
   _requestDirection(dx, dy) {
     if (!this.hasStarted || this.dead) return;
+    // Block input during coyote time
+    if (this.coyoteTime > 0 && this.coyoteTime < this.coyoteTimeMax) return;
     this.requestedDirection = { dx, dy };
   }
 
@@ -176,9 +233,10 @@ export class PlayerComponent extends Component {
   /**
    * Update directional digging (unified for all directions)
    * @param {TerrainComponent} terrain
+   * @param {number} deltaTime - Time since last update
    * @private
    */
-  _updateDirectionalDig(terrain) {
+  _updateDirectionalDig(terrain, deltaTime) {
     const { dx, dy } = this.digDirection;
     const targetX = this.gridX + dx;
     const targetY = this.gridY + dy;
@@ -194,21 +252,36 @@ export class PlayerComponent extends Component {
     // Check if target is traversable (empty/falling)
     if (isTraversable(targetBlock)) {
       if (dy > 0) {
-        // Vertical: Free-fall through empty space
-        this.state = PLAYER_STATE.FALLING;
-        this.velocityY += GRAVITY;
-        if (this.velocityY > FALL_SPEED_MAX) this.velocityY = FALL_SPEED_MAX;
+        // Increment coyote time when above empty space
+        this.coyoteTime += deltaTime;
 
-        const oldGridY = this.gridY;
-        this.y += this.velocityY;
-        this.gridY = Math.floor(this.y / 16);
+        // Only start falling/moving after coyote time expires
+        if (this.coyoteTime >= this.coyoteTimeMax) {
+          // Move into the empty space first (if we haven't already)
+          if (this.gridY !== targetY) {
+            this.gridX = targetX;
+            this.gridY = targetY;
+            this.x = this.gridX * 16 + 8;
+            this.y = this.gridY * 16 + 8;
+          }
 
-        if (this.gridY > oldGridY + 1) {
-          this.gridY = oldGridY + 1;
-          this.y = this.gridY * 16 + 16 - 8;
+          // Then start falling
+          this.state = PLAYER_STATE.FALLING;
+          this.velocityY += GRAVITY;
+          if (this.velocityY > FALL_SPEED_MAX) this.velocityY = FALL_SPEED_MAX;
+
+          const oldGridY = this.gridY;
+          this.y += this.velocityY;
+          this.gridY = Math.floor(this.y / 16);
+
+          if (this.gridY > oldGridY + 1) {
+            this.gridY = oldGridY + 1;
+            this.y = this.gridY * 16 + 16 - 8;
+          }
+
+          this.currentDigTarget = null;
         }
-
-        this.currentDigTarget = null;
+        // During coyote time, stay in place (appear to stand on nothing briefly)
       } else {
         // Lateral: Stop at empty space
         this.state = PLAYER_STATE.IDLE;
@@ -231,6 +304,7 @@ export class PlayerComponent extends Component {
     // Target is diggable - dig it
     this.state = dy === 0 ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;
     this.velocityY = 0;
+    this.coyoteTime = 0; // Reset coyote time when on solid ground
     this._digInDirection(terrain, dx, dy);
   }
 
@@ -278,7 +352,14 @@ export class PlayerComponent extends Component {
       // Emit event for falling blocks system
       eventBus.emit('block:destroyed', { x: targetX, y: targetY });
 
-      // Move player to new position
+      // If digging downward, activate coyote time delay before moving
+      if (dy > 0) {
+        this.coyoteTime = 0; // Start coyote timer
+        // Don't move yet - will move after coyote time expires
+        return;
+      }
+
+      // Move player to new position (immediate for lateral movement)
       this.gridX = targetX;
       this.gridY = targetY;
       this.x = this.gridX * 16 + 8;

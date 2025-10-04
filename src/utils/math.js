@@ -51,3 +51,12 @@ export function distance(x1, y1, x2, y2) {
   const dy = y2 - y1;
   return Math.sqrt(dx * dx + dy * dy);
 }
+
+/**
+ * Ease-in quadratic (starts slow, ends fast)
+ * @param {number} t - Value between 0 and 1
+ * @returns {number} Eased value
+ */
+export function easeInQuad(t) {
+  return t * t;
+}

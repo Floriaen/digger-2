@@ -13,7 +13,6 @@ import { CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
 export class DebugComponent extends Component {
   init() {
     this.gui = null;
-    this.deZoomActive = false;
     this.showChunkBounds = false;
     this.showGridPos = true;
     this.fps = 60;
@@ -35,21 +34,34 @@ export class DebugComponent extends Component {
   }
 
   render(ctx) {
-    // FPS counter
+    // Save context to prevent zoom from affecting debug text
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to identity matrix
+
+    // FPS counter (always visible)
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '12px monospace';
-    ctx.fillText(`FPS: ${this.fps}`, 10, 550);
+    ctx.fillText(`FPS: ${this.fps}`, 10, 20);
 
-    // Player grid position
+    // Player grid position and zoom
     if (this.showGridPos) {
       const player = this.game.components.find(
         (c) => c.constructor.name === 'PlayerComponent',
       );
+      const camera = this.game.components.find(
+        (c) => c.constructor.name === 'CameraComponent',
+      );
       if (player) {
-        ctx.fillText(`Grid: (${player.gridX}, ${player.gridY})`, 10, 565);
-        ctx.fillText(`State: ${player.state}`, 10, 580);
+        ctx.fillText(`Grid: (${player.gridX}, ${player.gridY})`, 10, 35);
+        ctx.fillText(`State: ${player.state}`, 10, 50);
+      }
+      if (camera) {
+        const transform = camera.getTransform();
+        ctx.fillText(`Zoom: ${camera.zoom.toFixed(2)} → ${transform.zoom.toFixed(2)} (target: ${camera.targetZoom.toFixed(2)})`, 10, 65);
       }
     }
+
+    ctx.restore();
 
     // Chunk bounds
     if (this.showChunkBounds) {
@@ -104,15 +116,33 @@ export class DebugComponent extends Component {
     const debugFolder = this.gui.addFolder('Debug');
     debugFolder.add(this, 'showChunkBounds').name('Chunk Bounds');
     debugFolder.add(this, 'showGridPos').name('Grid Position');
-    debugFolder.add(this, 'deZoomActive').name('De-Zoom').onChange((value) => {
-      // De-zoom toggle (zoom out camera)
-      const camera = this.game.components.find(
-        (c) => c.constructor.name === 'CameraComponent',
-      );
-      if (camera) {
-        // TODO: Implement de-zoom in camera
-      }
-    });
+
+    // Zoom control
+    const camera = this.game.components.find(
+      (c) => c.constructor.name === 'CameraComponent',
+    );
+    if (camera) {
+      // Manual zoom toggle
+      debugFolder.add(camera, 'manualZoom').name('Manual Zoom')
+        .onChange((val) => {
+          if (!val) {
+            // Reset to auto when disabled
+            camera.manualZoom = false;
+          }
+        });
+
+      // Control targetZoom (not zoom) to work with lerp system
+      debugFolder.add(camera, 'targetZoom', 0.1, 10.0).step(0.1).name('Zoom')
+        .onChange(() => {
+          // Enable manual zoom when slider is moved
+          camera.manualZoom = true;
+        })
+        .listen(); // Update GUI when zoom changes programmatically
+    }
+
+    // Zoom strategy toggle
+    debugFolder.add(this.game, 'zoomAfterRendering').name('Zoom After Rendering');
+
     debugFolder.open();
   }
 

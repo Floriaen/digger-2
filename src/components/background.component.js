@@ -13,10 +13,12 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 export class BackgroundComponent extends Component {
   init() {
     this.parallaxOffset = 0;
-    this.surfaceY = 100; // Surface level in screen coordinates
+    this.mountainWorldY = 80; // Mountain bottom in world coordinates (gridY=3, which is 3*16=48)
+    this.sunX = null; // Sun X position (set from player's initial position)
+    this.sunY = null; // Sun Y position (set from player's initial position)
   }
 
-  update(deltaTime) {
+  update() {
     // Update parallax based on camera position
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
     if (camera) {
@@ -27,88 +29,88 @@ export class BackgroundComponent extends Component {
 
   render(ctx) {
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
-
-    if (!camera || !player) return;
+    if (!camera) return;
 
     const transform = camera.getTransform();
 
-    // Calculate fade based on depth
-    const surfaceWorldY = this.surfaceY;
-    const fadeStartY = surfaceWorldY + 100; // Start fading at this depth
-    const fadeEndY = surfaceWorldY + 300; // Fully black at this depth
-    const depthRatio = (player.y - fadeStartY) / (fadeEndY - fadeStartY);
-    const fade = Math.max(0, Math.min(1, depthRatio)); // Clamp 0-1
+    // Calculate mountain bottom position in screen coordinates (world Y + camera offset)
+    const mountainBottomY = this.mountainWorldY + transform.y;
 
-    // Always draw sky (even when underground for smooth transition)
-    const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    gradient.addColorStop(0, '#FF8C42');
-    gradient.addColorStop(0.6, '#FF6B35');
-    gradient.addColorStop(1, '#FF5733');
-    ctx.fillStyle = gradient;
+    // Sky - solid orange (Chess Pursuit palette)
+    ctx.fillStyle = '#FF8601';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Beige sun disc (top right) - scrolls with camera, fades out
-    const sunY = 80 + transform.y;
-    if (sunY > -50 && fade < 1) {
-      ctx.globalAlpha = 1 - fade;
-      ctx.fillStyle = '#F4E4C1';
+    // Sun (fixed at player's initial position)
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    if (player) {
+      // Set sun position once from player's initial position
+      if (this.sunX === null || this.sunY === null) {
+        this.sunX = player.x;
+        this.sunY = player.y;
+      }
+
+      // Sun circle, fixed position in world (Chess Pursuit palette)
+      const sunScreenX = this.sunX + transform.x;
+      const sunScreenY = this.sunY + transform.y;
+      ctx.fillStyle = '#FFE7CA';
       ctx.beginPath();
-      ctx.arc(CANVAS_WIDTH - 100, sunY, 40, 0, Math.PI * 2);
+      ctx.arc(sunScreenX, sunScreenY, 80, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = 1;
     }
 
-    // Black mountain silhouettes (with parallax) - fade out
-    if (fade < 1) {
-      ctx.globalAlpha = 1 - fade;
-      this._drawMountains(ctx, transform);
-      ctx.globalAlpha = 1;
-    }
+    // Black mountain silhouettes (with parallax)
+    this._drawMountains(ctx, transform);
 
-    // Note: Green surface is now rendered per-block in terrain component
-
-    // Overlay black fade for underground transition
-    if (fade > 0) {
-      ctx.fillStyle = `rgba(0, 0, 0, ${fade})`;
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    // Draw black underground below the mountains
+    if (mountainBottomY < CANVAS_HEIGHT) {
+      ctx.fillStyle = '#202020';
+      ctx.fillRect(0, mountainBottomY - 1, CANVAS_WIDTH, CANVAS_HEIGHT - mountainBottomY);
     }
   }
 
   /**
-   * Draw mountain silhouettes with parallax
+   * Draw mountain silhouettes
+   * Code adapted from @saturnyn's Chess Pursuit (js13kGames 2015)
+   * https://js13kgames.com/2015/games/chesspursuit
    * @param {CanvasRenderingContext2D} ctx
    * @param {{x: number, y: number}} transform - Camera transform
    * @private
    */
   _drawMountains(ctx, transform) {
-    const screenY = this.surfaceY + transform.y;
-    ctx.fillStyle = '#000000';
+    const horizonY = this.mountainWorldY + transform.y;
 
-    // Mountain range 1 (background) - slight parallax
-    const parallax1 = transform.y * 0.3;
+    ctx.save();
     ctx.beginPath();
-    ctx.moveTo(0 + this.parallaxOffset * 0.5, screenY + parallax1);
-    ctx.lineTo(150 + this.parallaxOffset * 0.5, screenY - 80 + parallax1);
-    ctx.lineTo(300 + this.parallaxOffset * 0.5, screenY - 40 + parallax1);
-    ctx.lineTo(450 + this.parallaxOffset * 0.5, screenY - 100 + parallax1);
-    ctx.lineTo(CANVAS_WIDTH, screenY - 60 + parallax1);
-    ctx.lineTo(CANVAS_WIDTH, screenY + parallax1);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillStyle = '#202020';
 
-    // Mountain range 2 (foreground) - more parallax
-    const parallax2 = transform.y * 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0 + this.parallaxOffset, screenY + parallax2);
-    ctx.lineTo(100 + this.parallaxOffset, screenY - 60 + parallax2);
-    ctx.lineTo(250 + this.parallaxOffset, screenY - 30 + parallax2);
-    ctx.lineTo(400 + this.parallaxOffset, screenY - 90 + parallax2);
-    ctx.lineTo(600 + this.parallaxOffset, screenY - 50 + parallax2);
-    ctx.lineTo(CANVAS_WIDTH, screenY - 40 + parallax2);
-    ctx.lineTo(CANVAS_WIDTH, screenY + parallax2);
-    ctx.closePath();
+    const mountainMaxHeight = 40;
+    const points = [
+      0, 0.7,
+      0.1, 0.3,
+      0.2, 1,
+      0.3, 0.5,
+      0.35, 0.8,
+      0.42, 0.5,
+      0.55, 0.9,
+      0.7, 0.45,
+      0.8, 1.1,
+      0.88, 0.4,
+      1, 0.8
+    ];
+
+    for (let i = 0; i < points.length; i += 2) {
+      const x = points[i] * CANVAS_WIDTH;
+      const y = (transform.y * 0.2 - 78) + horizonY - (mountainMaxHeight * points[i + 1]);
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.lineTo(CANVAS_WIDTH, horizonY);
+    ctx.lineTo(0, horizonY);
     ctx.fill();
+    ctx.restore();
   }
 
   /**

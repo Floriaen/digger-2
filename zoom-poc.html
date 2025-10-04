@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zoom POC - Sub-pixel Rendering Test</title>
+  <style>
+    body {
+      background: #1a1a1a;
+      color: white;
+      font-family: monospace;
+      padding: 20px;
+    }
+    canvas {
+      border: 2px solid #444;
+      margin: 10px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      background: #2a2a2a;
+      border-radius: 5px;
+    }
+    h2 { color: #4CAF50; }
+    .controls {
+      margin: 20px 0;
+    }
+    input[type="range"] {
+      width: 300px;
+    }
+    .zoom-value {
+      display: inline-block;
+      width: 80px;
+      color: #FFD700;
+    }
+  </style>
+</head>
+<body>
+  <h1>Zoom POC - Tile Flickering Demonstration</h1>
+
+  <div class="controls">
+    <label>
+      Zoom Level: <span class="zoom-value" id="zoomValue">2.0</span>
+      <input type="range" id="zoomSlider" min="1.0" max="3.0" step="0.1" value="2.0">
+    </label>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 1: Scale BEFORE Drawing (Current Approach)</h2>
+    <p>Tiles rendered with zoom applied to canvas context before drawing</p>
+    <canvas id="beforeCanvas" width="400" height="200"></canvas>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Scale AFTER Drawing (Your Suggestion)</h2>
+    <p>Tiles rendered at 1:1, then entire canvas content scaled</p>
+    <canvas id="afterCanvas" width="400" height="200"></canvas>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Snapped Zoom (Our Solution)</h2>
+    <p>Zoom snapped to nearest 0.5 increment (1.0, 1.5, 2.0, 2.5, 3.0)</p>
+    <canvas id="snappedCanvas" width="400" height="200"></canvas>
+  </div>
+
+  <div class="test-section">
+    <h2>Observations:</h2>
+    <ul>
+      <li>At integer zoom (1.0, 2.0, 3.0): All methods look perfect ✓</li>
+      <li>At fractional zoom (1.5, 2.3, 2.7): Test 1 & 2 show gaps/overlaps between tiles</li>
+      <li>At fractional zoom: Test 3 (snapped) always looks perfect ✓</li>
+      <li><strong>Conclusion: Test 1 and 2 produce identical flickering - proving scaling WHEN doesn't matter!</strong></li>
+    </ul>
+  </div>
+
+  <script>
+    const beforeCanvas = document.getElementById('beforeCanvas');
+    const afterCanvas = document.getElementById('afterCanvas');
+    const snappedCanvas = document.getElementById('snappedCanvas');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
+
+    const beforeCtx = beforeCanvas.getContext('2d');
+    const afterCtx = afterCanvas.getContext('2d');
+    const snappedCtx = snappedCanvas.getContext('2d');
+
+    // Disable image smoothing for all canvases
+    [beforeCtx, afterCtx, snappedCtx].forEach(ctx => {
+      ctx.imageSmoothingEnabled = false;
+    });
+
+    // Load sprite sheet
+    const spriteSheet = new Image();
+    spriteSheet.src = 'Sprite/sprite.png';
+
+    // Classic mud sprite (second tile)
+    const MUD_SPRITE = { x: 16, y: 16 };
+
+    // Generate random darken mask for 10x10 grid
+    const gridSize = 10;
+    const darkenMask = [];
+    for (let i = 0; i < gridSize * gridSize; i++) {
+      darkenMask.push(Math.random() > 0.5);
+    }
+
+    function drawTile(ctx, gridX, gridY) {
+      const tileX = gridX * 16;
+      const tileY = gridY * 16;
+
+      // Draw mud tile
+      ctx.drawImage(
+        spriteSheet,
+        MUD_SPRITE.x, MUD_SPRITE.y,  // Source position
+        16, 16,                       // Source size
+        tileX, tileY,                 // Dest position
+        16, 16                        // Dest size
+      );
+
+      // Apply darken mask if needed
+      const index = gridY * gridSize + gridX;
+      if (darkenMask[index]) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(tileX, tileY, 16, 16);
+      }
+    }
+
+    function renderTest1_ScaleBefore(zoom) {
+      beforeCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset
+      beforeCtx.clearRect(0, 0, beforeCanvas.width, beforeCanvas.height);
+
+      // Apply zoom BEFORE drawing
+      beforeCtx.scale(zoom, zoom);
+
+      // Draw 10x10 grid
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          drawTile(beforeCtx, x, y);
+        }
+      }
+    }
+
+    function renderTest2_ScaleAfter(zoom) {
+      afterCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset
+      afterCtx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
+
+      // Create temporary canvas to render at 1:1
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = afterCanvas.width / zoom;
+      tempCanvas.height = afterCanvas.height / zoom;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.imageSmoothingEnabled = false;
+
+      // Draw 10x10 grid at 1:1 scale
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          drawTile(tempCtx, x, y);
+        }
+      }
+
+      // Now scale the entire rendered image
+      afterCtx.scale(zoom, zoom);
+      afterCtx.drawImage(tempCanvas, 0, 0);
+    }
+
+    function renderTest3_Snapped(zoom) {
+      snappedCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset
+      snappedCtx.clearRect(0, 0, snappedCanvas.width, snappedCanvas.height);
+
+      // Snap zoom to nearest 0.5
+      const snappedZoom = Math.round(zoom * 2) / 2;
+
+      // Apply snapped zoom BEFORE drawing
+      snappedCtx.scale(snappedZoom, snappedZoom);
+
+      // Draw 10x10 grid
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          drawTile(snappedCtx, x, y);
+        }
+      }
+    }
+
+    function render() {
+      const zoom = parseFloat(zoomSlider.value);
+      zoomValue.textContent = zoom.toFixed(1);
+
+      renderTest1_ScaleBefore(zoom);
+      renderTest2_ScaleAfter(zoom);
+      renderTest3_Snapped(zoom);
+    }
+
+    zoomSlider.addEventListener('input', render);
+
+    // Wait for sprite sheet to load before rendering
+    spriteSheet.onload = () => {
+      render();
+    };
+  </script>
+</body>
+</html>

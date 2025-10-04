@@ -24,11 +24,22 @@ export function drawTile(ctx, spriteSheet, blockId, screenX, screenY) {
   // Draw sprite offset -9px above collision box (cap extends upward)
   const spriteY = screenY - TILE_CAP_HEIGHT;
 
+  // Draw the sprite
   ctx.drawImage(
     spriteSheet,
     block.spriteX, block.spriteY,  // Source position in sprite sheet
     TILE_WIDTH, SPRITE_HEIGHT,      // Source dimensions (16×25)
     screenX, spriteY,                // Destination position (offset by cap height)
-    TILE_WIDTH, SPRITE_HEIGHT        // Destination dimensions
+    TILE_WIDTH, SPRITE_HEIGHT,       // Destination dimensions
   );
+
+  // Apply darkening based on HP (higher HP = darker)
+  // HP range: 1-5 for diggable blocks, Infinity for rock
+  if (block.hp > 0 && block.hp < Infinity) {
+    // Darken factor: 0 at HP=1, increasing with HP
+    // HP 1: 0% dark, HP 2: 10%, HP 3: 20%, HP 4: 30%, HP 5: 40%
+    const darkenFactor = (block.hp - 1) * 0.1;
+    ctx.fillStyle = `rgba(0, 0, 0, ${darkenFactor})`;
+    ctx.fillRect(screenX, spriteY, TILE_WIDTH, SPRITE_HEIGHT);
+  }
 }

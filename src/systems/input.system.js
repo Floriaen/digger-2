@@ -30,6 +30,11 @@ export class InputSystem {
    * @private
    */
   _onKeyDown(event) {
+    // Prevent repeat pause toggles
+    if ((event.code === 'Space' || event.code === 'Escape') && this.keys[event.code]) {
+      return;
+    }
+
     this.keys[event.code] = true;
 
     if (event.code === 'ArrowLeft') {
@@ -38,6 +43,8 @@ export class InputSystem {
       eventBus.emit('input:move-right');
     } else if (event.code === 'ArrowDown') {
       eventBus.emit('input:move-down');
+    } else if (event.code === 'Space' || event.code === 'Escape') {
+      eventBus.emit('input:pause-toggle');
     }
   }
 

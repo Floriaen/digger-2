@@ -5,6 +5,7 @@
 
 import { Component } from '../core/component.base.js';
 import { isDiggable } from '../terrain/block-registry.js';
+import { SPRITE_ATLAS, loadSpriteSheet } from '../rendering/sprite-atlas.js';
 
 const GUIDANCE_DELAY_MS = 400;
 
@@ -19,6 +20,14 @@ export class NavigationComponent extends Component {
     this.showGuidance = false;
     this.validDirections = { left: false, right: false, down: false };
     this.fallWarning = false; // Flash triangles if falling block above
+    this.spriteSheet = null;
+
+    // Load sprite sheet
+    loadSpriteSheet().then((img) => {
+      this.spriteSheet = img;
+    }).catch((err) => {
+      console.error('Failed to load sprite sheet:', err);
+    });
   }
 
   update(deltaTime) {
@@ -26,6 +35,13 @@ export class NavigationComponent extends Component {
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
 
     if (!player || !terrain) return;
+
+    // Hide guidance if player is dead
+    if (player.dead) {
+      this.inactivityTimer = 0;
+      this.showGuidance = false;
+      return;
+    }
 
     // Check if player is stationary (idle or blocked)
     const isStationary = player.state === 'idle' || !player.hasStarted;
@@ -45,7 +61,7 @@ export class NavigationComponent extends Component {
   }
 
   render(ctx) {
-    if (!this.showGuidance) return;
+    if (!this.showGuidance || !this.spriteSheet) return;
 
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
@@ -54,29 +70,36 @@ export class NavigationComponent extends Component {
 
     const transform = camera.getTransform();
 
-    // Draw white triangles for valid directions
-    ctx.fillStyle = this.fallWarning ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)';
+    // Save context state
+    ctx.save();
 
-    // Left triangle
+    // Set opacity for arrows
+    const alpha = this.fallWarning ? 0.9 : 0.7;
+    ctx.globalAlpha = alpha;
+
+    // Left arrow - align with front face of block (9px down for cap)
     if (this.validDirections.left) {
-      const x = (player.gridX - 1) * 16 + 8 + transform.x;
-      const y = player.gridY * 16 + 8 + transform.y;
-      this._drawTriangle(ctx, x, y, 'left');
+      const x = (player.gridX - 1) * 16 + transform.x;
+      const y = player.gridY * 16 - 7 + transform.y; // +9 for cap offset
+      this._drawArrow(ctx, x, y, 'left');
     }
 
-    // Right triangle
+    // Right arrow - align with front face of block (9px down for cap)
     if (this.validDirections.right) {
-      const x = (player.gridX + 1) * 16 + 8 + transform.x;
-      const y = player.gridY * 16 + 8 + transform.y;
-      this._drawTriangle(ctx, x, y, 'right');
+      const x = (player.gridX + 1) * 16 + transform.x;
+      const y = player.gridY * 16 - 7 + transform.y; // +9 for cap offset
+      this._drawArrow(ctx, x, y, 'right');
     }
 
-    // Down triangle
+    // Down arrow - align with front face of block (9px down for cap)
     if (this.validDirections.down) {
-      const x = player.gridX * 16 + 8 + transform.x;
-      const y = (player.gridY + 1) * 16 + 8 + transform.y;
-      this._drawTriangle(ctx, x, y, 'down');
+      const x = player.gridX * 16 + transform.x;
+      const y = (player.gridY + 1) * 16 + transform.y; // +9 for cap offset
+      this._drawArrow(ctx, x, y, 'down');
     }
+
+    // Restore context state
+    ctx.restore();
   }
 
   /**
@@ -111,31 +134,29 @@ export class NavigationComponent extends Component {
   }
 
   /**
-   * Draw a directional triangle
+   * Draw an arrow from sprite sheet
    * @param {CanvasRenderingContext2D} ctx
-   * @param {number} x - Center X
-   * @param {number} y - Center Y
+   * @param {number} x - Grid X position (world coords)
+   * @param {number} y - Grid Y position (world coords)
    * @param {string} direction - 'left', 'right', or 'down'
    * @private
    */
-  _drawTriangle(ctx, x, y, direction) {
-    const size = 6;
-
-    ctx.beginPath();
+  _drawArrow(ctx, x, y, direction) {
+    let sprite;
     if (direction === 'left') {
-      ctx.moveTo(x - size, y);
-      ctx.lineTo(x + size / 2, y - size);
-      ctx.lineTo(x + size / 2, y + size);
+      sprite = SPRITE_ATLAS.triangle_left;
     } else if (direction === 'right') {
-      ctx.moveTo(x + size, y);
-      ctx.lineTo(x - size / 2, y - size);
-      ctx.lineTo(x - size / 2, y + size);
+      sprite = SPRITE_ATLAS.triangle_right;
     } else if (direction === 'down') {
-      ctx.moveTo(x, y + size);
-      ctx.lineTo(x - size, y - size / 2);
-      ctx.lineTo(x + size, y - size / 2);
+      sprite = SPRITE_ATLAS.triangle_down;
     }
-    ctx.closePath();
-    ctx.fill();
+
+    if (!sprite) return;
+
+    ctx.drawImage(
+      this.spriteSheet,
+      sprite.x, sprite.y, sprite.width, sprite.height,
+      x, y, sprite.width, sprite.height,
+    );
   }
 }

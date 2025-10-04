@@ -26,10 +26,10 @@ export const SPRITE_ATLAS = {
   // UI
   coin_icon: { x: 0, y: 0, width: 16, height: 16 },
 
-  // Navigation markers
-  triangle_left: { x: 0, y: 0, width: 8, height: 8 },
-  triangle_right: { x: 8, y: 0, width: 8, height: 8 },
-  triangle_down: { x: 16, y: 0, width: 8, height: 8 },
+  // Navigation markers (white arrows in row 3)
+  triangle_left: { x: 0, y: 48, width: 16, height: 16 },
+  triangle_down: { x: 16, y: 48, width: 16, height: 16 },
+  triangle_right: { x: 32, y: 48, width: 16, height: 16 },
 };
 
 /**

@@ -13,11 +13,20 @@ export class Game {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+
+    // Disable image smoothing for crisp pixel art
+    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.mozImageSmoothingEnabled = false;
+    this.ctx.webkitImageSmoothingEnabled = false;
+    this.ctx.msImageSmoothingEnabled = false;
+
     this.components = [];
     this.running = false;
+    this.paused = false;
     this.lastTime = 0;
     this.deltaTime = 0;
     this.frameInterval = 1000 / TARGET_FPS;
+    this.zoomAfterRendering = false; // Toggle for testing zoom strategies
   }
 
   /**
@@ -67,22 +76,95 @@ export class Game {
       this.deltaTime = this.frameInterval;
     }
 
-    // Update all components
-    this.components.forEach((component) => {
-      if (component.update) {
-        component.update(this.deltaTime);
-      }
-    });
+    // Update all components (skip if paused)
+    if (!this.paused) {
+      this.components.forEach((component) => {
+        if (component.update) {
+          component.update(this.deltaTime);
+        }
+      });
+    }
 
-    // Clear canvas
+    // Reset transform and clear canvas
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to identity matrix
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Render all components
-    this.components.forEach((component) => {
-      if (component.render) {
-        component.render(this.ctx);
+    // Get camera and player for zoom
+    const camera = this.components.find((c) => c.constructor.name === 'CameraComponent');
+    const player = this.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const zoom = camera ? camera.getTransform().zoom : 1.0;
+
+    if (this.zoomAfterRendering) {
+      // STRATEGY 2: Render at 1:1 to temp canvas, then zoom
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = this.canvas.width;
+      tempCanvas.height = this.canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.imageSmoothingEnabled = false;
+      tempCtx.mozImageSmoothingEnabled = false;
+      tempCtx.webkitImageSmoothingEnabled = false;
+      tempCtx.msImageSmoothingEnabled = false;
+
+      // Render all components EXCEPT debug to temp canvas at 1:1 (no zoom)
+      this.components.forEach((component) => {
+        if (component.render && component.constructor.name !== 'DebugComponent') {
+          component.render(tempCtx);
+        }
+      });
+
+      // Now zoom and draw the entire rendered image to main canvas
+      this.ctx.save();
+      if (camera && player) {
+        const transform = camera.getTransform();
+        const playerScreenX = Math.round(player.x + transform.x);
+        const playerScreenY = Math.round(player.y + transform.y);
+        this.ctx.translate(playerScreenX, playerScreenY);
+        this.ctx.scale(zoom, zoom);
+        this.ctx.translate(-playerScreenX, -playerScreenY);
       }
-    });
+      this.ctx.drawImage(tempCanvas, 0, 0);
+      this.ctx.restore();
+
+      // Render debug component separately (not zoomed)
+      const debugComponent = this.components.find((c) => c.constructor.name === 'DebugComponent');
+      if (debugComponent && debugComponent.render) {
+        debugComponent.render(this.ctx);
+      }
+    } else {
+      // STRATEGY 1: Apply zoom BEFORE rendering (current approach)
+      this.ctx.save();
+      if (camera && player) {
+        const transform = camera.getTransform();
+        // Player's screen position (rounded to prevent sub-pixel gaps)
+        const playerScreenX = Math.round(player.x + transform.x);
+        const playerScreenY = Math.round(player.y + transform.y);
+        // Zoom around player position
+        this.ctx.translate(playerScreenX, playerScreenY);
+        this.ctx.scale(zoom, zoom);
+        this.ctx.translate(-playerScreenX, -playerScreenY);
+      } else {
+        // Fallback to center zoom
+        const { width, height } = this.canvas;
+        this.ctx.translate(width / 2, height / 2);
+        this.ctx.scale(zoom, zoom);
+        this.ctx.translate(-width / 2, -height / 2);
+      }
+
+      // Render all components (always render, even when paused)
+      this.components.forEach((component) => {
+        if (component.render) {
+          component.render(this.ctx);
+        }
+      });
+
+      // Restore context
+      this.ctx.restore();
+    }
+
+    // Render pause overlay if paused (after restore, so it's not zoomed)
+    if (this.paused) {
+      this._renderPauseOverlay();
+    }
 
     this.lastTime = currentTime;
   }
@@ -100,6 +182,52 @@ export class Game {
    */
   stop() {
     this.running = false;
+  }
+
+  /**
+   * Toggle pause state
+   */
+  togglePause() {
+    this.paused = !this.paused;
+  }
+
+  /**
+   * Pause the game
+   */
+  pause() {
+    this.paused = true;
+  }
+
+  /**
+   * Resume the game
+   */
+  resume() {
+    this.paused = false;
+  }
+
+  /**
+   * Render pause overlay
+   * @private
+   */
+  _renderPauseOverlay() {
+    const { ctx } = this;
+    const { width, height } = this.canvas;
+
+    // Semi-transparent dark overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, width, height);
+
+    // "PAUSED" text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PAUSED', width / 2, height / 2 - 30);
+
+    // Instruction text
+    ctx.font = '20px Arial';
+    ctx.fillStyle = '#CCCCCC';
+    ctx.fillText('Press SPACE or ESC to resume', width / 2, height / 2 + 30);
   }
 
   /**

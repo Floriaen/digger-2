@@ -45,14 +45,25 @@ export class TerrainGenerator {
 
         let blockType = BLOCK_TYPES.EMPTY;
 
-        // Surface layer: empty above world Y = 4 (where green strip ends)
-        if (worldY < 4) {
+        // Surface layer handling
+        if (worldY < 3) {
+          // Empty air above surface (Y = 0, 1, 2)
           blockType = BLOCK_TYPES.EMPTY;
+        } else if (worldY === 3) {
+          // Surface row: grass blocks (Y = 3)
+          blockType = BLOCK_TYPES.GRASS;
+        } else if (worldY < 33) {
+          // First 30 rows below surface: no caverns/holes, but rocks allowed (Y = 4 to 32)
+          if (this._isRock(worldX, worldY)) {
+            blockType = BLOCK_TYPES.ROCK;
+          } else {
+            blockType = this._getMudTypeByDepth(worldY);
+          }
         } else if (this._isLavaZone(worldY)) {
           // Lava termination zone (deep underground)
           blockType = BLOCK_TYPES.LAVA;
         } else {
-          // Check for red torus formation
+          // Below 30 rows: normal terrain generation with caverns and rocks
           const torusBlock = this._getTorusBlock(worldX, worldY);
           if (torusBlock !== null) {
             blockType = torusBlock;
@@ -77,6 +88,9 @@ export class TerrainGenerator {
 
     // Ensure torus rings are surrounded by solid blocks
     this._ensureTorusSurroundings(chunk, chunkX, chunkY);
+
+    // Apply organic HP distribution based on proximity to empty tiles
+    this._applyOrganicHP(chunk, chunkX, chunkY);
 
     // Cache the chunk
     this.chunkCache.set(key, chunk);
@@ -336,6 +350,109 @@ export class TerrainGenerator {
   _random(x, y) {
     const n = Math.sin(x * 12.9898 + y * 78.233 + this.seed) * 43758.5453;
     return n - Math.floor(n);
+  }
+
+  /**
+   * Apply organic HP distribution based on proximity to empty tiles
+   * Blocks closer to empty tiles get lower HP
+   * @param {TerrainChunk} chunk - Chunk to modify
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkY - Chunk Y coordinate
+   * @private
+   */
+  _applyOrganicHP(chunk, chunkX, chunkY) {
+    // Skip top chunks (surface and first filled rows stay as-is)
+    const worldYStart = chunkY * CHUNK_SIZE;
+    if (worldYStart < 6) return;
+
+    // For each block in chunk
+    for (let y = 0; y < CHUNK_SIZE; y += 1) {
+      for (let x = 0; x < CHUNK_SIZE; x += 1) {
+        const blockType = chunk.getBlock(x, y);
+        const worldX = chunkX * CHUNK_SIZE + x;
+        const worldY = worldYStart + y;
+
+        // Only process mud blocks (not empty, rock, lava, or torus)
+        if (blockType < BLOCK_TYPES.MUD_LIGHT || blockType > BLOCK_TYPES.MUD_CORE) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+
+        // Calculate distance to nearest empty tile
+        const distanceToEmpty = this._getDistanceToEmpty(chunk, x, y, chunkX, chunkY);
+
+        // Add noise-based variation to create organic patterns
+        const noiseValue = this._noise(worldX * 0.15, worldY * 0.15);
+        // Noise adjustment: -1 to +1 HP variation
+        const noiseAdjustment = Math.floor((noiseValue - 0.5) * 2);
+
+        // Map distance to HP (1-5) with noise
+        let targetHP = Math.min(5, Math.max(1, distanceToEmpty + noiseAdjustment));
+
+        // Apply depth influence (deeper = slightly higher HP)
+        const depthBonus = Math.floor(worldY / 150); // +1 HP per 150 depth
+        targetHP = Math.min(5, targetHP + depthBonus);
+
+        // Add random variation (20% chance to vary by ±1)
+        const randomValue = this._random(worldX, worldY);
+        if (randomValue > 0.9) {
+          targetHP = Math.min(5, targetHP + 1); // 10% chance to increase
+        } else if (randomValue < 0.1) {
+          targetHP = Math.max(1, targetHP - 1); // 10% chance to decrease
+        }
+
+        // Map HP to block type
+        let newBlockType = BLOCK_TYPES.MUD_LIGHT;
+        if (targetHP === 1) newBlockType = BLOCK_TYPES.MUD_LIGHT;
+        else if (targetHP === 2) newBlockType = BLOCK_TYPES.MUD_MEDIUM;
+        else if (targetHP === 3) newBlockType = BLOCK_TYPES.MUD_DARK;
+        else if (targetHP === 4) newBlockType = BLOCK_TYPES.MUD_DENSE;
+        else newBlockType = BLOCK_TYPES.MUD_CORE;
+
+        chunk.setBlock(x, y, newBlockType);
+      }
+    }
+  }
+
+  /**
+   * Get distance to nearest empty tile (flood fill up to 6 blocks)
+   * @param {TerrainChunk} chunk - Chunk to check
+   * @param {number} x - Local X in chunk
+   * @param {number} y - Local Y in chunk
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkY - Chunk Y coordinate
+   * @returns {number} Distance to nearest empty tile (1-6)
+   * @private
+   */
+  _getDistanceToEmpty(chunk, x, y, chunkX, chunkY) {
+    const maxDistance = 6;
+
+    // Check in expanding squares
+    for (let dist = 1; dist <= maxDistance; dist += 1) {
+      // Check all positions at this distance
+      for (let dy = -dist; dy <= dist; dy += 1) {
+        for (let dx = -dist; dx <= dist; dx += 1) {
+          // Only check perimeter of square (not interior)
+          if (Math.abs(dx) !== dist && Math.abs(dy) !== dist) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+
+          const checkX = x + dx;
+          const checkY = y + dy;
+
+          // Check if within chunk bounds
+          if (checkX >= 0 && checkX < CHUNK_SIZE && checkY >= 0 && checkY < CHUNK_SIZE) {
+            const blockType = chunk.getBlock(checkX, checkY);
+            if (blockType === BLOCK_TYPES.EMPTY) {
+              return dist;
+            }
+          }
+        }
+      }
+    }
+
+    return maxDistance;
   }
 
   /**

@@ -16,6 +16,7 @@ export const BLOCK_TYPES = {
   ROCK: 6,
   RED_FRAME: 7,
   LAVA: 8,
+  GRASS: 9,
 };
 
 /**
@@ -101,6 +102,15 @@ const REGISTRY = {
     color: '#FF6D00',
     name: 'lava',
     spriteX: 64, // Lava sprite (5th position)
+    spriteY: 0,
+  },
+  [BLOCK_TYPES.GRASS]: {
+    hp: 1,
+    traversable: false,
+    diggable: true,
+    color: '#7CB342',
+    name: 'grass',
+    spriteX: 0, // Grass-topped block (first in atlas)
     spriteY: 0,
   },
 };
