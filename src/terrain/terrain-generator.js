@@ -10,6 +10,10 @@ import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { FallableComponent } from '../components/blocks/fallable.component.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
+import { DiggableComponent } from '../components/blocks/diggable.component.js';
+import { LootableComponent } from '../components/blocks/lootable.component.js';
+import { createChest } from '../entities/chest.js';
+import { generateHalo } from '../systems/halo-generator.js';
 
 // Helper constants for block type identification
 const BLOCK_TYPE = {
@@ -111,6 +115,9 @@ export class TerrainGenerator {
 
     // NOTE: Organic HP distribution disabled - all mud blocks have fixed HP based on type
     // this._applyOrganicHP(chunk, chunkX, chunkY);
+
+    // Generate chests with protective halos
+    this._generateChests(chunk, chunkX, chunkY);
 
     // Cache the chunk
     this.chunkCache.set(key, chunk);
@@ -510,6 +517,133 @@ export class TerrainGenerator {
     }
 
     return maxDistance;
+  }
+
+  /**
+   * Generate chests with protective halos in a chunk
+   * Max 2 chests per chunk, high spawn probability for testing
+   * @param {TerrainChunk} chunk - Chunk to modify
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkY - Chunk Y coordinate
+   * @private
+   */
+  _generateChests(chunk, chunkX, chunkY) {
+    const worldYStart = chunkY * CHUNK_SIZE;
+
+    // Don't spawn chests in very top chunks or lava zone
+    if (worldYStart < 4 || worldYStart >= this.lavaDepth) return;
+
+    // TESTING: High spawn rate to verify functionality
+    const baseProbability = 0.8; // 80% chance for testing
+
+    // Determine number of chests to spawn (0-2)
+    const rand1 = this._random(chunkX * 1000, chunkY * 1000);
+    const rand2 = this._random(chunkX * 1000 + 1, chunkY * 1000 + 1);
+
+    const chestsToSpawn = [];
+    if (rand1 < baseProbability) chestsToSpawn.push(0);
+    if (rand2 < baseProbability) chestsToSpawn.push(1);
+
+    // Spawn up to 2 chests
+    chestsToSpawn.forEach((chestIndex) => {
+      // Find a valid position for the chest
+      const position = this._findChestPosition(chunk, chunkX, chunkY, chestIndex);
+      if (!position) return;
+
+      const { x, y } = position;
+      const worldX = chunkX * CHUNK_SIZE + x;
+      const worldY = chunkY * CHUNK_SIZE + y;
+
+      // Place chest (convert old format to ECS Block)
+      const chestBlock = BlockFactory.createChest();
+      chunk.setBlock(x, y, chestBlock);
+
+      // Generate protective halo
+      const haloRadius = Math.floor(this._random(worldX, worldY) * 2) + 2; // 2-3
+      const seed = this._random(worldX + 100, worldY + 100) * 10000;
+      const halo = generateHalo(worldX, worldY, 0, haloRadius, seed);
+
+      // Place halo blocks in chunk (if within bounds)
+      halo.forEach((haloBlock) => {
+        const haloLocalX = haloBlock.x - chunkX * CHUNK_SIZE;
+        const haloLocalY = haloBlock.y - chunkY * CHUNK_SIZE;
+
+        // Only place if within chunk bounds
+        if (haloLocalX >= 0 && haloLocalX < CHUNK_SIZE && haloLocalY >= 0 && haloLocalY < CHUNK_SIZE) {
+          // Don't overwrite the chest itself or special blocks
+          const existingBlock = chunk.getBlock(haloLocalX, haloLocalY);
+
+          // Skip if it's a chest, rock, torus, or lava (check components)
+          const hasLoot = existingBlock.get(LootableComponent);
+          const hasFallable = existingBlock.has(FallableComponent);
+          const render = existingBlock.get(RenderComponent);
+          const isRedFrame = render && render.spriteX === 32;
+          const isLava = render && render.spriteX === 64 && render.spriteY === 0;
+
+          if (hasLoot || hasFallable || isRedFrame || isLava) {
+            return;
+          }
+
+          // Place protective block (convert old format to ECS Block)
+          const protectiveBlock = BlockFactory.createProtectiveBlock(haloBlock.blockData.darkness);
+          chunk.setBlock(haloLocalX, haloLocalY, protectiveBlock);
+        }
+      });
+    });
+  }
+
+  /**
+   * Find a valid position for a chest in the chunk
+   * @param {TerrainChunk} chunk - Chunk to search
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkY - Chunk Y coordinate
+   * @param {number} chestIndex - Chest index for randomization
+   * @returns {Object|null} {x, y} position or null if no valid position
+   * @private
+   */
+  _findChestPosition(chunk, chunkX, chunkY, chestIndex) {
+    const maxAttempts = 20;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const x = Math.floor(this._random(chunkX * 100 + chestIndex, chunkY * 100 + attempt) * CHUNK_SIZE);
+      const y = Math.floor(this._random(chunkX * 100 + chestIndex + 1, chunkY * 100 + attempt + 1) * CHUNK_SIZE);
+
+      const block = chunk.getBlock(x, y);
+      const render = block.get(RenderComponent);
+      const diggable = block.has(DiggableComponent);
+
+      // Must be a diggable mud block (spriteX === 16)
+      if (!render || !diggable || render.spriteX !== 16) {
+        continue; // eslint-disable-line no-continue
+      }
+
+      // Check that there's some solid ground around it (not in a large cavern)
+      let solidNeighbors = 0;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          if (dx === 0 && dy === 0) continue; // eslint-disable-line no-continue
+
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && nx < CHUNK_SIZE && ny >= 0 && ny < CHUNK_SIZE) {
+            const neighborBlock = chunk.getBlock(nx, ny);
+            const neighborRender = neighborBlock.get(RenderComponent);
+            const neighborDiggable = neighborBlock.has(DiggableComponent);
+
+            if (neighborRender && neighborDiggable && neighborRender.spriteX === 16) {
+              solidNeighbors += 1;
+            }
+          }
+        }
+      }
+
+      // Need at least 4 solid neighbors to be a good spot
+      if (solidNeighbors >= 4) {
+        return { x, y };
+      }
+    }
+
+    return null;
   }
 
   /**
