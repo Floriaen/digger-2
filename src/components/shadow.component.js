@@ -5,7 +5,7 @@
 
 import { Component } from '../core/component.base.js';
 import { PLAYER_RADIUS } from '../utils/config.js';
-import { isTraversable } from '../terrain/block-registry.js';
+import { PhysicsComponent } from './blocks/physics.component.js';
 
 /**
  * ShadowComponent
@@ -37,7 +37,9 @@ export class ShadowComponent extends Component {
     let checkY = player.gridY + 1;
     while (checkY < player.gridY + 20) { // Check up to 20 blocks down
       const block = terrain.getBlock(player.gridX, checkY);
-      if (!isTraversable(block)) {
+      const physics = block.get(PhysicsComponent);
+
+      if (physics && !physics.traversable) {
         // Found solid block - shadow goes on top of it
         shadowY = checkY * 16;
         break;
