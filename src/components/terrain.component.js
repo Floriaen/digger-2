@@ -10,6 +10,9 @@ import { ChunkCache } from '../terrain/chunk-cache.js';
 import { drawTile, drawTileDarkening } from '../rendering/tile-renderer.js';
 import { BLOCK_TYPES } from '../terrain/block-registry.js';
 import { loadSpriteSheet } from '../rendering/sprite-atlas.js';
+import { PhysicsComponent } from '../components/blocks/physics.component.js';
+import { RenderComponent } from '../components/blocks/render.component.js';
+import { BlockFactory } from '../factories/block.factory.js';
 
 /**
  * TerrainComponent
@@ -109,8 +112,16 @@ export class TerrainComponent extends Component {
     // Render tiles bottom to top for proper overlap
     for (let localY = CHUNK_SIZE - 1; localY >= 0; localY -= 1) {
       for (let localX = 0; localX < CHUNK_SIZE; localX += 1) {
-        const blockId = chunk.getBlock(localX, localY);
-        if (blockId === BLOCK_TYPES.EMPTY) continue;
+        const block = chunk.getBlock(localX, localY);
+
+        // Skip empty blocks (check PhysicsComponent for traversability)
+        const physics = block.get(PhysicsComponent);
+        const render = block.get(RenderComponent);
+
+        // Skip if no render component or is empty (traversable and not lava)
+        if (!render) continue;
+        const isLava = render.spriteX === 64 && render.spriteY === 0;
+        if (physics && physics.traversable && !isLava) continue;
 
         const screenX = worldOffsetX + localX * TILE_WIDTH + transform.x;
         const screenY = worldOffsetY + localY * TILE_HEIGHT + transform.y;
@@ -129,10 +140,10 @@ export class TerrainComponent extends Component {
         }
 
         // 1. Draw block sprite (always full opacity)
-        drawTile(ctx, this.spriteSheet, blockId, screenX, screenY, 1.0);
+        drawTile(ctx, this.spriteSheet, block, screenX, screenY, 1.0);
 
         // 2. Draw block type darkening overlay
-        drawTileDarkening(ctx, blockId, screenX, screenY, 1.0);
+        drawTileDarkening(ctx, block, screenX, screenY, 1.0);
 
         // 3. Draw dig progress darkening (on top)
         if (digDarkness > 0) {
@@ -150,7 +161,7 @@ export class TerrainComponent extends Component {
    * Get block at world grid coordinates
    * @param {number} gridX - World grid x coordinate
    * @param {number} gridY - World grid y coordinate
-   * @returns {number} Block type ID
+   * @returns {Block} Block entity
    */
   getBlock(gridX, gridY) {
     const chunkX = Math.floor(gridX / CHUNK_SIZE);
@@ -159,16 +170,16 @@ export class TerrainComponent extends Component {
     const localY = ((gridY % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
     const chunk = this.cache.getChunk(chunkX, chunkY);
-    return chunk ? chunk.getBlock(localX, localY) : BLOCK_TYPES.EMPTY;
+    return chunk ? chunk.getBlock(localX, localY) : BlockFactory.createEmpty();
   }
 
   /**
    * Set block at world grid coordinates
    * @param {number} gridX - World grid x coordinate
    * @param {number} gridY - World grid y coordinate
-   * @param {number} blockId - Block type ID
+   * @param {Block} block - Block entity
    */
-  setBlock(gridX, gridY, blockId) {
+  setBlock(gridX, gridY, block) {
     const chunkX = Math.floor(gridX / CHUNK_SIZE);
     const chunkY = Math.floor(gridY / CHUNK_SIZE);
     const localX = ((gridX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
@@ -176,7 +187,7 @@ export class TerrainComponent extends Component {
 
     const chunk = this.cache.getChunk(chunkX, chunkY);
     if (chunk) {
-      chunk.setBlock(localX, localY, blockId);
+      chunk.setBlock(localX, localY, block);
     }
   }
 
