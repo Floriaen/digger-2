@@ -4,10 +4,10 @@
  */
 
 import { Component } from '../core/component.base.js';
-import { CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
+import { CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, SPRITE_HEIGHT, TILE_CAP_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 import { TerrainGenerator } from '../terrain/terrain-generator.js';
 import { ChunkCache } from '../terrain/chunk-cache.js';
-import { drawTile } from '../rendering/tile-renderer.js';
+import { drawTile, drawTileDarkening } from '../rendering/tile-renderer.js';
 import { BLOCK_TYPES } from '../terrain/block-registry.js';
 import { loadSpriteSheet } from '../rendering/sprite-atlas.js';
 
@@ -97,10 +97,14 @@ export class TerrainComponent extends Component {
    */
   _renderChunk(ctx, chunkX, chunkY, transform) {
     const chunk = this.cache.getChunk(chunkX, chunkY);
-    if (!chunk) return;
+    if (!chunk || !this.spriteSheet) return;
 
     const worldOffsetX = chunkX * CHUNK_SIZE * TILE_WIDTH;
     const worldOffsetY = chunkY * CHUNK_SIZE * TILE_HEIGHT;
+
+    // Get player's current dig target for transparency
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const digTarget = player ? player.currentDigTarget : null;
 
     // Render tiles bottom to top for proper overlap
     for (let localY = CHUNK_SIZE - 1; localY >= 0; localY -= 1) {
@@ -111,7 +115,33 @@ export class TerrainComponent extends Component {
         const screenX = worldOffsetX + localX * TILE_WIDTH + transform.x;
         const screenY = worldOffsetY + localY * TILE_HEIGHT + transform.y;
 
-        drawTile(ctx, this.spriteSheet, blockId, screenX, screenY);
+        // Calculate dig progress darkness
+        const worldX = chunkX * CHUNK_SIZE + localX;
+        const worldY = chunkY * CHUNK_SIZE + localY;
+        let digDarkness = 0; // Default: no dig darkness
+
+        const isDigTarget = digTarget && digTarget.x === worldX && digTarget.y === worldY;
+
+        if (isDigTarget) {
+          // This block is being actively dug - increase darkness
+          const damagePercent = 1 - (digTarget.hp / digTarget.maxHp);
+          digDarkness = damagePercent * 0.5; // Max 50% darkening as block is dug
+        }
+
+        // 1. Draw block sprite (always full opacity)
+        drawTile(ctx, this.spriteSheet, blockId, screenX, screenY, 1.0);
+
+        // 2. Draw block type darkening overlay
+        drawTileDarkening(ctx, blockId, screenX, screenY, 1.0);
+
+        // 3. Draw dig progress darkening (on top)
+        if (digDarkness > 0) {
+          const spriteY = screenY - TILE_CAP_HEIGHT;
+          ctx.save();
+          ctx.fillStyle = `rgba(0, 0, 0, ${digDarkness})`;
+          ctx.fillRect(screenX, spriteY, TILE_WIDTH, SPRITE_HEIGHT);
+          ctx.restore();
+        }
       }
     }
   }

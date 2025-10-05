@@ -4,6 +4,7 @@
  */
 
 import { TARGET_FPS } from '../utils/config.js';
+import { PerformanceMonitor } from '../utils/performance-monitor.js';
 
 /**
  * Main Game class
@@ -27,6 +28,10 @@ export class Game {
     this.deltaTime = 0;
     this.frameInterval = 1000 / TARGET_FPS;
     this.zoomAfterRendering = false; // Toggle for testing zoom strategies
+
+    // Performance monitoring
+    this.performanceMonitor = new PerformanceMonitor();
+    this.memoryUpdateCounter = 0; // Update memory every 60 frames
   }
 
   /**
@@ -68,6 +73,9 @@ export class Game {
 
     requestAnimationFrame((time) => this.loop(time));
 
+    // Performance: Start frame timing
+    this.performanceMonitor.startMark('frame');
+
     // Calculate delta time
     this.deltaTime = currentTime - this.lastTime;
 
@@ -75,6 +83,9 @@ export class Game {
     if (this.deltaTime > 100) {
       this.deltaTime = this.frameInterval;
     }
+
+    // Performance: Start update timing
+    this.performanceMonitor.startMark('update');
 
     // Update all components (skip if paused)
     if (!this.paused) {
@@ -85,9 +96,15 @@ export class Game {
       });
     }
 
+    // Performance: End update timing
+    this.performanceMonitor.endMark('update');
+
     // Reset transform and clear canvas
     this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to identity matrix
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Performance: Start render timing
+    this.performanceMonitor.startMark('render');
 
     // Get camera and player for zoom
     const camera = this.components.find((c) => c.constructor.name === 'CameraComponent');
@@ -166,6 +183,19 @@ export class Game {
       this._renderPauseOverlay();
     }
 
+    // Performance: End render timing
+    this.performanceMonitor.endMark('render');
+
+    // Performance: End frame timing
+    this.performanceMonitor.endMark('frame');
+
+    // Update memory usage every 60 frames
+    this.memoryUpdateCounter++;
+    if (this.memoryUpdateCounter >= 60) {
+      this.performanceMonitor.updateMemory();
+      this.memoryUpdateCounter = 0;
+    }
+
     this.lastTime = currentTime;
   }
 
@@ -217,17 +247,17 @@ export class Game {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, width, height);
 
-    // "PAUSED" text
+    // "SPACE" text (large)
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('PAUSED', width / 2, height / 2 - 30);
+    ctx.fillText('SPACE', width / 2, height / 2 - 20);
 
-    // Instruction text
+    // "to resume" text (smaller below)
     ctx.font = '20px Arial';
     ctx.fillStyle = '#CCCCCC';
-    ctx.fillText('Press SPACE or ESC to resume', width / 2, height / 2 + 30);
+    ctx.fillText('to resume', width / 2, height / 2 + 20);
   }
 
   /**

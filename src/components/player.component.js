@@ -44,10 +44,6 @@ export class PlayerComponent extends Component {
     this.hasStarted = false; // Requires down arrow to start
     this.dead = false;
 
-    // Coyote time: delay before falling
-    this.coyoteTime = 0;
-    this.coyoteTimeMax = 150; // 150ms grace period
-
     // Input subscription
     this.unsubscribeLeft = eventBus.on('input:move-left', () => this._requestDirection(-1, 0));
     this.unsubscribeRight = eventBus.on('input:move-right', () => this._requestDirection(1, 0));
@@ -81,6 +77,12 @@ export class PlayerComponent extends Component {
 
     // Auto-dig timer
     this.digTimer += deltaTime;
+
+    // Handle falling state - apply gravity every frame
+    if (this.state === PLAYER_STATE.FALLING) {
+      this._updateFalling(terrain, deltaTime);
+      return;
+    }
 
     // Check block at current position (in case we fell into it)
     const blockAtPosition = terrain.getBlock(this.gridX, this.gridY);
@@ -135,13 +137,12 @@ export class PlayerComponent extends Component {
     let mouthAngle = 0;
     let directionAngle = 0;
 
-    // Show mouth while digging OR during coyote time (but not when falling)
-    const isEating = (this.currentDigTarget || (this.coyoteTime > 0 && this.coyoteTime < this.coyoteTimeMax))
-      && this.state !== PLAYER_STATE.FALLING;
+    // Show mouth only while actively digging (not during coyote time or falling)
+    const isEating = this.currentDigTarget && this.state !== PLAYER_STATE.FALLING;
 
     if (isEating) {
       // 3-frame animation like original Pac-Man: open -> half -> closed -> half -> open
-      const frameTime = 100; // Time per frame in ms
+      const frameTime = 70; // Time per frame in ms
       const frame = Math.floor(this.digTimer / frameTime) % 4;
 
       // Frame sequence: 0=open, 1=half, 2=closed, 3=half
@@ -158,19 +159,26 @@ export class PlayerComponent extends Component {
       else if (dy < 0) directionAngle = -Math.PI / 2; // Up
     }
 
-    if (isEating && mouthAngle > 0) {
-      // Draw Pac-Man with mouth
-      ctx.beginPath();
-      ctx.arc(
-        centerX,
-        centerY,
-        PLAYER_RADIUS,
-        directionAngle + mouthAngle,
-        directionAngle - mouthAngle + Math.PI * 2,
-      );
-      ctx.lineTo(centerX, centerY);
-      ctx.closePath();
-      ctx.fill();
+    if (isEating) {
+      // Draw Pac-Man with mouth (animated)
+      if (mouthAngle > 0) {
+        ctx.beginPath();
+        ctx.arc(
+          centerX,
+          centerY,
+          PLAYER_RADIUS,
+          directionAngle + mouthAngle,
+          directionAngle - mouthAngle + Math.PI * 2,
+        );
+        ctx.lineTo(centerX, centerY);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Closed mouth frame - still show direction with full circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, PLAYER_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else {
       // Draw full circle when not digging
       ctx.beginPath();
@@ -179,19 +187,6 @@ export class PlayerComponent extends Component {
     }
 
     ctx.restore();
-
-    // Render dig progress (white outline fade) - always on top
-    if (this.currentDigTarget) {
-      const progress = 1 - (this.currentDigTarget.hp / this.currentDigTarget.maxHp);
-      const alpha = 0.3 + progress * 0.5;
-
-      const targetX = this.currentDigTarget.x * 16 + transform.x;
-      const targetY = this.currentDigTarget.y * 16 + transform.y;
-
-      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(targetX, targetY, 16, 16);
-    }
   }
 
   destroy() {
@@ -209,8 +204,6 @@ export class PlayerComponent extends Component {
    */
   _requestDirection(dx, dy) {
     if (!this.hasStarted || this.dead) return;
-    // Block input during coyote time
-    if (this.coyoteTime > 0 && this.coyoteTime < this.coyoteTimeMax) return;
     this.requestedDirection = { dx, dy };
   }
 
@@ -252,36 +245,18 @@ export class PlayerComponent extends Component {
     // Check if target is traversable (empty/falling)
     if (isTraversable(targetBlock)) {
       if (dy > 0) {
-        // Increment coyote time when above empty space
-        this.coyoteTime += deltaTime;
-
-        // Only start falling/moving after coyote time expires
-        if (this.coyoteTime >= this.coyoteTimeMax) {
-          // Move into the empty space first (if we haven't already)
-          if (this.gridY !== targetY) {
-            this.gridX = targetX;
-            this.gridY = targetY;
-            this.x = this.gridX * 16 + 8;
-            this.y = this.gridY * 16 + 8;
-          }
-
-          // Then start falling
-          this.state = PLAYER_STATE.FALLING;
-          this.velocityY += GRAVITY;
-          if (this.velocityY > FALL_SPEED_MAX) this.velocityY = FALL_SPEED_MAX;
-
-          const oldGridY = this.gridY;
-          this.y += this.velocityY;
-          this.gridY = Math.floor(this.y / 16);
-
-          if (this.gridY > oldGridY + 1) {
-            this.gridY = oldGridY + 1;
-            this.y = this.gridY * 16 + 16 - 8;
-          }
-
-          this.currentDigTarget = null;
+        // Move into the empty space first
+        if (this.gridY !== targetY) {
+          this.gridX = targetX;
+          this.gridY = targetY;
+          this.x = this.gridX * 16 + 8;
+          this.y = this.gridY * 16 + 8;
         }
-        // During coyote time, stay in place (appear to stand on nothing briefly)
+
+        // Transition to falling state immediately
+        this.state = PLAYER_STATE.FALLING;
+        this.velocityY = 0; // Start from zero velocity
+        this.currentDigTarget = null;
       } else {
         // Lateral: Stop at empty space
         this.state = PLAYER_STATE.IDLE;
@@ -304,7 +279,6 @@ export class PlayerComponent extends Component {
     // Target is diggable - dig it
     this.state = dy === 0 ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;
     this.velocityY = 0;
-    this.coyoteTime = 0; // Reset coyote time when on solid ground
     this._digInDirection(terrain, dx, dy);
   }
 
@@ -340,7 +314,8 @@ export class PlayerComponent extends Component {
       return;
     }
 
-    // Dig interval complete - reduce HP
+    // Dig interval complete - reduce HP (with performance tracking)
+    performance.mark('dig-start');
     this.digTimer = 0;
     this.currentDigTarget.hp -= 1;
 
@@ -352,20 +327,76 @@ export class PlayerComponent extends Component {
       // Emit event for falling blocks system
       eventBus.emit('block:destroyed', { x: targetX, y: targetY });
 
-      // If digging downward, activate coyote time delay before moving
-      if (dy > 0) {
-        this.coyoteTime = 0; // Start coyote timer
-        // Don't move yet - will move after coyote time expires
-        return;
+      performance.mark('dig-end');
+      try {
+        performance.measure('dig', 'dig-start', 'dig-end');
+      } catch (e) {
+        // Ignore if marks don't exist
       }
 
-      // Move player to new position (immediate for lateral movement)
+      // Move player into the empty space
       this.gridX = targetX;
       this.gridY = targetY;
       this.x = this.gridX * 16 + 8;
-      this.y = this.gridY * 16 + 8; // Center of collision box
+      this.y = this.gridY * 16 + 8;
 
-      // Continue digging in same direction (next update will check next block)
+      // After moving, gravity system will handle falling if needed (checked in next update)
+    }
+  }
+
+  /**
+   * Handle falling physics - called every frame when in FALLING state
+   * @param {TerrainComponent} terrain
+   * @param {number} deltaTime
+   * @private
+   */
+  _updateFalling(terrain, deltaTime) {
+    // Apply gravity
+    this.velocityY += GRAVITY;
+    if (this.velocityY > FALL_SPEED_MAX) {
+      this.velocityY = FALL_SPEED_MAX;
+    }
+
+    // Update position
+    this.y += this.velocityY;
+    const newGridY = Math.floor(this.y / 16);
+
+    // Check if we've entered a new grid cell
+    if (newGridY !== this.gridY) {
+      const newGridX = Math.floor(this.x / 16);
+
+      // Check what's at the new position BEFORE moving into it
+      const blockAtNewPos = terrain.getBlock(newGridX, newGridY);
+
+      // Check if we fell into lava
+      if (blockAtNewPos === BLOCK_TYPES.LAVA) {
+        eventBus.emit('player:death', { cause: 'lava' });
+        this.state = PLAYER_STATE.IDLE;
+        this.velocityY = 0;
+        return;
+      }
+
+      // Check if we hit a solid block
+      if (!isTraversable(blockAtNewPos)) {
+        // Stop at the previous grid position (don't enter the solid block)
+        this.y = this.gridY * 16 + 8; // Snap to center of current grid cell
+        this.velocityY = 0;
+
+        if (isDiggable(blockAtNewPos)) {
+          // Start digging the block below us
+          this.state = PLAYER_STATE.DIGGING;
+          this.digDirection = { dx: 0, dy: 1 };
+          this._digInDirection(terrain, 0, 1); // Dig block below (dy = 1)
+        } else {
+          // Hit undiggable block (rock) - stop
+          this.state = PLAYER_STATE.IDLE;
+          this.digDirection = { dx: 0, dy: 1 };
+        }
+      } else {
+        // Block is traversable, move into it and keep falling
+        this.gridY = newGridY;
+        this.gridX = newGridX;
+      }
     }
   }
 }

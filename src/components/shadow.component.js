@@ -50,7 +50,7 @@ export class ShadowComponent extends Component {
     ctx.beginPath();
     ctx.ellipse(
       player.x + transform.x,
-      shadowY + PLAYER_RADIUS + transform.y - 12, // -4 for 3D fake offset
+      shadowY + PLAYER_RADIUS + transform.y - 10, // -4 for 3D fake offset
       PLAYER_RADIUS * 0.8,
       PLAYER_RADIUS * 0.3,
       0,

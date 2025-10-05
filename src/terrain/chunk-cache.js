@@ -31,8 +31,16 @@ export class ChunkCache {
       return this.chunks.get(key);
     }
 
-    // Generate new chunk
+    // Generate new chunk (with performance tracking)
+    performance.mark('chunkGen-start');
     const chunk = this.generator.generateChunk(chunkX, chunkY);
+    performance.mark('chunkGen-end');
+    try {
+      performance.measure('chunkGen', 'chunkGen-start', 'chunkGen-end');
+    } catch (e) {
+      // Ignore if marks don't exist
+    }
+
     this.chunks.set(key, chunk);
     this.accessTimes.set(key, Date.now());
 

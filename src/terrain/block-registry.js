@@ -33,7 +33,7 @@ const REGISTRY = {
     spriteY: null,
   },
   [BLOCK_TYPES.MUD_LIGHT]: {
-    hp: 1,
+    hp: 5,
     traversable: false,
     diggable: true,
     color: '#A67C52',
@@ -42,7 +42,7 @@ const REGISTRY = {
     spriteY: 0,
   },
   [BLOCK_TYPES.MUD_MEDIUM]: {
-    hp: 2,
+    hp: 5,
     traversable: false,
     diggable: true,
     color: '#8B6444',
@@ -51,7 +51,7 @@ const REGISTRY = {
     spriteY: 0,
   },
   [BLOCK_TYPES.MUD_DARK]: {
-    hp: 3,
+    hp: 5,
     traversable: false,
     diggable: true,
     color: '#6F4E37',
@@ -60,7 +60,7 @@ const REGISTRY = {
     spriteY: 0,
   },
   [BLOCK_TYPES.MUD_DENSE]: {
-    hp: 4,
+    hp: 5,
     traversable: false,
     diggable: true,
     color: '#5C4033',
@@ -105,7 +105,7 @@ const REGISTRY = {
     spriteY: 0,
   },
   [BLOCK_TYPES.GRASS]: {
-    hp: 1,
+    hp: 5,
     traversable: false,
     diggable: true,
     color: '#7CB342',

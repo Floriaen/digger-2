@@ -12,19 +12,13 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
  */
 export class BackgroundComponent extends Component {
   init() {
-    this.parallaxOffset = 0;
-    this.mountainWorldY = 80; // Mountain bottom in world coordinates (gridY=3, which is 3*16=48)
     this.sunX = null; // Sun X position (set from player's initial position)
     this.sunY = null; // Sun Y position (set from player's initial position)
+    this.mountainWorldY = null; // Mountain Y position in world space (set once, like sun)
   }
 
   update() {
-    // Update parallax based on camera position
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
-    if (camera) {
-      // Subtle horizontal parallax
-      this.parallaxOffset = -camera.x * 0.2;
-    }
+    // No updates needed - sun and mountains are in fixed world positions
   }
 
   render(ctx) {
@@ -33,23 +27,21 @@ export class BackgroundComponent extends Component {
 
     const transform = camera.getTransform();
 
-    // Calculate mountain bottom position in screen coordinates (world Y + camera offset)
-    const mountainBottomY = this.mountainWorldY + transform.y;
-
     // Sky - solid orange (Chess Pursuit palette)
     ctx.fillStyle = '#FF8601';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Sun (fixed at player's initial position)
+    // Sun and mountains: both fixed at initial world position (like sun)
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
     if (player) {
-      // Set sun position once from player's initial position
+      // Set sun and mountain positions once from player's initial position
       if (this.sunX === null || this.sunY === null) {
         this.sunX = player.x;
         this.sunY = player.y;
+        this.mountainWorldY = 120; // Mountain horizon at fixed world Y
       }
 
-      // Sun circle, fixed position in world (Chess Pursuit palette)
+      // Sun circle, fixed position in world
       const sunScreenX = this.sunX + transform.x;
       const sunScreenY = this.sunY + transform.y;
       ctx.fillStyle = '#FFE7CA';
@@ -58,18 +50,19 @@ export class BackgroundComponent extends Component {
       ctx.fill();
     }
 
-    // Black mountain silhouettes (with parallax)
+    // Mountains: fixed world Y (like sun), rendered same way
     this._drawMountains(ctx, transform);
 
-    // Draw black underground below the mountains
-    if (mountainBottomY < CANVAS_HEIGHT) {
+    // Dark underground below mountains
+    const mountainScreenY = this.mountainWorldY + transform.y;
+    if (mountainScreenY < CANVAS_HEIGHT) {
       ctx.fillStyle = '#202020';
-      ctx.fillRect(0, mountainBottomY - 1, CANVAS_WIDTH, CANVAS_HEIGHT - mountainBottomY);
+      ctx.fillRect(0, mountainScreenY - 1, CANVAS_WIDTH, CANVAS_HEIGHT - mountainScreenY); // -1 to avoid any light gap
     }
   }
 
   /**
-   * Draw mountain silhouettes
+   * Draw mountain silhouettes (fixed world Y, just like sun)
    * Code adapted from @saturnyn's Chess Pursuit (js13kGames 2015)
    * https://js13kgames.com/2015/games/chesspursuit
    * @param {CanvasRenderingContext2D} ctx
@@ -77,7 +70,10 @@ export class BackgroundComponent extends Component {
    * @private
    */
   _drawMountains(ctx, transform) {
-    const horizonY = this.mountainWorldY + transform.y;
+    if (this.mountainWorldY === null) return;
+
+    // Mountain horizon in screen space (world Y + camera transform, just like sun)
+    const horizonScreenY = this.mountainWorldY + transform.y;
 
     ctx.save();
     ctx.beginPath();
@@ -98,17 +94,18 @@ export class BackgroundComponent extends Component {
       1, 0.8
     ];
 
+    // Draw mountain silhouette spanning screen width
     for (let i = 0; i < points.length; i += 2) {
-      const x = points[i] * CANVAS_WIDTH;
-      const y = (transform.y * 0.2 - 78) + horizonY - (mountainMaxHeight * points[i + 1]);
+      const x = points[i] * CANVAS_WIDTH + transform.x; // Full screen width (0 to CANVAS_WIDTH)
+      const y = horizonScreenY - (mountainMaxHeight * points[i + 1]) - 78;
       if (i === 0) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
       }
     }
-    ctx.lineTo(CANVAS_WIDTH, horizonY);
-    ctx.lineTo(0, horizonY);
+    ctx.lineTo(CANVAS_WIDTH, horizonScreenY);
+    ctx.lineTo(0, horizonScreenY);
     ctx.fill();
     ctx.restore();
   }

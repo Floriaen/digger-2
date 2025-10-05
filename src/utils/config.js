@@ -3,10 +3,20 @@
  * @description Centralized game configuration constants
  */
 
-// Canvas & Rendering
-export const CANVAS_WIDTH = 800;
-export const CANVAS_HEIGHT = 600;
+// Canvas & Rendering (responsive - will be updated based on viewport)
+export let CANVAS_WIDTH = 800;
+export let CANVAS_HEIGHT = 600;
 export const TARGET_FPS = 60;
+
+/**
+ * Update canvas dimensions (called from main.js on resize)
+ * @param {number} width
+ * @param {number} height
+ */
+export function updateCanvasDimensions(width, height) {
+  CANVAS_WIDTH = width;
+  CANVAS_HEIGHT = height;
+}
 
 // Tile Dimensions (from spec: 16x25px with 16x9px cap)
 export const TILE_WIDTH = 16;
@@ -16,8 +26,8 @@ export const TILE_CAP_HEIGHT = 9;
 export const TILE_BASE_HEIGHT = 16; // Collision box height (excludes cap)
 
 // Player
-export const DIG_INTERVAL_MS = 200; // Time per HP point (200ms = 1 second for HP=5)
-export const PLAYER_RADIUS = 6;
+export const DIG_INTERVAL_MS = 40; // Time per HP point (200ms = 1 second for HP=5)
+export const PLAYER_RADIUS = 5;
 
 // Terrain
 export const CHUNK_SIZE = 32; // 32x32 blocks per chunk

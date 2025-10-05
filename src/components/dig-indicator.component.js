@@ -1,0 +1,63 @@
+/**
+ * @file dig-indicator.component.js
+ * @description Renders dig target outline on top of all terrain
+ */
+
+import { Component } from '../core/component.base.js';
+import { TILE_WIDTH, SPRITE_HEIGHT, TILE_CAP_HEIGHT } from '../utils/config.js';
+import { BLOCK_TYPES } from '../terrain/block-registry.js';
+
+/**
+ * DigIndicatorComponent
+ * Renders white outline around the block being dug (always on top of terrain)
+ */
+export class DigIndicatorComponent extends Component {
+  init() {
+    // No initialization needed
+  }
+
+  update(deltaTime) {
+    // No update logic needed
+  }
+
+  /**
+   * Render dig target outline on top of all terrain
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   */
+  render(ctx) {
+    // Get camera transform
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
+    if (!camera) return;
+
+    const transform = camera.getTransform();
+
+    // Get player's current dig target
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    if (!player || !player.currentDigTarget) return;
+
+    const digTarget = player.currentDigTarget;
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    if (!terrain) return;
+
+    // Calculate screen position
+    const screenX = digTarget.x * TILE_WIDTH + transform.x;
+    const screenY = digTarget.y * TILE_WIDTH + transform.y;
+
+    // Check if there's a block above
+    const blockAbove = terrain.getBlock(digTarget.x, digTarget.y - 1);
+    const hasBlockAbove = blockAbove !== BLOCK_TYPES.EMPTY;
+
+    // Full height (16x25) if no block above, partial (16x16) if block above
+    const outlineHeight = hasBlockAbove ? TILE_WIDTH : SPRITE_HEIGHT;
+    const outlineY = hasBlockAbove ? screenY : screenY - TILE_CAP_HEIGHT;
+
+    // Draw outline
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(screenX, outlineY, TILE_WIDTH, outlineHeight);
+  }
+
+  destroy() {
+    // No cleanup needed
+  }
+}

@@ -39,18 +39,19 @@ After completing a milestone, log actual token use to compare against budget.
 | 1 | 1560 | 22500 | 22900 | Core: ~20k, Cleanup: ~3k | +400 (+2%) | **Core implementation**: Navigation triangles, falling blocks system, player death, input gating (~20k). **Cleanup**: Removed excessive console.log statements (~3k). Within revised budget. |
 | 2 | 2760 | 35000 | 111912 | Core: ~25k, Sprite rendering: ~40k, Fixes: ~47k | +76912 (+220%) | **Core implementation**: Block registry with HP tiers, procedural generation (stratified mud, caverns, torus, lava), unified directional digging, lava death (~25k). **Sprite rendering**: Fake-3D collision vs visual separation, sprite sheet integration, rendering order fixes (~40k). **Major fixes**: Grid coordinate system changes (25px→16px collision), player/navigation positioning updates, dig indicator fixes, lava visibility, torus depth adjustment (~47k). Multiple attempts at fake-3D overlap approach before finding correct solution (sprite offset vs collision offset). |
 | 3 | 1560 | 70000 | 62543 | Core: ~40k, Zoom: ~23k | -7457 (-11%) | **Core implementation**: Pac-Man player animation (4-frame mouth), Chess Pursuit palette, mountain silhouettes, surface grass generation, organic HP distribution with darken, shadow/grid overlay components, pause overlay (~40k). **Zoom system**: Smooth depth-based zoom with ease-in curve, manual controls in dat.GUI, rendering strategy comparison POC (zoom before vs after), critical canvas transform reset bug fix (~23k). Came in under revised estimate - visual polish more straightforward than M2 architectural work. |
-| 4 | 1560 | 60000 | | | | Bug triage from integration, profiling (generation cost, memory), documentation (block registry API, hooks). Unknown issues buffer. **Revised 3x** to account for cascading fixes from M2 changes |
+| 4 | 1560 | 60000 | 58020 | Core: ~30k, Docs: ~20k, Testing: ~8k | -1980 (-3%) | **Core implementation**: Mountain horizontal fix, Performance API profiling (PerformanceObserver), responsive canvas (mobile-first 9:16 aspect), touch input component with visual feedback (~30k). **Documentation**: Block Registry API (2.5k words), Chain-Reaction Hooks (2.2k words), Dev Tools Guide (1.9k words), M4 Test Report (~20k). **Testing**: Collision edge cases, free-fall scenarios, procedural generation validation, regression tests (~8k). Came in 3% under budget - stabilization work highly predictable. |
 
 **Revised Total Estimate**: 335,000 tokens (vs original 10,040)
 
-**Actual So Far**: 271,939 tokens (Pre-0: 26,832 + M0: 47,752 + M1: 22,900 + M2: 111,912 + M3: 62,543)
+**Actual Total**: 329,959 tokens (Pre-0: 26,832 + M0: 47,752 + M1: 22,900 + M2: 111,912 + M3: 62,543 + M4: 58,020)
 
-**Revision Rationale (2025-10-04 - Post M3)**:
+**Revision Rationale (2025-10-04 - Post M4 COMPLETE)**:
 - **First revision (Pre-M0)**: Context establishment overhead revealed 27x multiplier needed
 - **Second revision (Post-M0)**: Core implementation estimates accurate (~15k), but bug fixes/polish add 2x overhead (~32k)
 - **Third revision (Post-M1)**: M1 came in on budget (~23k vs 22.5k estimate) - first milestone within projections
 - **Fourth revision (Post-M2)**: M2 exceeded estimate by 220% (112k vs 35k) - major architectural changes required
 - **Fifth revision (Post-M3)**: M3 came in 11% under budget (62.5k vs 70k) - polish work more predictable than architectural changes
+- **Sixth revision (Post-M4)**: M4 came in 3% under budget (58k vs 60k) - stabilization/documentation work highly predictable
 - **Key learnings**:
   - Major architectural bugs expensive (chunk visibility: 10k, fake-3D rendering: 40k)
   - Visual refinement iterations add up significantly
@@ -60,9 +61,10 @@ After completing a milestone, log actual token use to compare against budget.
   - **Fake-3D rendering lesson**: Attempting wrong approaches (coordinate system changes, fallbacks) wasted ~30k tokens before finding correct solution (sprite offset)
   - Grid coordinate system changes cascade through entire codebase (player, navigation, dig indicator, etc.)
   - **M3 lesson**: Polish/visual work (animations, palette, zoom easing) more predictable than core systems - came in under budget
-  - **Pattern emerging**: Implementation milestones accurate (M1, M3), architectural/rendering work unpredictable (M0, M2)
-- **New multipliers**: 3-4x revised estimates for milestones with architectural/rendering changes, 1-2x for polish/refinement
-- **M4 outlook**: 272k used vs 335k total estimate - 63k tokens remaining for final milestone (within 60k budget)
+  - **M4 lesson**: Stabilization/documentation work extremely predictable (58k actual vs 60k estimate, 3% accuracy) - no surprises in final milestone
+  - **Pattern confirmed**: Implementation milestones accurate (M1, M3, M4), architectural/rendering work unpredictable (M0, M2)
+- **Final multipliers**: 3-4x revised estimates for architectural/rendering, 1-2x for polish, 1x for stabilization/docs
+- **Project complete**: 329,959 tokens used vs 335,000 estimate (1.5% under budget)
 
 ## Instructions for Agents
 1. Read this guide before starting a milestone.
