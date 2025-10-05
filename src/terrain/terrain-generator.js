@@ -4,8 +4,26 @@
  */
 
 import { CHUNK_SIZE } from '../utils/config.js';
-import { BLOCK_TYPES } from './block-registry.js';
+import { BlockFactory } from '../factories/block.factory.js';
 import { TerrainChunk } from './terrain-chunk.js';
+import { PhysicsComponent } from '../components/blocks/physics.component.js';
+import { FallableComponent } from '../components/blocks/fallable.component.js';
+import { RenderComponent } from '../components/blocks/render.component.js';
+import { HealthComponent } from '../components/blocks/health.component.js';
+
+// Helper constants for block type identification
+const BLOCK_TYPE = {
+  EMPTY: 'empty',
+  MUD_LIGHT: 'mud_light',
+  MUD_MEDIUM: 'mud_medium',
+  MUD_DARK: 'mud_dark',
+  MUD_DENSE: 'mud_dense',
+  MUD_CORE: 'mud_core',
+  ROCK: 'rock',
+  RED_FRAME: 'red_frame',
+  LAVA: 'lava',
+  GRASS: 'grass',
+};
 
 /**
  * TerrainGenerator
@@ -43,25 +61,25 @@ export class TerrainGenerator {
         const worldX = chunkX * CHUNK_SIZE + x;
         const worldY = chunkY * CHUNK_SIZE + y;
 
-        let blockType = BLOCK_TYPES.EMPTY;
+        let blockType = BLOCK_TYPE.EMPTY;
 
         // Surface layer handling
         if (worldY < 3) {
           // Empty air above surface (Y = 0, 1, 2)
-          blockType = BLOCK_TYPES.EMPTY;
+          blockType = BLOCK_TYPE.EMPTY;
         } else if (worldY === 3) {
           // Surface row: grass blocks (Y = 3)
-          blockType = BLOCK_TYPES.GRASS;
+          blockType = BLOCK_TYPE.GRASS;
         } else if (worldY < 33) {
           // First 30 rows below surface: no caverns/holes, but rocks allowed (Y = 4 to 32)
           if (this._isRock(worldX, worldY)) {
-            blockType = BLOCK_TYPES.ROCK;
+            blockType = BLOCK_TYPE.ROCK;
           } else {
             blockType = this._getMudTypeByDepth(worldY);
           }
         } else if (this._isLavaZone(worldY)) {
           // Lava termination zone (deep underground)
-          blockType = BLOCK_TYPES.LAVA;
+          blockType = BLOCK_TYPE.LAVA;
         } else {
           // Below 30 rows: normal terrain generation with caverns and rocks
           const torusBlock = this._getTorusBlock(worldX, worldY);
@@ -69,17 +87,19 @@ export class TerrainGenerator {
             blockType = torusBlock;
           } else if (this._isCavern(worldX, worldY)) {
             // Cavern (procedural holes)
-            blockType = BLOCK_TYPES.EMPTY;
+            blockType = BLOCK_TYPE.EMPTY;
           } else if (this._isRock(worldX, worldY)) {
             // Rare falling rock
-            blockType = BLOCK_TYPES.ROCK;
+            blockType = BLOCK_TYPE.ROCK;
           } else {
             // Stratified mud based on depth
             blockType = this._getMudTypeByDepth(worldY);
           }
         }
 
-        chunk.setBlock(x, y, blockType);
+        // Create block entity from type identifier
+        const block = this._createBlock(blockType, worldY);
+        chunk.setBlock(x, y, block);
       }
     }
 
@@ -101,7 +121,7 @@ export class TerrainGenerator {
   /**
    * Get mud type based on depth (HP progression)
    * @param {number} worldY - World Y coordinate
-   * @returns {number} Block type
+   * @returns {string} Block type identifier
    * @private
    */
   _getMudTypeByDepth(worldY) {
@@ -112,11 +132,45 @@ export class TerrainGenerator {
     // 300-500: MUD_DENSE (HP=4)
     // 500+: MUD_CORE (HP=5)
 
-    if (worldY < 50) return BLOCK_TYPES.MUD_LIGHT;
-    if (worldY < 150) return BLOCK_TYPES.MUD_MEDIUM;
-    if (worldY < 300) return BLOCK_TYPES.MUD_DARK;
-    if (worldY < 500) return BLOCK_TYPES.MUD_DENSE;
-    return BLOCK_TYPES.MUD_CORE;
+    if (worldY < 50) return BLOCK_TYPE.MUD_LIGHT;
+    if (worldY < 150) return BLOCK_TYPE.MUD_MEDIUM;
+    if (worldY < 300) return BLOCK_TYPE.MUD_DARK;
+    if (worldY < 500) return BLOCK_TYPE.MUD_DENSE;
+    return BLOCK_TYPE.MUD_CORE;
+  }
+
+  /**
+   * Create a block entity from type identifier
+   * @param {string} blockType - Block type identifier
+   * @param {number} worldY - World Y coordinate (for HP calculation)
+   * @returns {Block} Block entity
+   * @private
+   */
+  _createBlock(blockType, worldY) {
+    switch (blockType) {
+      case BLOCK_TYPE.EMPTY:
+        return BlockFactory.createEmpty();
+      case BLOCK_TYPE.MUD_LIGHT:
+        return BlockFactory.createMud(1);
+      case BLOCK_TYPE.MUD_MEDIUM:
+        return BlockFactory.createMud(2);
+      case BLOCK_TYPE.MUD_DARK:
+        return BlockFactory.createMud(3);
+      case BLOCK_TYPE.MUD_DENSE:
+        return BlockFactory.createMud(4);
+      case BLOCK_TYPE.MUD_CORE:
+        return BlockFactory.createMud(5);
+      case BLOCK_TYPE.ROCK:
+        return BlockFactory.createRock();
+      case BLOCK_TYPE.RED_FRAME:
+        return BlockFactory.createRedFrame();
+      case BLOCK_TYPE.LAVA:
+        return BlockFactory.createLava();
+      case BLOCK_TYPE.GRASS:
+        return BlockFactory.createGrass();
+      default:
+        return BlockFactory.createEmpty();
+    }
   }
 
   /**
@@ -133,7 +187,7 @@ export class TerrainGenerator {
    * Get red torus block at position (8x6 rings)
    * @param {number} worldX - World X coordinate
    * @param {number} worldY - World Y coordinate
-   * @returns {number|null} RED_FRAME, EMPTY (for inside), or null (for outside)
+   * @returns {string|null} RED_FRAME, EMPTY (for inside), or null (for outside)
    * @private
    */
   _getTorusBlock(worldX, worldY) {
@@ -165,15 +219,15 @@ export class TerrainGenerator {
     // Hollow ring: outer edges only
     if (torusY === 0 || torusY === 5) {
       // Top and bottom rows: full width
-      return BLOCK_TYPES.RED_FRAME;
+      return BLOCK_TYPE.RED_FRAME;
     }
     if (localX === 0 || localX === 7) {
       // Left and right edges
-      return BLOCK_TYPES.RED_FRAME;
+      return BLOCK_TYPE.RED_FRAME;
     }
 
     // Inside is empty - force empty (prevents caverns/rocks inside)
-    return BLOCK_TYPES.EMPTY;
+    return BLOCK_TYPE.EMPTY;
   }
 
   /**
@@ -224,8 +278,11 @@ export class TerrainGenerator {
       for (let y = 0; y < CHUNK_SIZE; y += 1) {
         const worldY = chunkY * CHUNK_SIZE + y;
         if (worldY >= 4) {
-          const blockType = chunk.getBlock(x, y);
-          if (blockType === BLOCK_TYPES.EMPTY || blockType !== BLOCK_TYPES.ROCK) {
+          const block = chunk.getBlock(x, y);
+          const physics = block.get(PhysicsComponent);
+
+          // Check if traversable (empty) or not a falling rock
+          if ((physics && physics.traversable) || !block.has(FallableComponent)) {
             hasPath = true;
             break;
           }
@@ -237,7 +294,8 @@ export class TerrainGenerator {
         const midY = Math.floor(CHUNK_SIZE / 2);
         const worldY = chunkY * CHUNK_SIZE + midY;
         const mudType = this._getMudTypeByDepth(worldY);
-        chunk.setBlock(x, midY, mudType);
+        const mudBlock = this._createBlock(mudType, worldY);
+        chunk.setBlock(x, midY, mudBlock);
       }
     }
   }
@@ -253,8 +311,11 @@ export class TerrainGenerator {
     // Check all blocks in chunk for torus blocks
     for (let y = 0; y < CHUNK_SIZE; y += 1) {
       for (let x = 0; x < CHUNK_SIZE; x += 1) {
-        const blockType = chunk.getBlock(x, y);
-        if (blockType === BLOCK_TYPES.RED_FRAME) {
+        const block = chunk.getBlock(x, y);
+        const render = block.get(RenderComponent);
+
+        // Check if it's a red frame block (spriteX: 32)
+        if (render && render.spriteX === 32) {
           // Found torus block - ensure surrounding blocks are solid
           const worldX = chunkX * CHUNK_SIZE + x;
           const worldY = chunkY * CHUNK_SIZE + y;
@@ -280,13 +341,15 @@ export class TerrainGenerator {
               }
 
               const neighborBlock = chunk.getBlock(localX, localY);
+              const neighborPhysics = neighborBlock.get(PhysicsComponent);
 
               // If neighbor is empty and not part of torus interior, fill with mud
               const neighborTorusBlock = this._getTorusBlock(neighborWorldX, neighborWorldY);
-              if (neighborBlock === BLOCK_TYPES.EMPTY && neighborTorusBlock !== BLOCK_TYPES.EMPTY) {
+              if (neighborPhysics && neighborPhysics.traversable && neighborTorusBlock !== BLOCK_TYPE.EMPTY) {
                 // Fill with appropriate mud based on depth
                 const mudType = this._getMudTypeByDepth(neighborWorldY);
-                chunk.setBlock(localX, localY, mudType);
+                const mudBlock = this._createBlock(mudType, neighborWorldY);
+                chunk.setBlock(localX, localY, mudBlock);
               }
             }
           }
@@ -368,12 +431,14 @@ export class TerrainGenerator {
     // For each block in chunk
     for (let y = 0; y < CHUNK_SIZE; y += 1) {
       for (let x = 0; x < CHUNK_SIZE; x += 1) {
-        const blockType = chunk.getBlock(x, y);
+        const block = chunk.getBlock(x, y);
         const worldX = chunkX * CHUNK_SIZE + x;
         const worldY = worldYStart + y;
+        const health = block.get(HealthComponent);
+        const render = block.get(RenderComponent);
 
-        // Only process mud blocks (not empty, rock, lava, or torus)
-        if (blockType < BLOCK_TYPES.MUD_LIGHT || blockType > BLOCK_TYPES.MUD_CORE) {
+        // Only process mud blocks (sprite X position 16)
+        if (!health || !render || render.spriteX !== 16) {
           // eslint-disable-next-line no-continue
           continue;
         }
@@ -401,15 +466,9 @@ export class TerrainGenerator {
           targetHP = Math.max(1, targetHP - 1); // 10% chance to decrease
         }
 
-        // Map HP to block type
-        let newBlockType = BLOCK_TYPES.MUD_LIGHT;
-        if (targetHP === 1) newBlockType = BLOCK_TYPES.MUD_LIGHT;
-        else if (targetHP === 2) newBlockType = BLOCK_TYPES.MUD_MEDIUM;
-        else if (targetHP === 3) newBlockType = BLOCK_TYPES.MUD_DARK;
-        else if (targetHP === 4) newBlockType = BLOCK_TYPES.MUD_DENSE;
-        else newBlockType = BLOCK_TYPES.MUD_CORE;
-
-        chunk.setBlock(x, y, newBlockType);
+        // Create new mud block with calculated HP
+        const newMudBlock = BlockFactory.createMud(targetHP);
+        chunk.setBlock(x, y, newMudBlock);
       }
     }
   }
@@ -443,8 +502,9 @@ export class TerrainGenerator {
 
           // Check if within chunk bounds
           if (checkX >= 0 && checkX < CHUNK_SIZE && checkY >= 0 && checkY < CHUNK_SIZE) {
-            const blockType = chunk.getBlock(checkX, checkY);
-            if (blockType === BLOCK_TYPES.EMPTY) {
+            const block = chunk.getBlock(checkX, checkY);
+            const physics = block.get(PhysicsComponent);
+            if (physics && physics.traversable) {
               return dist;
             }
           }
