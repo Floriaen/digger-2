@@ -141,6 +141,7 @@ export class TerrainGenerator {
 
   /**
    * Create a block entity from type identifier
+   * Note: Mud blocks are created with base HP but _applyOrganicHP will adjust them
    * @param {string} blockType - Block type identifier
    * @param {number} worldY - World Y coordinate (for HP calculation)
    * @returns {Block} Block entity
@@ -151,14 +152,11 @@ export class TerrainGenerator {
       case BLOCK_TYPE.EMPTY:
         return BlockFactory.createEmpty();
       case BLOCK_TYPE.MUD_LIGHT:
-        return BlockFactory.createMud(1);
       case BLOCK_TYPE.MUD_MEDIUM:
-        return BlockFactory.createMud(2);
       case BLOCK_TYPE.MUD_DARK:
-        return BlockFactory.createMud(3);
       case BLOCK_TYPE.MUD_DENSE:
-        return BlockFactory.createMud(4);
       case BLOCK_TYPE.MUD_CORE:
+        // All mud starts with HP=5, will be adjusted by _applyOrganicHP
         return BlockFactory.createMud(5);
       case BLOCK_TYPE.ROCK:
         return BlockFactory.createRock();
