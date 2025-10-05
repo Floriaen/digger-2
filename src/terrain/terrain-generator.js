@@ -109,8 +109,8 @@ export class TerrainGenerator {
     // Ensure torus rings are surrounded by solid blocks
     this._ensureTorusSurroundings(chunk, chunkX, chunkY);
 
-    // Apply organic HP distribution based on proximity to empty tiles
-    this._applyOrganicHP(chunk, chunkX, chunkY);
+    // NOTE: Organic HP distribution disabled - all mud blocks have fixed HP based on type
+    // this._applyOrganicHP(chunk, chunkX, chunkY);
 
     // Cache the chunk
     this.chunkCache.set(key, chunk);
@@ -151,14 +151,11 @@ export class TerrainGenerator {
       case BLOCK_TYPE.EMPTY:
         return BlockFactory.createEmpty();
       case BLOCK_TYPE.MUD_LIGHT:
-        return BlockFactory.createMud(1);
       case BLOCK_TYPE.MUD_MEDIUM:
-        return BlockFactory.createMud(2);
       case BLOCK_TYPE.MUD_DARK:
-        return BlockFactory.createMud(3);
       case BLOCK_TYPE.MUD_DENSE:
-        return BlockFactory.createMud(4);
       case BLOCK_TYPE.MUD_CORE:
+        // All mud types have HP=5 (same digging time)
         return BlockFactory.createMud(5);
       case BLOCK_TYPE.ROCK:
         return BlockFactory.createRock();
