@@ -6,6 +6,7 @@ import { DiggableComponent } from '../components/blocks/diggable.component.js';
 import { FallableComponent } from '../components/blocks/fallable.component.js';
 import { DarknessComponent } from '../components/blocks/darkness.component.js';
 import { LootableComponent } from '../components/blocks/lootable.component.js';
+import { LavaComponent } from '../components/blocks/lava.component.js';
 
 /**
  * BlockFactory
@@ -20,22 +21,33 @@ export class BlockFactory {
    */
   static createEmpty() {
     return new Block([
-      new PhysicsComponent({ solid: false, traversable: true }),
+      new PhysicsComponent({ collidable: false }),
     ]);
   }
 
   /**
-   * Create a mud block with variable HP
-   * @param {number} hp - Hit points (1-5 for different mud densities)
+   * Create a mud block with variable HP and visual variant
+   * @param {number} hp - Hit points (all mud has 5)
+   * @param {number} variant - Visual variant (1-5 for depth-based diversity)
    * @returns {Block}
    */
-  static createMud(hp = 5) {
-    return new Block([
+  static createMud(hp = 5, variant = 1) {
+    // Map variant (1-5) to darkness alpha (0-0.4)
+    const darknessAlpha = (variant - 1) * 0.1; // 1→0, 2→0.1, 3→0.2, 4→0.3, 5→0.4
+
+    const components = [
       new RenderComponent({ spriteX: 16, spriteY: 0 }),
-      new PhysicsComponent({ solid: true, traversable: false }),
+      new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp }),
       new DiggableComponent(),
-    ]);
+    ];
+
+    // Add DarknessComponent if variant creates darkening
+    if (darknessAlpha > 0) {
+      components.push(new DarknessComponent({ alpha: darknessAlpha }));
+    }
+
+    return new Block(components);
   }
 
   /**
@@ -45,7 +57,7 @@ export class BlockFactory {
   static createRock() {
     return new Block([
       new RenderComponent({ spriteX: 48, spriteY: 0 }),
-      new PhysicsComponent({ solid: true, traversable: false }),
+      new PhysicsComponent({ collidable: true }),
       new FallableComponent(),
     ]);
   }
@@ -57,7 +69,7 @@ export class BlockFactory {
   static createRedFrame() {
     return new Block([
       new RenderComponent({ spriteX: 32, spriteY: 0 }),
-      new PhysicsComponent({ solid: true, traversable: false }),
+      new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
     ]);
@@ -70,7 +82,8 @@ export class BlockFactory {
   static createLava() {
     return new Block([
       new RenderComponent({ spriteX: 64, spriteY: 0 }),
-      new PhysicsComponent({ solid: false, traversable: true }),
+      new PhysicsComponent({ collidable: false }),
+      new LavaComponent(),
     ]);
   }
 
@@ -81,7 +94,7 @@ export class BlockFactory {
   static createGrass() {
     return new Block([
       new RenderComponent({ spriteX: 0, spriteY: 0 }),
-      new PhysicsComponent({ solid: true, traversable: false }),
+      new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
     ]);
@@ -95,7 +108,7 @@ export class BlockFactory {
   static createChest(loot = [{ type: 'coin', value: 10 }]) {
     return new Block([
       new RenderComponent({ spriteX: 64, spriteY: 0 }),
-      new PhysicsComponent({ solid: true, traversable: false }),
+      new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 15 }),
       new DiggableComponent(),
       new LootableComponent({ loot }),
@@ -110,7 +123,7 @@ export class BlockFactory {
   static createProtectiveBlock(darknessAlpha = 0.5) {
     return new Block([
       new RenderComponent({ spriteX: 80, spriteY: 0 }),
-      new PhysicsComponent({ solid: true, traversable: false }),
+      new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 10 }),
       new DiggableComponent(),
       new DarknessComponent({ alpha: darknessAlpha }),

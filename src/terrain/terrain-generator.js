@@ -12,6 +12,7 @@ import { RenderComponent } from '../components/blocks/render.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
 import { DiggableComponent } from '../components/blocks/diggable.component.js';
 import { LootableComponent } from '../components/blocks/lootable.component.js';
+import { LavaComponent } from '../components/blocks/lava.component.js';
 import { createChest } from '../entities/chest.js';
 import { generateHalo } from '../systems/halo-generator.js';
 
@@ -113,8 +114,8 @@ export class TerrainGenerator {
     // Ensure torus rings are surrounded by solid blocks
     this._ensureTorusSurroundings(chunk, chunkX, chunkY);
 
-    // NOTE: Organic HP distribution disabled - all mud blocks have fixed HP based on type
-    // this._applyOrganicHP(chunk, chunkX, chunkY);
+    // Apply organic visual variant distribution based on proximity to empty tiles
+    this._applyOrganicVariant(chunk, chunkX, chunkY);
 
     // Generate chests with protective halos
     this._generateChests(chunk, chunkX, chunkY);
@@ -149,7 +150,7 @@ export class TerrainGenerator {
   /**
    * Create a block entity from type identifier
    * @param {string} blockType - Block type identifier
-   * @param {number} worldY - World Y coordinate (for HP calculation)
+   * @param {number} worldY - World Y coordinate (for variant calculation)
    * @returns {Block} Block entity
    * @private
    */
@@ -158,12 +159,15 @@ export class TerrainGenerator {
       case BLOCK_TYPE.EMPTY:
         return BlockFactory.createEmpty();
       case BLOCK_TYPE.MUD_LIGHT:
+        return BlockFactory.createMud(5, 1); // HP=5, variant=1 (lightest)
       case BLOCK_TYPE.MUD_MEDIUM:
+        return BlockFactory.createMud(5, 2); // HP=5, variant=2
       case BLOCK_TYPE.MUD_DARK:
+        return BlockFactory.createMud(5, 3); // HP=5, variant=3
       case BLOCK_TYPE.MUD_DENSE:
+        return BlockFactory.createMud(5, 4); // HP=5, variant=4
       case BLOCK_TYPE.MUD_CORE:
-        // All mud types have HP=5 (same digging time)
-        return BlockFactory.createMud(5);
+        return BlockFactory.createMud(5, 5); // HP=5, variant=5 (darkest)
       case BLOCK_TYPE.ROCK:
         return BlockFactory.createRock();
       case BLOCK_TYPE.RED_FRAME:
@@ -286,7 +290,7 @@ export class TerrainGenerator {
           const physics = block.get(PhysicsComponent);
 
           // Check if traversable (empty) or not a falling rock
-          if ((physics && physics.traversable) || !block.has(FallableComponent)) {
+          if ((physics && !physics.isCollidable()) || !block.has(FallableComponent)) {
             hasPath = true;
             break;
           }
@@ -420,14 +424,15 @@ export class TerrainGenerator {
   }
 
   /**
-   * Apply organic HP distribution based on proximity to empty tiles
-   * Blocks closer to empty tiles get lower HP
+   * Apply organic visual variant distribution based on proximity to empty tiles
+   * Creates visual variety using distance-to-empty and noise
+   * All mud keeps HP=5 (uniform digging time), but variant varies for visual diversity
    * @param {TerrainChunk} chunk - Chunk to modify
    * @param {number} chunkX - Chunk X coordinate
    * @param {number} chunkY - Chunk Y coordinate
    * @private
    */
-  _applyOrganicHP(chunk, chunkX, chunkY) {
+  _applyOrganicVariant(chunk, chunkX, chunkY) {
     // Skip top chunks (surface and first filled rows stay as-is)
     const worldYStart = chunkY * CHUNK_SIZE;
     if (worldYStart < 6) return;
@@ -452,26 +457,26 @@ export class TerrainGenerator {
 
         // Add noise-based variation to create organic patterns
         const noiseValue = this._noise(worldX * 0.15, worldY * 0.15);
-        // Noise adjustment: -1 to +1 HP variation
+        // Noise adjustment: -1 to +1 variant variation
         const noiseAdjustment = Math.floor((noiseValue - 0.5) * 2);
 
-        // Map distance to HP (1-5) with noise
-        let targetHP = Math.min(5, Math.max(1, distanceToEmpty + noiseAdjustment));
+        // Map distance to variant (1-5) with noise
+        let targetVariant = Math.min(5, Math.max(1, distanceToEmpty + noiseAdjustment));
 
-        // Apply depth influence (deeper = slightly higher HP)
-        const depthBonus = Math.floor(worldY / 150); // +1 HP per 150 depth
-        targetHP = Math.min(5, targetHP + depthBonus);
+        // Apply depth influence (deeper = slightly higher variant/darker)
+        const depthBonus = Math.floor(worldY / 150); // +1 variant per 150 depth
+        targetVariant = Math.min(5, targetVariant + depthBonus);
 
         // Add random variation (20% chance to vary by ±1)
         const randomValue = this._random(worldX, worldY);
         if (randomValue > 0.9) {
-          targetHP = Math.min(5, targetHP + 1); // 10% chance to increase
+          targetVariant = Math.min(5, targetVariant + 1); // 10% chance to increase
         } else if (randomValue < 0.1) {
-          targetHP = Math.max(1, targetHP - 1); // 10% chance to decrease
+          targetVariant = Math.max(1, targetVariant - 1); // 10% chance to decrease
         }
 
-        // Create new mud block with calculated HP
-        const newMudBlock = BlockFactory.createMud(targetHP);
+        // Create new mud block with HP=5 (uniform digging) but organic variant (visual)
+        const newMudBlock = BlockFactory.createMud(5, targetVariant);
         chunk.setBlock(x, y, newMudBlock);
       }
     }
@@ -508,7 +513,7 @@ export class TerrainGenerator {
           if (checkX >= 0 && checkX < CHUNK_SIZE && checkY >= 0 && checkY < CHUNK_SIZE) {
             const block = chunk.getBlock(checkX, checkY);
             const physics = block.get(PhysicsComponent);
-            if (physics && physics.traversable) {
+            if (physics && !physics.isCollidable()) {
               return dist;
             }
           }
@@ -554,7 +559,7 @@ export class TerrainGenerator {
       const worldX = chunkX * CHUNK_SIZE + x;
       const worldY = chunkY * CHUNK_SIZE + y;
 
-      // Place chest (convert old format to ECS Block)
+      // Place chest
       const chestBlock = BlockFactory.createChest();
       chunk.setBlock(x, y, chestBlock);
 
@@ -578,15 +583,14 @@ export class TerrainGenerator {
           const hasFallable = existingBlock.has(FallableComponent);
           const render = existingBlock.get(RenderComponent);
           const isRedFrame = render && render.spriteX === 32;
-          const isLava = render && render.spriteX === 64 && render.spriteY === 0;
+          const isLava = existingBlock.has(LavaComponent);
 
           if (hasLoot || hasFallable || isRedFrame || isLava) {
             return;
           }
 
-          // Place protective block (convert old format to ECS Block)
-          const protectiveBlock = BlockFactory.createProtectiveBlock(haloBlock.blockData.darkness);
-          chunk.setBlock(haloLocalX, haloLocalY, protectiveBlock);
+          // Place protective block (already an ECS Block)
+          chunk.setBlock(haloLocalX, haloLocalY, haloBlock.blockData);
         }
       });
     });

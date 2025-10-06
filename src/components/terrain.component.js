@@ -12,6 +12,8 @@ import { BLOCK_TYPES } from '../terrain/block-registry.js';
 import { loadSpriteSheet } from '../rendering/sprite-atlas.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
+import { DarknessComponent } from '../components/blocks/darkness.component.js';
+import { LavaComponent } from '../components/blocks/lava.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -118,10 +120,10 @@ export class TerrainComponent extends Component {
         const physics = block.get(PhysicsComponent);
         const render = block.get(RenderComponent);
 
-        // Skip if no render component or is empty (traversable and not lava)
+        // Skip if no render component or is empty (not collidable and not lava)
         if (!render) continue;
-        const isLava = render.spriteX === 64 && render.spriteY === 0;
-        if (physics && physics.traversable && !isLava) continue;
+        const isLava = block.has(LavaComponent);
+        if (physics && !physics.isCollidable() && !isLava) continue;
 
         const screenX = worldOffsetX + localX * TILE_WIDTH + transform.x;
         const screenY = worldOffsetY + localY * TILE_HEIGHT + transform.y;
@@ -145,7 +147,13 @@ export class TerrainComponent extends Component {
         // 2. Draw block type darkening overlay
         drawTileDarkening(ctx, block, screenX, screenY, 1.0);
 
-        // 3. Draw dig progress darkening (on top)
+        // 3. Draw darkness overlay (if block has DarknessComponent)
+        const darkness = block.get(DarknessComponent);
+        if (darkness) {
+          darkness.render(ctx, screenX, screenY);
+        }
+
+        // 4. Draw dig progress darkening (on top of everything)
         if (digDarkness > 0) {
           const spriteY = screenY - TILE_CAP_HEIGHT;
           ctx.save();

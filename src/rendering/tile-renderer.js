@@ -7,6 +7,7 @@ import { TILE_WIDTH, SPRITE_HEIGHT, TILE_CAP_HEIGHT } from '../utils/config.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
+import { LavaComponent } from '../components/blocks/lava.component.js';
 
 /**
  * Draw a tile at grid coordinates
@@ -25,9 +26,9 @@ export function drawTile(ctx, spriteSheet, block, screenX, screenY, alpha = 1.0)
     return; // Can't render without RenderComponent
   }
 
-  // Don't render empty blocks (but render lava even though traversable)
-  const isLava = render.spriteX === 64 && render.spriteY === 0;
-  if (physics && physics.traversable && !isLava) {
+  // Don't render empty blocks (but render lava even though not collidable)
+  const isLava = block.has(LavaComponent);
+  if (physics && !physics.isCollidable() && !isLava) {
     return;
   }
 
@@ -51,7 +52,8 @@ export function drawTile(ctx, spriteSheet, block, screenX, screenY, alpha = 1.0)
 }
 
 /**
- * Draw darkening overlay on a tile based on HP
+ * Draw darkening overlay on a tile for specific block types (RED_FRAME only)
+ * Most darkening is now handled by DarknessComponent
  * @param {CanvasRenderingContext2D} ctx - Canvas context
  * @param {Block} block - Block entity
  * @param {number} screenX - Screen X coordinate
@@ -64,31 +66,12 @@ export function drawTileDarkening(ctx, block, screenX, screenY, alpha = 1.0) {
 
   const spriteY = screenY - TILE_CAP_HEIGHT;
 
-  // Apply darkening based on block HP
-  // Map sprite coordinates to darkening factors
+  // Fixed darkening for specific block types (most use DarknessComponent now)
   const darkenFactors = {
-    16: {  // Mud blocks (different HP levels)
-      1: 0,      // HP=1: no darkening
-      2: 0.1,    // HP=2: 10% dark
-      3: 0.2,    // HP=3: 20% dark
-      4: 0.3,    // HP=4: 30% dark
-      5: 0.4,    // HP=5: 40% dark
-    },
     32: 0.4,  // RED_FRAME (torus): 40% dark
-    0: 0,     // GRASS: no darkening
   };
 
-  let darkenFactor = 0;
-
-  // Check if mud block (spriteX 16) - use HP-based darkening
-  if (render.spriteX === 16) {
-    const health = block.get(HealthComponent);
-    const hp = health ? health.maxHp : 1;
-    darkenFactor = darkenFactors[16][hp] || 0;
-  } else {
-    // Other blocks use fixed darkening
-    darkenFactor = darkenFactors[render.spriteX] || 0;
-  }
+  const darkenFactor = darkenFactors[render.spriteX] || 0;
 
   if (darkenFactor > 0) {
     ctx.save();

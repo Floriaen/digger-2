@@ -39,7 +39,7 @@ export class ShadowComponent extends Component {
       const block = terrain.getBlock(player.gridX, checkY);
       const physics = block.get(PhysicsComponent);
 
-      if (physics && !physics.traversable) {
+      if (physics && physics.isCollidable()) {
         // Found solid block - shadow goes on top of it
         shadowY = checkY * 16;
         break;

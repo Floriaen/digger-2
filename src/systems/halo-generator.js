@@ -4,7 +4,7 @@
  */
 
 import SimplexNoise from '../utils/noise.js';
-import { createProtectiveBlock } from '../entities/protective-block.js';
+import { BlockFactory } from '../factories/block.factory.js';
 
 /**
  * Generate organic halo around a chest position
@@ -53,7 +53,7 @@ export function generateHalo(centerX, centerY, minRadius = 1, maxRadius = 3, see
         haloBlocks.push({
           x: centerX + dx,
           y: centerY + dy,
-          blockData: createProtectiveBlock(darknessAlpha),
+          blockData: BlockFactory.createProtectiveBlock(darknessAlpha),
         });
       }
     }

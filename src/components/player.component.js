@@ -14,6 +14,7 @@ import { DiggableComponent } from './blocks/diggable.component.js';
 import { HealthComponent } from './blocks/health.component.js';
 import { RenderComponent } from './blocks/render.component.js';
 import { LootableComponent } from './blocks/lootable.component.js';
+import { LavaComponent } from './blocks/lava.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -92,14 +93,17 @@ export class PlayerComponent extends Component {
 
     // Check block at current position (in case we fell into it)
     const blockAtPosition = terrain.getBlock(this.gridX, this.gridY);
-    if (!this._isTraversable(blockAtPosition) && this._isDiggable(blockAtPosition)) {
-      // We're inside a block, dig it first
+    const physics = blockAtPosition.get(PhysicsComponent);
+    const stuckInBlock = physics && physics.isCollidable() && blockAtPosition.has(DiggableComponent);
+
+    if (stuckInBlock) {
+      // We're inside a block, dig it while also allowing movement
       this._digInDirection(terrain, 0, 0);
-      return;
+      // Don't return - allow player to still process input and movement
     }
 
-    // Handle direction change requests
-    if (this.requestedDirection) {
+    // Handle direction change requests (unless stuck and digging in place)
+    if (this.requestedDirection && !stuckInBlock) {
       const canChange = this._tryChangeDirection(terrain);
       if (canChange) {
         this.digDirection = this.requestedDirection;
@@ -107,8 +111,10 @@ export class PlayerComponent extends Component {
       this.requestedDirection = null; // Clear request after attempting
     }
 
-    // Unified directional digging
-    this._updateDirectionalDig(terrain, deltaTime);
+    // Unified directional digging (unless stuck and digging in place)
+    if (!stuckInBlock) {
+      this._updateDirectionalDig(terrain, deltaTime);
+    }
   }
 
   render(ctx) {
@@ -120,7 +126,8 @@ export class PlayerComponent extends Component {
 
     // Check if there's a block above that should occlude the player
     const blockAbove = terrain ? terrain.getBlock(this.gridX, this.gridY - 1) : null;
-    const shouldClip = blockAbove && !this._isTraversable(blockAbove);
+    const physicsAbove = blockAbove?.get(PhysicsComponent);
+    const shouldClip = physicsAbove && physicsAbove.isCollidable();
 
     ctx.save();
 
@@ -226,7 +233,7 @@ export class PlayerComponent extends Component {
     const targetBlock = terrain.getBlock(targetX, targetY);
 
     // Can change direction if target is diggable
-    return this._isDiggable(targetBlock);
+    return targetBlock.has(DiggableComponent);
   }
 
   /**
@@ -242,14 +249,15 @@ export class PlayerComponent extends Component {
     const targetBlock = terrain.getBlock(targetX, targetY);
 
     // Check if target is lava (death)
-    if (this._isLava(targetBlock)) {
+    if (targetBlock.has(LavaComponent)) {
       eventBus.emit('player:death', { cause: 'lava' });
       this.state = PLAYER_STATE.IDLE;
       return;
     }
 
     // Check if target is traversable (empty/falling)
-    if (this._isTraversable(targetBlock)) {
+    const targetPhysics = targetBlock.get(PhysicsComponent);
+    if (targetPhysics && !targetPhysics.isCollidable()) {
       if (dy > 0) {
         // Move into the empty space first
         if (this.gridY !== targetY) {
@@ -273,7 +281,7 @@ export class PlayerComponent extends Component {
     }
 
     // Check if target is diggable
-    if (!this._isDiggable(targetBlock)) {
+    if (!targetBlock.has(DiggableComponent)) {
       // Hit rock or boundary - stop and reset to down
       this.state = PLAYER_STATE.IDLE;
       this.velocityY = 0;
@@ -305,9 +313,15 @@ export class PlayerComponent extends Component {
 
     if (isNewTarget) {
       const block = terrain.getBlock(targetX, targetY);
-      const health = block.get(HealthComponent);
+      const diggable = block.get(DiggableComponent);
 
-      // Get HP from HealthComponent, default to 1 if no health component
+      if (!diggable) {
+        // Not diggable, shouldn't reach here
+        return;
+      }
+
+      // Initialize dig target with current HP
+      const health = block.get(HealthComponent);
       const hp = health ? health.hp : 1;
       const maxHp = health ? health.maxHp : 1;
 
@@ -325,42 +339,45 @@ export class PlayerComponent extends Component {
       return;
     }
 
-    // Dig interval complete - reduce HP (with performance tracking)
+    // Dig interval complete - apply damage via DiggableComponent
     performance.mark('dig-start');
     this.digTimer = 0;
-    this.currentDigTarget.hp -= 1;
 
-    if (this.currentDigTarget.hp <= 0) {
-      // Block destroyed - check for loot first
-      const block = terrain.getBlock(targetX, targetY);
-      const lootable = block.get(LootableComponent);
+    const block = terrain.getBlock(targetX, targetY);
+    const diggable = block.get(DiggableComponent);
 
-      if (lootable && lootable.loot.length > 0) {
-        // Emit loot event (e.g., for chests)
-        eventBus.emit('block:loot', { x: targetX, y: targetY, loot: lootable.loot });
+    if (diggable) {
+      const result = diggable.dig(block, targetX, targetY, 1);
+
+      // Update dig target HP for visual feedback
+      this.currentDigTarget.hp = result.hp;
+
+      if (result.destroyed) {
+        // Block destroyed - replace with empty
+        terrain.setBlock(targetX, targetY, BlockFactory.createEmpty());
+        this.currentDigTarget = null;
+
+        performance.mark('dig-end');
+        try {
+          performance.measure('dig', 'dig-start', 'dig-end');
+        } catch (e) {
+          // Ignore if marks don't exist
+        }
+
+        // Move player into the empty space
+        this.gridX = targetX;
+        this.gridY = targetY;
+        this.x = this.gridX * 16 + 8;
+        this.y = this.gridY * 16 + 8;
+
+        // If we dug block at our position (offset 0,0), reset to idle so gravity takes over
+        if (dx === 0 && dy === 0) {
+          this.state = PLAYER_STATE.IDLE;
+          this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+        }
+
+        // After moving, gravity system will handle falling if needed (checked in next update)
       }
-
-      // Replace with empty block
-      terrain.setBlock(targetX, targetY, BlockFactory.createEmpty());
-      this.currentDigTarget = null;
-
-      // Emit event for falling blocks system
-      eventBus.emit('block:destroyed', { x: targetX, y: targetY });
-
-      performance.mark('dig-end');
-      try {
-        performance.measure('dig', 'dig-start', 'dig-end');
-      } catch (e) {
-        // Ignore if marks don't exist
-      }
-
-      // Move player into the empty space
-      this.gridX = targetX;
-      this.gridY = targetY;
-      this.x = this.gridX * 16 + 8;
-      this.y = this.gridY * 16 + 8;
-
-      // After moving, gravity system will handle falling if needed (checked in next update)
     }
   }
 
@@ -389,7 +406,7 @@ export class PlayerComponent extends Component {
       const blockAtNewPos = terrain.getBlock(newGridX, newGridY);
 
       // Check if we fell into lava
-      if (this._isLava(blockAtNewPos)) {
+      if (blockAtNewPos.has(LavaComponent)) {
         eventBus.emit('player:death', { cause: 'lava' });
         this.state = PLAYER_STATE.IDLE;
         this.velocityY = 0;
@@ -397,12 +414,13 @@ export class PlayerComponent extends Component {
       }
 
       // Check if we hit a solid block
-      if (!this._isTraversable(blockAtNewPos)) {
+      const physicsAtNewPos = blockAtNewPos.get(PhysicsComponent);
+      if (physicsAtNewPos && physicsAtNewPos.isCollidable()) {
         // Stop at the previous grid position (don't enter the solid block)
         this.y = this.gridY * 16 + 8; // Snap to center of current grid cell
         this.velocityY = 0;
 
-        if (this._isDiggable(blockAtNewPos)) {
+        if (blockAtNewPos.has(DiggableComponent)) {
           // Start digging the block below us
           this.state = PLAYER_STATE.DIGGING;
           this.digDirection = { dx: 0, dy: 1 };
@@ -420,35 +438,4 @@ export class PlayerComponent extends Component {
     }
   }
 
-  /**
-   * Check if a block is traversable (empty/air)
-   * @param {Block} block - Block entity
-   * @returns {boolean}
-   * @private
-   */
-  _isTraversable(block) {
-    const physics = block.get(PhysicsComponent);
-    return physics ? physics.traversable : true;
-  }
-
-  /**
-   * Check if a block is diggable
-   * @param {Block} block - Block entity
-   * @returns {boolean}
-   * @private
-   */
-  _isDiggable(block) {
-    return block.has(DiggableComponent);
-  }
-
-  /**
-   * Check if a block is lava
-   * @param {Block} block - Block entity
-   * @returns {boolean}
-   * @private
-   */
-  _isLava(block) {
-    const render = block.get(RenderComponent);
-    return render && render.spriteX === 64 && render.spriteY === 0;
-  }
 }
