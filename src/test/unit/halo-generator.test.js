@@ -3,7 +3,7 @@
  * @description Tests for organic halo generation around chests
  */
 
-import { generateHalo } from './halo-generator.js';
+import { generateHalo } from '../../systems/halo-generator.js';
 
 describe('generateHalo', () => {
   describe('directional coverage', () => {
