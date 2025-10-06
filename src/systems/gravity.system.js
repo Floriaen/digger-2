@@ -53,43 +53,45 @@ export class GravitySystem extends LifecycleComponent {
 
     // Iterate through all chunks (chunks is a Map, not an object)
     chunks.forEach((chunk) => {
-      chunk.blocks.forEach((block, index) => {
-        if (!block.has(FallableComponent)) return;
+      // Iterate through 2D block array
+      for (let y = 0; y < chunk.blocks.length; y++) {
+        for (let x = 0; x < chunk.blocks[y].length; x++) {
+          const block = chunk.blocks[y][x];
+          if (!block || !block.has || !block.has(FallableComponent)) continue;
 
-        const fallable = block.get(FallableComponent);
-        const x = index % chunk.width;
-        const y = Math.floor(index / chunk.width);
-        const worldX = chunk.chunkX * chunk.width + x;
-        const worldY = chunk.chunkY * chunk.height + y;
+          const fallable = block.get(FallableComponent);
+          const worldX = chunk.chunkX * 32 + x; // 32 is CHUNK_SIZE
+          const worldY = chunk.chunkY * 32 + y;
 
-        // Check if block should start falling
-        if (!fallable.isFalling && fallable.checkSupport(block, terrain, worldX, worldY)) {
-          fallable.startFalling(worldX, worldY);
-        }
+          // Check if block should start falling
+          if (!fallable.isFalling && fallable.checkSupport(block, terrain, worldX, worldY)) {
+            fallable.startFalling(worldX, worldY);
+          }
 
-        // Update falling blocks
-        if (fallable.isFalling) {
-          fallable.updateFalling(deltaTime);
+          // Update falling blocks
+          if (fallable.isFalling) {
+            fallable.updateFalling(deltaTime);
 
-          // Check if block landed on solid ground
-          const blockBelow = terrain.getBlock(fallable.gridX, fallable.gridY + 1);
-          const physicsBelow = blockBelow?.get(PhysicsComponent);
+            // Check if block landed on solid ground
+            const blockBelow = terrain.getBlock(fallable.gridX, fallable.gridY + 1);
+            const physicsBelow = blockBelow?.get(PhysicsComponent);
 
-          if (physicsBelow && physicsBelow.isCollidable()) {
-            // Landed - stop falling and update grid position
-            // Move block from old position to new position
-            terrain.setBlock(worldX, worldY, BlockFactory.createEmpty());
-            terrain.setBlock(fallable.gridX, fallable.gridY, block);
-            fallable.stopFalling();
-          } else {
-            // Still falling - check player collision
-            if (this._checkBlockPlayerCollision(fallable, player)) {
-              eventBus.emit('player:death', { cause: 'crushed' });
+            if (physicsBelow && physicsBelow.isCollidable()) {
+              // Landed - stop falling and update grid position
+              // Move block from old position to new position
+              terrain.setBlock(worldX, worldY, BlockFactory.createEmpty());
+              terrain.setBlock(fallable.gridX, fallable.gridY, block);
+              fallable.stopFalling();
+            } else {
+              // Still falling - check player collision
+              if (this._checkBlockPlayerCollision(fallable, player)) {
+                eventBus.emit('player:death', { cause: 'crushed' });
+              }
+              newFallingBlocks.add(block);
             }
-            newFallingBlocks.add(block);
           }
         }
-      });
+      }
     });
 
     this.fallingBlocks = newFallingBlocks;
