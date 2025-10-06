@@ -3,13 +3,13 @@
  * @description HUD component - displays score, UI overlays
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 
 /**
  * HUDComponent
  * Renders score display and UI elements
  */
-export class HUDComponent extends Component {
+export class HUDComponent extends LifecycleComponent {
   init() {
     this.score = 0;
   }

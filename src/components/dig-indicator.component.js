@@ -3,15 +3,15 @@
  * @description Renders dig target outline on top of all terrain
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { TILE_WIDTH, SPRITE_HEIGHT, TILE_CAP_HEIGHT } from '../utils/config.js';
-import { BLOCK_TYPES } from '../terrain/block-registry.js';
+import { PhysicsComponent } from './blocks/physics.component.js';
 
 /**
  * DigIndicatorComponent
  * Renders white outline around the block being dug (always on top of terrain)
  */
-export class DigIndicatorComponent extends Component {
+export class DigIndicatorComponent extends LifecycleComponent {
   init() {
     // No initialization needed
   }
@@ -45,7 +45,8 @@ export class DigIndicatorComponent extends Component {
 
     // Check if there's a block above
     const blockAbove = terrain.getBlock(digTarget.x, digTarget.y - 1);
-    const hasBlockAbove = blockAbove !== BLOCK_TYPES.EMPTY;
+    const physics = blockAbove.get(PhysicsComponent);
+    const hasBlockAbove = physics && physics.isCollidable();
 
     // Full height (16x25) if no block above, partial (16x16) if block above
     const outlineHeight = hasBlockAbove ? TILE_WIDTH : SPRITE_HEIGHT;

@@ -3,14 +3,14 @@
  * @description Debug component - dat.GUI controls, de-zoom, overlays
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
 
 /**
  * DebugComponent
  * Provides dat.GUI interface and debug visualizations
  */
-export class DebugComponent extends Component {
+export class DebugComponent extends LifecycleComponent {
   init() {
     this.gui = null;
     this.showChunkBounds = false;

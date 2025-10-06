@@ -12,8 +12,7 @@ import { RenderComponent } from '../components/blocks/render.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
 import { DiggableComponent } from '../components/blocks/diggable.component.js';
 import { LootableComponent } from '../components/blocks/lootable.component.js';
-import { LavaComponent } from '../components/blocks/lava.component.js';
-import { createChest } from '../entities/chest.js';
+import { LethalComponent } from '../components/blocks/lethal.component.js';
 import { generateHalo } from '../systems/halo-generator.js';
 
 // Helper constants for block type identification
@@ -583,7 +582,7 @@ export class TerrainGenerator {
           const hasFallable = existingBlock.has(FallableComponent);
           const render = existingBlock.get(RenderComponent);
           const isRedFrame = render && render.spriteX === 32;
-          const isLava = existingBlock.has(LavaComponent);
+          const isLava = existingBlock.has(LethalComponent);
 
           if (hasLoot || hasFallable || isRedFrame || isLava) {
             return;

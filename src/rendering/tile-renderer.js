@@ -7,7 +7,7 @@ import { TILE_WIDTH, SPRITE_HEIGHT, TILE_CAP_HEIGHT } from '../utils/config.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
-import { LavaComponent } from '../components/blocks/lava.component.js';
+import { LethalComponent } from '../components/blocks/lethal.component.js';
 
 /**
  * Draw a tile at grid coordinates
@@ -27,7 +27,7 @@ export function drawTile(ctx, spriteSheet, block, screenX, screenY, alpha = 1.0)
   }
 
   // Don't render empty blocks (but render lava even though not collidable)
-  const isLava = block.has(LavaComponent);
+  const isLava = block.has(LethalComponent);
   if (physics && !physics.isCollidable() && !isLava) {
     return;
   }

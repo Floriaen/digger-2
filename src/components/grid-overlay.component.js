@@ -3,15 +3,15 @@
  * @description Grid overlay component - renders subtle grid lines on solid blocks
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { TILE_WIDTH, TILE_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
-import { BLOCK_TYPES } from '../terrain/block-registry.js';
+import { PhysicsComponent } from './blocks/physics.component.js';
 
 /**
  * GridOverlayComponent
  * Renders a subtle grid on top of solid blocks (not on empty or red torus)
  */
-export class GridOverlayComponent extends Component {
+export class GridOverlayComponent extends LifecycleComponent {
   init() {
     // No initialization needed
   }
@@ -44,10 +44,11 @@ export class GridOverlayComponent extends Component {
     // Draw grid on solid blocks
     for (let y = startY; y <= endY; y += 1) {
       for (let x = startX; x <= endX; x += 1) {
-        const blockType = terrain.getBlock(x, y);
+        const block = terrain.getBlock(x, y);
+        const physics = block.get(PhysicsComponent);
 
-        // Skip empty blocks and red torus blocks
-        if (blockType === BLOCK_TYPES.EMPTY || blockType === BLOCK_TYPES.RED_FRAME) {
+        // Skip blocks without collision
+        if (!physics || !physics.isCollidable()) {
           // eslint-disable-next-line no-continue
           continue;
         }

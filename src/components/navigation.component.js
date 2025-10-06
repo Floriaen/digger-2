@@ -3,9 +3,9 @@
  * @description Navigation guidance - white triangle markers for valid movement directions
  */
 
-import { Component } from '../core/component.base.js';
-import { isDiggable } from '../terrain/block-registry.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { SPRITE_ATLAS, loadSpriteSheet } from '../rendering/sprite-atlas.js';
+import { DiggableComponent } from './blocks/diggable.component.js';
 
 const GUIDANCE_DELAY_MS = 400;
 
@@ -14,7 +14,7 @@ const GUIDANCE_DELAY_MS = 400;
  * Displays white triangle markers after 400ms of player inactivity
  * to indicate valid dig directions (left, right, down)
  */
-export class NavigationComponent extends Component {
+export class NavigationComponent extends LifecycleComponent {
   init() {
     this.inactivityTimer = 0;
     this.showGuidance = false;
@@ -113,9 +113,9 @@ export class NavigationComponent extends Component {
     const rightBlock = terrain.getBlock(player.gridX + 1, player.gridY);
     const downBlock = terrain.getBlock(player.gridX, player.gridY + 1);
 
-    this.validDirections.left = isDiggable(leftBlock);
-    this.validDirections.right = isDiggable(rightBlock);
-    this.validDirections.down = isDiggable(downBlock);
+    this.validDirections.left = leftBlock.has(DiggableComponent);
+    this.validDirections.right = rightBlock.has(DiggableComponent);
+    this.validDirections.down = downBlock.has(DiggableComponent);
 
     // Check for falling blocks component
     const fallingBlocks = this.game.components.find(

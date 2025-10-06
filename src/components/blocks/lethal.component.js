@@ -1,12 +1,12 @@
 import { Component } from '../../core/component.js';
 
 /**
- * LavaComponent
+ * LethalComponent
  *
- * Marks a block as lava (deadly to player).
+ * Marks a block as deadly to the player (lava, spikes, poison, etc.).
  * Blocks with this component kill the player on contact.
  */
-export class LavaComponent extends Component {
+export class LethalComponent extends Component {
   constructor() {
     super();
   }

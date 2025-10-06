@@ -6,7 +6,7 @@ import { DiggableComponent } from '../components/blocks/diggable.component.js';
 import { FallableComponent } from '../components/blocks/fallable.component.js';
 import { DarknessComponent } from '../components/blocks/darkness.component.js';
 import { LootableComponent } from '../components/blocks/lootable.component.js';
-import { LavaComponent } from '../components/blocks/lava.component.js';
+import { LethalComponent } from '../components/blocks/lethal.component.js';
 
 /**
  * BlockFactory
@@ -83,7 +83,7 @@ export class BlockFactory {
     return new Block([
       new RenderComponent({ spriteX: 64, spriteY: 0 }),
       new PhysicsComponent({ collidable: false }),
-      new LavaComponent(),
+      new LethalComponent(),
     ]);
   }
 

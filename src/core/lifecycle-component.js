@@ -1,13 +1,17 @@
 /**
- * @file component.base.js
- * @description Abstract base class for all game components following lifecycle pattern
+ * @file lifecycle-component.js
+ * @description Abstract base class for all game loop components following lifecycle pattern
+ *
+ * NOTE: This is distinct from the ECS Component class (src/core/component.js).
+ * - LifecycleComponent: For game loop components (player, camera, terrain, HUD)
+ * - Component: For ECS block components (pure data containers)
  */
 
 /**
- * Base Component class
- * All game components extend this to follow a consistent lifecycle
+ * LifecycleComponent class
+ * All game loop components extend this to follow a consistent lifecycle
  */
-export class Component {
+export class LifecycleComponent {
   /**
    * @param {Game} game - Reference to the main game instance
    */

@@ -3,24 +3,23 @@
  * @description Terrain component - manages chunks, generation, and block data
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, SPRITE_HEIGHT, TILE_CAP_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 import { TerrainGenerator } from '../terrain/terrain-generator.js';
 import { ChunkCache } from '../terrain/chunk-cache.js';
 import { drawTile, drawTileDarkening } from '../rendering/tile-renderer.js';
-import { BLOCK_TYPES } from '../terrain/block-registry.js';
 import { loadSpriteSheet } from '../rendering/sprite-atlas.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
 import { DarknessComponent } from '../components/blocks/darkness.component.js';
-import { LavaComponent } from '../components/blocks/lava.component.js';
+import { LethalComponent } from '../components/blocks/lethal.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
  * TerrainComponent
  * Manages terrain chunks, procedural generation, and block queries
  */
-export class TerrainComponent extends Component {
+export class TerrainComponent extends LifecycleComponent {
   async init() {
     this.seed = 12345; // Default seed, controllable via dat.GUI
     this.generator = new TerrainGenerator(this.seed);
@@ -122,7 +121,7 @@ export class TerrainComponent extends Component {
 
         // Skip if no render component or is empty (not collidable and not lava)
         if (!render) continue;
-        const isLava = block.has(LavaComponent);
+        const isLava = block.has(LethalComponent);
         if (physics && !physics.isCollidable() && !isLava) continue;
 
         const screenX = worldOffsetX + localX * TILE_WIDTH + transform.x;

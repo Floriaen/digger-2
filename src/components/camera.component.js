@@ -3,7 +3,7 @@
  * @description Camera component - handles viewport tracking and smooth following
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { CAMERA_LERP_FACTOR, CAMERA_OFFSET_Y, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp, easeInQuad } from '../utils/math.js';
 
@@ -11,7 +11,7 @@ import { lerp, easeInQuad } from '../utils/math.js';
  * CameraComponent
  * Manages viewport position and smooth player tracking
  */
-export class CameraComponent extends Component {
+export class CameraComponent extends LifecycleComponent {
   init() {
     // Initialize camera position centered on player immediately
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');

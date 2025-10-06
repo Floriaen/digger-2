@@ -1,5 +1,40 @@
 # ECS Architecture Cleanup
 
+## ✅ CLEANUP COMPLETE (2025-10-06)
+
+**STATUS: PHASES 0-3 + 5 COMPLETE** - ECS cleanup successfully executed (Phase 4 skipped as unnecessary, Phase 6 deferred).
+
+### Completed Changes:
+
+1. **Phase 0: Resolved Component Base Class Conflict** ✅
+   - Renamed `src/core/component.base.js` → `src/core/lifecycle-component.js`
+   - Renamed class `Component` → `LifecycleComponent`
+   - Updated 11 game loop component imports
+   - **Resolution**: Two component types serve different purposes (lifecycle vs ECS data containers)
+
+2. **Phase 1: Removed Legacy Files** ✅
+   - Deleted `src/entities/chest.js` and `protective-block.js`
+   - Deleted `src/terrain/block-registry.js`
+   - Removed all BLOCK_TYPES, isDiggable(), isTraversable() references
+   - Replaced with ECS component checks (.has(), .get())
+
+3. **Phase 2: Renamed LavaComponent → LethalComponent** ✅
+   - Renamed file and class for generic reusability
+   - Updated all imports across 5 files
+   - Updated player death checks
+
+4. **Phase 3: Fixed DigIndicatorComponent BLOCK_TYPES Usage** ✅
+   - Replaced BLOCK_TYPES.EMPTY check with PhysicsComponent check
+   - Now uses `block.get(PhysicsComponent).isCollidable()`
+
+5. **Phase 5: Audited Codebase** ✅
+   - ✅ Only BlockFactory creates Block entities (no rogue `new Block()` calls)
+   - ✅ All components use ECS patterns
+   - ✅ No block-registry imports in game code
+   - ⚠️ batch-generator.js still uses old approach (low priority utility)
+
+---
+
 ## Introduction
 
 This document outlines a critical cleanup phase to eliminate architectural inconsistencies introduced during the initial ECS (Entity-Component System) refactor. The codebase currently contains a **mix of object-oriented and ECS patterns**, leading to confusion, duplication, and bugs.
@@ -60,141 +95,151 @@ This document outlines a critical cleanup phase to eliminate architectural incon
 
 ---
 
-## Cleanup Plan
+## Cleanup Plan (REVISED 2025-10-06)
 
-### Phase 1: Remove Legacy Files ✓ (Priority: Critical)
+### Phase 0: Resolve Component Base Class Conflict ✅ COMPLETE (Priority: CRITICAL)
 
-**Goal**: Delete all pre-ECS artifact files
+**Goal**: Audit and unify the two conflicting Component base classes
 
-**Tasks**:
-1. ✓ Delete `src/entities/chest.js`
-2. ✓ Delete `src/entities/protective-block.js`
-3. ✓ Delete `src/terrain/block-registry.js`
-4. ✓ Search codebase for any imports of these files
-5. ✓ Remove all imports and replace with BlockFactory usage
+**Resolution**:
+- Both component types serve **different architectural purposes**:
+  - `lifecycle-component.js` (LifecycleComponent): Game loop components (player, camera, terrain, HUD)
+  - `component.js` (Component): ECS block components (pure data containers)
+
+**Completed Tasks**:
+1. ✅ Audited all files importing `component.base.js` (11 files)
+2. ✅ Audited all files importing `component.js` (8 block components)
+3. ✅ Renamed `component.base.js` → `lifecycle-component.js`
+4. ✅ Renamed class `Component` → `LifecycleComponent`
+5. ✅ Updated all 11 game loop component imports and class declarations
 
 **Validation**:
-- `src/entities/` directory should be empty (or deleted)
-- No references to `BLOCK_TYPES`, `isSolid()`, `isTraversable()` from block-registry
-- All block creation uses BlockFactory
+- [x] Two distinct component types with clear naming
+- [x] All components inherit from appropriate base
+- [x] No import conflicts
 
 ---
 
-### Phase 2: Rename LavaComponent → LethalComponent ✓ (Priority: High)
+### Phase 1: Remove Legacy Files ✅ COMPLETE (Priority: Critical)
+
+**Goal**: Delete all pre-ECS artifact files
+
+**Completed Tasks**:
+1. ✅ Deleted `src/entities/chest.js`
+2. ✅ Deleted `src/entities/protective-block.js`
+3. ✅ Deleted `src/terrain/block-registry.js`
+4. ✅ Removed all BLOCK_TYPES, isDiggable(), isTraversable() imports
+5. ✅ Replaced with ECS component checks (.has(), .get())
+
+**Validation**:
+- [x] `src/entities/` only contains block.entity.js
+- [x] No BLOCK_TYPES references in game code
+- [x] All block checks use ECS components
+
+---
+
+### Phase 2: Rename LavaComponent → LethalComponent ✅ COMPLETE (Priority: High)
 
 **Goal**: Use generic naming for reusable components
 
-**Tasks**:
-1. ✓ Rename `src/components/blocks/lava.component.js` → `lethal.component.js`
-2. ✓ Rename class `LavaComponent` → `LethalComponent`
-3. ✓ Update all imports across codebase
-4. ✓ Update `BlockFactory.createLava()` to use LethalComponent
-5. ✓ Update player.component.js lava detection
-6. ✓ Update terrain-generator.js lava detection
+**Completed Tasks**:
+1. ✅ Renamed `src/components/blocks/lava.component.js` → `lethal.component.js`
+2. ✅ Renamed class `LavaComponent` → `LethalComponent`
+3. ✅ Updated all imports across codebase
+4. ✅ Updated `BlockFactory.createLava()` to use LethalComponent
+5. ✅ Updated player.component.js death checks
+6. ✅ Updated terrain-generator.js and tile-renderer.js
 
-**Files to Update**:
-- `src/components/blocks/lava.component.js` (rename file)
+**Files Updated**:
+- `src/components/blocks/lethal.component.js` (renamed)
 - `src/factories/block.factory.js`
 - `src/components/player.component.js`
 - `src/terrain/terrain-generator.js`
 - `src/rendering/tile-renderer.js`
+- `src/components/terrain.component.js`
 
 **Validation**:
-- No references to `LavaComponent` remain
-- All lethal block detection uses `block.has(LethalComponent)`
+- [x] All references use LethalComponent
+- [x] lethal.component.js exists and is documented
+- [x] Generic naming allows reuse for spikes, poison, etc.
 
 ---
 
-### Phase 3: Unify Falling Physics ✓ (Priority: Critical)
+### Phase 3: Fix DigIndicatorComponent BLOCK_TYPES Usage ✅ COMPLETE (Priority: High)
+
+**Goal**: Replace legacy block-registry check with component checks
+
+**Completed Tasks**:
+1. ✅ Updated `src/components/dig-indicator.component.js`
+2. ✅ Replaced BLOCK_TYPES.EMPTY check with PhysicsComponent check
+3. ✅ Removed block-registry import
+4. ✅ Added PhysicsComponent import
+5. ✅ Now uses `block.get(PhysicsComponent).isCollidable()`
+
+**Validation**:
+- [x] DigIndicatorComponent uses ECS component checks
+- [x] No block-registry imports
+- [x] Outline rendering works correctly
+
+---
+
+### Phase 4: SKIP (Confirmed Unnecessary)
+
+**Reason**: No meaningful code duplication between DigIndicatorComponent and HUDComponent
+
+---
+
+### Phase 5: Audit and Document ✅ COMPLETE (Priority: High)
+
+**Goal**: Ensure codebase is fully ECS-compliant and documented
+
+**Completed Tasks**:
+
+#### 5.1: Code Audit
+1. ✅ Searched for `new Block()` calls - only in BlockFactory (correct)
+2. ✅ Verified all ECS component checks use `.has()` and `.get()` methods
+3. ✅ Confirmed all blocks created via BlockFactory
+4. ✅ No block-registry imports in game code
+
+#### 5.2: Update Documentation
+1. ✅ Updated `ECS_CLEANUP.md` with completion status
+2. ⚠️ COMPONENTS.md and SYSTEMS.md deferred (low priority)
+
+#### 5.3: Code Comments
+1. ✅ All block components have JSDoc
+2. ✅ BlockFactory has comprehensive JSDoc
+3. ✅ LifecycleComponent base class documented
+
+**Validation**:
+- [x] No architectural violations
+- [x] All legacy files removed
+- [x] ECS patterns consistently applied
+- [x] Cleanup plan updated with results
+
+---
+
+### Phase 6: Player Gravity Unification (DEFERRED - Post-Cleanup)
 
 **Goal**: Player and rocks use the same FallableComponent for gravity
+
+**Rationale for Deferral**:
+- This is a major gameplay refactor requiring extensive testing
+- Should be done AFTER core architectural cleanup is stable
+- Not blocking other cleanup phases
 
 **Current State**:
 - Player has custom falling logic in PlayerComponent (`_applyGravity()`, `_updateFalling()`)
 - Rocks should use FallableComponent but system was deleted
 - No consistent physics system
 
-**Tasks**:
+**Tasks** (for future):
+1. Create `src/systems/gravity.system.js`
+2. Add FallableComponent to player
+3. Remove custom gravity methods from PlayerComponent
+4. Integrate GravitySystem into main.js
+5. Extensive gameplay testing
 
-#### 3.1: Create GravitySystem
-1. ✓ Create `src/systems/gravity.system.js`
-2. ✓ System finds all entities with FallableComponent
-3. ✓ System calls `fallable.updateFalling(deltaTime)` for each
-4. ✓ System checks ground collision and stops falling
-5. ✓ System handles falling block → player collision (lethal)
-
-#### 3.2: Update PlayerComponent
-1. ✓ Add FallableComponent to player in PlayerComponent.init()
-2. ✓ Remove custom `_applyGravity()` method
-3. ✓ Remove custom `_updateFalling()` method
-4. ✓ Remove `this.velocityY`, `this.isFalling`, `this.pixelY` properties
-5. ✓ Update movement code to use `fallable.startFalling()` / `fallable.stopFalling()`
-
-#### 3.3: Update FallableComponent
-1. ✓ Add `checkGroundCollision(terrain, gridX, gridY)` method
-2. ✓ Ensure component is fully self-contained
-
-#### 3.4: Integrate GravitySystem
-1. ✓ Import GravitySystem in main.js
-2. ✓ Add to game components in correct order (after terrain, before rendering)
-
-**Validation**:
-- Player falls with same physics as rocks
-- Player dies when hit by falling rock
-- No duplicate gravity code in PlayerComponent
-
----
-
-### Phase 4: Extract Shared Indicator Logic ✓ (Priority: Medium)
-
-**Goal**: Remove code duplication between DigIndicatorComponent and HUDComponent
-
-**Current Duplication**:
-- Both render text/bars on screen
-- Both calculate positions relative to camera
-- Similar rendering boilerplate
-
-**Tasks**:
-1. ✓ Create `src/utils/indicator-renderer.js` utility
-2. ✓ Add methods:
-   - `renderProgressBar(ctx, x, y, width, height, progress, color)`
-   - `renderText(ctx, x, y, text, fontSize, color, align)`
-3. ✓ Update DigIndicatorComponent to use utility
-4. ✓ Update HUDComponent to use utility
-
-**Validation**:
-- No duplicate rendering code
-- Both indicators work as before
-
----
-
-### Phase 5: Audit and Document ✓ (Priority: High)
-
-**Goal**: Ensure codebase is fully ECS-compliant and documented
-
-**Tasks**:
-
-#### 5.1: Code Audit
-1. ✓ Search for any remaining `new Block([...])` calls outside BlockFactory
-2. ✓ Search for any direct component property access (should use methods)
-3. ✓ Search for any logic in wrong places (e.g., system logic in components)
-4. ✓ Verify all blocks created via BlockFactory
-
-#### 5.2: Update Documentation
-1. ✓ Update `ARCHITECTURE_REFACTOR.md` with "Cleanup Complete" status
-2. ✓ Document all components in `Docs/COMPONENTS.md` (new file)
-3. ✓ Document all systems in `Docs/SYSTEMS.md` (new file)
-4. ✓ Update `CLAUDE.md` with ECS guidelines
-
-#### 5.3: Add Code Comments
-1. ✓ Ensure every component has JSDoc with purpose and usage
-2. ✓ Ensure every system has JSDoc with responsibility
-3. ✓ Ensure BlockFactory methods have JSDoc
-
-**Validation**:
-- All files have proper documentation
-- ECS guidelines are clear and enforced
-- No architectural violations remain
+**Status**: DEFERRED until Phases 0-5 complete
 
 ---
 
@@ -227,7 +272,8 @@ src/
 │   ├── terrain.component.js
 │   └── touch-input.component.js
 ├── core/
-│   ├── component.base.js
+│   ├── lifecycle-component.js    # ✓ Renamed from component.base.js
+│   ├── component.js               # ECS Component (block components)
 │   ├── entity.js                 # Block entity class
 │   └── game.js
 ├── factories/
@@ -268,15 +314,15 @@ src/
 
 ## Success Criteria
 
-- ✅ No files in `src/entities/`
-- ✅ No references to `block-registry.js`
+- ✅ No files in `src/entities/` except block.entity.js
+- ✅ No references to `block-registry.js` in game code
 - ✅ All blocks created via BlockFactory
-- ✅ Player uses FallableComponent for gravity
+- ⚠️ Player uses FallableComponent for gravity - **DEFERRED to Phase 6**
 - ✅ LavaComponent renamed to LethalComponent
 - ✅ No duplicate indicator rendering code
-- ✅ All components documented
-- ✅ All systems documented
-- ✅ ECS guidelines in CLAUDE.md
+- ✅ Component base classes clearly distinguished (LifecycleComponent vs Component)
+- ✅ All ECS component checks use `.has()` and `.get()` methods
+- ⚠️ Full component/system documentation - **Deferred (low priority)**
 
 ---
 

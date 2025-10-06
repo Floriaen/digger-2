@@ -3,7 +3,7 @@
  * @description Player shadow component - renders shadow on ground below player
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { PLAYER_RADIUS } from '../utils/config.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
 
@@ -12,7 +12,7 @@ import { PhysicsComponent } from './blocks/physics.component.js';
  * Renders player shadow on the first solid block below
  * Handles coyote time and falling states
  */
-export class ShadowComponent extends Component {
+export class ShadowComponent extends LifecycleComponent {
   init() {
     // Shadow will track player position
   }

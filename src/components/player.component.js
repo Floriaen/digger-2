@@ -3,18 +3,17 @@
  * @description Player component - handles red ball movement, digging, and state machine
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import {
   DIG_INTERVAL_MS, PLAYER_RADIUS, GRAVITY, FALL_SPEED_MAX,
 } from '../utils/config.js';
-import { BLOCK_TYPES, isDiggable, isTraversable, getBlock } from '../terrain/block-registry.js';
 import { eventBus } from '../utils/event-bus.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
 import { DiggableComponent } from './blocks/diggable.component.js';
 import { HealthComponent } from './blocks/health.component.js';
 import { RenderComponent } from './blocks/render.component.js';
 import { LootableComponent } from './blocks/lootable.component.js';
-import { LavaComponent } from './blocks/lava.component.js';
+import { LethalComponent } from './blocks/lethal.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -31,7 +30,7 @@ const PLAYER_STATE = {
  * PlayerComponent
  * Manages player position, state, and digging behavior
  */
-export class PlayerComponent extends Component {
+export class PlayerComponent extends LifecycleComponent {
   init() {
     // Grid position (tiles) - start position (in grass layer, first line)
     this.gridX = 12;
@@ -249,7 +248,7 @@ export class PlayerComponent extends Component {
     const targetBlock = terrain.getBlock(targetX, targetY);
 
     // Check if target is lava (death)
-    if (targetBlock.has(LavaComponent)) {
+    if (targetBlock.has(LethalComponent)) {
       eventBus.emit('player:death', { cause: 'lava' });
       this.state = PLAYER_STATE.IDLE;
       return;
@@ -406,7 +405,7 @@ export class PlayerComponent extends Component {
       const blockAtNewPos = terrain.getBlock(newGridX, newGridY);
 
       // Check if we fell into lava
-      if (blockAtNewPos.has(LavaComponent)) {
+      if (blockAtNewPos.has(LethalComponent)) {
         eventBus.emit('player:death', { cause: 'lava' });
         this.state = PLAYER_STATE.IDLE;
         this.velocityY = 0;

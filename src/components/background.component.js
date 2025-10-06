@@ -3,14 +3,14 @@
  * @description Background component - renders sky, mountains, sun, and lava
  */
 
-import { Component } from '../core/component.base.js';
+import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 
 /**
  * BackgroundComponent
  * Renders orange sky, black mountains, parallax, and lava lake
  */
-export class BackgroundComponent extends Component {
+export class BackgroundComponent extends LifecycleComponent {
   init() {
     this.sunX = null; // Sun X position (set from player's initial position)
     this.sunY = null; // Sun Y position (set from player's initial position)
