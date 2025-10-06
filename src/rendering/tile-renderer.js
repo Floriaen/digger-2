@@ -5,9 +5,7 @@
 
 import { TILE_WIDTH, SPRITE_HEIGHT, TILE_CAP_HEIGHT } from '../utils/config.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
-import { SpriteStackComponent } from '../components/blocks/sprite-stack.component.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
-import { HealthComponent } from '../components/blocks/health.component.js';
 import { LethalComponent } from '../components/blocks/lethal.component.js';
 
 /**
@@ -20,13 +18,12 @@ import { LethalComponent } from '../components/blocks/lethal.component.js';
  * @param {number} alpha - Transparency (0.0 = fully transparent, 1.0 = fully opaque)
  */
 export function drawTile(ctx, spriteSheet, block, screenX, screenY, alpha = 1.0) {
-  const spriteStack = block.get(SpriteStackComponent);
   const render = block.get(RenderComponent);
   const physics = block.get(PhysicsComponent);
 
-  // Check if we have sprite stack first, otherwise use regular render component
-  if (!spriteStack && !render) {
-    return; // Can't render without RenderComponent or SpriteStackComponent
+  // Check if we have render component
+  if (!render) {
+    return; // Can't render without RenderComponent
   }
 
   // Don't render empty blocks (but render lava even though not collidable)
@@ -42,35 +39,20 @@ export function drawTile(ctx, spriteSheet, block, screenX, screenY, alpha = 1.0)
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  // If we have a sprite stack, render all layers bottom-to-top
-  if (spriteStack) {
-    const layers = spriteStack.getLayers();
-    for (let i = 0; i < layers.length; i += 1) {
-      const layer = layers[i];
-      ctx.drawImage(
-        spriteSheet,
-        layer.spriteX,
-        layer.spriteY,
-        TILE_WIDTH,
-        SPRITE_HEIGHT,
-        screenX,
-        spriteY,
-        TILE_WIDTH,
-        SPRITE_HEIGHT,
-      );
-    }
-  } else {
-    // Regular single sprite rendering
+  // Render all layers bottom-to-top (single sprite or multiple)
+  const layers = render.getLayers();
+  for (let i = 0; i < layers.length; i += 1) {
+    const layer = layers[i];
     ctx.drawImage(
       spriteSheet,
-      render.spriteX,
-      render.spriteY, // Source position in sprite sheet
+      layer.spriteX,
+      layer.spriteY,
       TILE_WIDTH,
-      SPRITE_HEIGHT, // Source dimensions (16×25)
+      SPRITE_HEIGHT,
       screenX,
-      spriteY, // Destination position (offset by cap height)
+      spriteY,
       TILE_WIDTH,
-      SPRITE_HEIGHT, // Destination dimensions
+      SPRITE_HEIGHT,
     );
   }
 

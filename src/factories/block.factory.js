@@ -1,6 +1,5 @@
 import { Block } from '../entities/block.entity.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
-import { SpriteStackComponent } from '../components/blocks/sprite-stack.component.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
 import { DiggableComponent } from '../components/blocks/diggable.component.js';
@@ -124,7 +123,7 @@ export class BlockFactory {
    */
   static createCoveredChest(loot = [{ type: 'coin', value: 10 }]) {
     return new Block([
-      new SpriteStackComponent({
+      new RenderComponent({
         layers: [
           { spriteX: 64, spriteY: 0 }, // Chest (bottom)
           { spriteX: 16, spriteY: 24 }, // Cover (top) - sprite position 9

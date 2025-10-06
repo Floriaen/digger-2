@@ -13,7 +13,6 @@ import { drawTile, drawTileDarkening } from '../rendering/tile-renderer.js';
 import { loadSpriteSheet } from '../rendering/sprite-atlas.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
 import { RenderComponent } from './blocks/render.component.js';
-import { SpriteStackComponent } from './blocks/sprite-stack.component.js';
 import { DarknessComponent } from './blocks/darkness.component.js';
 import { LethalComponent } from './blocks/lethal.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
@@ -121,10 +120,9 @@ export class TerrainComponent extends LifecycleComponent {
         // Skip empty blocks (check PhysicsComponent for traversability)
         const physics = block.get(PhysicsComponent);
         const render = block.get(RenderComponent);
-        const spriteStack = block.get(SpriteStackComponent);
 
-        // Skip if no render component AND no sprite stack, or is empty (not collidable and not lava)
-        if (!render && !spriteStack) continue;
+        // Skip if no render component, or is empty (not collidable and not lava)
+        if (!render) continue;
         const isLava = block.has(LethalComponent);
         if (physics && !physics.isCollidable() && !isLava) continue;
 
