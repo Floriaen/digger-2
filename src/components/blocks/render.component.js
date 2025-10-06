@@ -41,6 +41,28 @@ export class RenderComponent extends Component {
   }
 
   /**
+   * Get the base (terrain) sprite layer.
+   * @returns {{spriteX: number, spriteY: number} | null}
+   */
+  getBaseLayer() {
+    const layers = this.getLayers();
+    return layers[0] ?? null;
+  }
+
+  /**
+   * Get overlay layers rendered above the terrain base.
+   * Preserves declaration order so later sprites draw in front.
+   * @returns {Array<{spriteX: number, spriteY: number}>}
+   */
+  getOverlayLayers() {
+    const layers = this.getLayers();
+    if (layers.length <= 1) {
+      return [];
+    }
+    return layers.slice(1);
+  }
+
+  /**
    * Get number of layers
    * @returns {number}
    */

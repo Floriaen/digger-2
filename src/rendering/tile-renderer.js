@@ -39,10 +39,25 @@ export function drawTile(ctx, spriteSheet, block, screenX, screenY, alpha = 1.0)
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  // Render all layers bottom-to-top (single sprite or multiple)
-  const layers = render.getLayers();
-  for (let i = 0; i < layers.length; i += 1) {
-    const layer = layers[i];
+  // Draw base terrain sprite first, then overlays in declaration order
+  const baseLayer = render.getBaseLayer();
+  if (baseLayer) {
+    ctx.drawImage(
+      spriteSheet,
+      baseLayer.spriteX,
+      baseLayer.spriteY,
+      TILE_WIDTH,
+      SPRITE_HEIGHT,
+      screenX,
+      spriteY,
+      TILE_WIDTH,
+      SPRITE_HEIGHT,
+    );
+  }
+
+  const overlayLayers = render.getOverlayLayers();
+  for (let i = 0; i < overlayLayers.length; i += 1) {
+    const layer = overlayLayers[i];
     ctx.drawImage(
       spriteSheet,
       layer.spriteX,
