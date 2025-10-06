@@ -112,6 +112,7 @@ export class BlockFactory {
       new HealthComponent({ hp: 15 }),
       new DiggableComponent(),
       new LootableComponent({ loot }),
+      new FallableComponent()
     ]);
   }
 

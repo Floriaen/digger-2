@@ -86,7 +86,7 @@ testFolder.open();
 
 ## 3. Batch Generator Tool
 
-**Location**: [`batch-tool.html`](../batch-tool.html)
+**Location**: [`tools/batch-tool.html`](../tools/batch-tool.html)
 
 ### Purpose
 Generate 10x10 chunk composite images for procedural terrain validation without running the full game.
@@ -99,7 +99,7 @@ Generate 10x10 chunk composite images for procedural terrain validation without 
 - **Download**: Save PNG image + JSON data for documentation
 
 ### Workflow
-1. Open `batch-tool.html` in browser
+1. Open `tools/batch-tool.html` in browser
 2. Set seed (e.g., `12345` for default game seed)
 3. Configure chunk range:
    - Start X/Y: Top-left chunk coordinate
@@ -275,21 +275,35 @@ Verify player can always dig out of generated terrain.
 3. Visually scan for isolated pockets (all sides rock)
 4. If found, note seed and coordinates for bug report
 
-**Automated Test** (future):
+**Automated Test** (ECS-compliant):
 ```javascript
+import { PhysicsComponent } from '../components/blocks/physics.component.js';
+import { DiggableComponent } from '../components/blocks/diggable.component.js';
+
 function validateChunkEscapability(chunk) {
   for (let y = 0; y < CHUNK_SIZE; y++) {
     for (let x = 0; x < CHUNK_SIZE; x++) {
-      const blockType = chunk.getBlock(x, y);
-      if (!isDiggable(blockType) && !isTraversable(blockType)) {
-        // Check if surrounded by undiggable blocks
+      const block = chunk.getBlock(x, y);
+
+      // Skip empty blocks
+      if (!block.has(PhysicsComponent)) continue;
+
+      const physics = block.get(PhysicsComponent);
+      const isDiggable = block.has(DiggableComponent);
+
+      // If block is solid and not diggable, check if trapped
+      if (physics.isCollidable() && !isDiggable) {
         const neighbors = [
           chunk.getBlock(x - 1, y),
           chunk.getBlock(x + 1, y),
           chunk.getBlock(x, y - 1),
           chunk.getBlock(x, y + 1),
         ];
-        const escapable = neighbors.some(n => isDiggable(n) || isTraversable(n));
+
+        const escapable = neighbors.some(n =>
+          n.has(DiggableComponent) || !n.get(PhysicsComponent)?.isCollidable()
+        );
+
         if (!escapable) {
           console.error(`Unescapable block at (${x}, ${y})`);
           return false;
@@ -348,7 +362,7 @@ function validateChunkEscapability(chunk) {
 ---
 
 ## Related Documentation
-- [Block Registry API](./API_BLOCK_REGISTRY.md)
+- [ECS Cleanup](./ECS_CLEANUP.md) - Architecture refactor documentation
 - [Chain-Reaction Hooks](./API_CHAIN_REACTIONS.md)
 - [Game Specification](./GAME_SPEC.md)
-- [Development Plan](./DEVELOPMENT_PLAN.md)
+- [Development Plan](./archive/DEVELOPMENT_PLAN.md) - Archived milestone specifications

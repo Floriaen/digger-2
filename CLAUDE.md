@@ -2,67 +2,86 @@
 
 This document tracks AI-assisted development sessions for Digger 2, including token usage, architectural decisions, and feature estimates.
 
+## Project Status
+
+**All milestones complete** (M0-M4) as of 2025-10-06. See [TOKEN_ESTIMATES.md](Docs/TOKEN_ESTIMATES.md) for detailed breakdown.
+
+**Total tokens used**: 371,448 (vs original estimate of 10,040 - 37x multiplier due to architectural complexity)
+
+---
+
+## Current Architecture (Post-ECS Refactor)
+
+### Core Principles
+1. **ECS (Entity-Component-System)**: Blocks are entities composed of components (data + behavior)
+2. **Two Component Types**:
+   - **LifecycleComponent** (`src/core/lifecycle-component.js`): Game loop systems (player, camera, terrain, HUD)
+   - **Component** (`src/core/component.js`): ECS data containers for block entities
+3. **Factory Pattern**: BlockFactory is the ONLY way to create block entities
+4. **Event-driven communication**: Event bus for decoupled systems
+5. **NO FALLBACKS**: Errors surface immediately during development
+
+### Directory Structure
+```
+/src
+  /components       → Game systems (player, terrain, camera, HUD, etc.)
+    /blocks         → Block ECS components (health, physics, diggable, etc.)
+  /systems          → Cross-entity orchestration (gravity, input, score)
+  /factories        → BlockFactory (entity composition)
+  /terrain          → Procedural generation, chunk management
+  /rendering        → Sprite atlas, tile rendering
+  /core             → Base classes (LifecycleComponent, Component, Entity)
+  /utils            → Event bus, math helpers, config
+```
+
+### Key Architectural Changes
+- **Deleted**: `block-registry.js` (replaced by ECS component checks)
+- **Deleted**: Standalone entity classes (`chest.js`, `protective-block.js`)
+- **Unified**: Player and rocks use same `FallableComponent` via `GravitySystem`
+- **Renamed**: `LavaComponent` → `LethalComponent` (generic reusability)
+
+See [ECS_CLEANUP.md](Docs/ECS_CLEANUP.md) for full refactor details.
+
+---
+
+## Naming Conventions
+
+- **Files**: `kebab-case.js`
+- **Classes**: `PascalCase`
+- **Functions/variables**: `camelCase`
+- **Constants**: `SCREAMING_SNAKE_CASE`
+- **Private members**: `_prefixedUnderscore`
+
+---
+
 ## Token Usage Commitment
 
-**Before implementing any new feature or milestone**, I will:
-1. Provide a token estimate (base + buffer with reasoning)
-2. Log the estimate in [TOKEN_ESTIMATES.md](Docs/TOKEN_ESTIMATES.md)
+**Before implementing any new feature or milestone**:
+1. Provide token estimate (base + buffer with reasoning)
+2. Log estimate in [TOKEN_ESTIMATES.md](Docs/TOKEN_ESTIMATES.md)
 3. Track actual usage after completion
 4. Highlight deviations >20% for accuracy assessment
 
 ---
 
-## Development Sessions
+## Development Milestones Summary
 
-### Session 1: Pre-Milestone 0 Setup
-**Date**: 2025-10-03
-**Milestone**: Pre-M0 Infrastructure
-**Budgeted Tokens**: 1000
+All milestones completed. See [DEVELOPMENT_PLAN.md](Docs/DEVELOPMENT_PLAN.md) for specifications.
 
-#### Objectives
-- [x] Initialize git repository and link to remote
-- [x] Create component-based architecture scaffold
-- [x] Set up package.json with dat.gui dependency
-- [x] Configure ESLint (Airbnb base)
-- [x] Create base component class and event bus
-- [x] Write README.md and CLAUDE.md
-- [x] Create MIT LICENSE
-- [x] Create .gitignore
-- [x] Scaffold index.html and component stubs
+| Milestone | Status | Token Budget | Actual | Delta |
+|-----------|--------|--------------|--------|-------|
+| Pre-M0 | ✅ Complete | 1,000 | 26,832 | +2583% |
+| M0: Pure Mud Sandbox | ✅ Complete | 2,400 | 47,752 | +1890% |
+| M1: Navigation & Safety | ✅ Complete | 1,560 | 22,900 | +1368% |
+| M2: Terrain Variants | ✅ Complete | 2,760 | 111,912 | +3956% |
+| M3: Visual & UX Polish | ✅ Complete | 1,560 | 62,543 | +3909% |
+| M4: Stabilization | ✅ Complete | 1,560 | 99,509 | +6279% |
 
-#### Architectural Decisions
-1. **Component-based architecture**: All game entities extend `Component` base class with lifecycle methods (`init`, `update`, `render`, `destroy`)
-2. **Event-driven communication**: Lightweight pub/sub via `event-bus.js` for decoupled components
-3. **Modular structure**: Separate directories for components, systems, terrain, rendering, utilities
-4. **ES6 modules**: Native browser module support, no bundler initially
-5. **Naming conventions**:
-   - Files: `kebab-case.js`
-   - Classes: `PascalCase`
-   - Functions/variables: `camelCase`
-   - Constants: `SCREAMING_SNAKE_CASE`
-   - Private members: `_prefixedUnderscore`
-6. **NO FALLBACKS**: Never add fallback code unless explicitly specified. Fallbacks hide bugs during development and make debugging harder. Let errors surface immediately.
-
-#### Files Created
-- `package.json` - Dependencies (dat.gui) and scripts
-- `.eslintrc.json` - Airbnb style guide with browser env
-- `src/core/component.base.js` - Abstract component class
-- `src/utils/event-bus.js` - Pub/sub event system
-- `src/utils/math.js` - lerp, clamp, distance helpers
-- `README.md` - Project overview and setup instructions
-- `CLAUDE.md` - This file
-- `LICENSE` - MIT license
-- `.gitignore` - Node/web project ignores
-
-#### Token Usage
-- **Budgeted**: 1000 tokens
-- **Actual**: _[To be filled after session completion]_
-- **Delta**: _[To be calculated]_
-
-#### Notes
-- Git repository initialized with remote `git@github.com:Floriaen/digger-2.git`
-- User configured as "Floriaen"
-- Component stubs pending (next task)
+**Key Learnings**:
+- Architectural/rendering work: 3-4x revised estimates
+- Polish work: 1-2x revised estimates
+- Stabilization/docs: 1x revised estimates (most predictable)
+- Major bugs expensive (chunk visibility: 10k, fake-3D rendering: 40k tokens)
 
 ---
 
@@ -87,22 +106,10 @@ When proposing new features not in the original spec, use this format:
 
 ---
 
-## Retrospective Notes
+## Related Documentation
 
-After each milestone, record:
-- What went well
-- What could be improved
-- Unexpected challenges
-- Token accuracy (vs. estimate)
-
----
-
-## Next Steps
-
-1. Complete Pre-M0 setup (component stubs, index.html)
-2. Begin Milestone 0: Pure Mud Sandbox
-3. Implement core game loop and rendering pipeline
-4. Integrate sprite.png atlas
-5. Build auto-dig mechanics and camera follow
-
-**Estimated Start of M0**: After Pre-M0 completion and npm install
+- [Development Plan](Docs/archive/DEVELOPMENT_PLAN.md) - Milestone specifications (archived)
+- [Token Estimates](Docs/TOKEN_ESTIMATES.md) - Detailed usage tracking
+- [ECS Cleanup](Docs/ECS_CLEANUP.md) - Architecture refactor documentation
+- [Dev Tools](Docs/DEV_TOOLS.md) - Debugging and testing utilities
+- [Game Spec](Docs/GAME_SPEC.md) - Original game design document
