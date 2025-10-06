@@ -6,8 +6,6 @@
 import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { FallableComponent } from '../components/blocks/fallable.component.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
-import { LethalComponent } from '../components/blocks/lethal.component.js';
-import { DiggableComponent } from '../components/blocks/diggable.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { eventBus } from '../utils/event-bus.js';
 
@@ -47,17 +45,21 @@ export class GravitySystem extends LifecycleComponent {
     if (!terrain.cache || !terrain.cache.chunks) {
       return;
     }
-    
-    const chunks = terrain.cache.chunks;
+
+    const { chunks } = terrain.cache;
     const newFallingBlocks = new Set();
 
     // Iterate through all chunks (chunks is a Map, not an object)
     chunks.forEach((chunk) => {
       // Iterate through 2D block array
-      for (let y = 0; y < chunk.blocks.length; y++) {
-        for (let x = 0; x < chunk.blocks[y].length; x++) {
+      for (let y = 0; y < chunk.blocks.length; y += 1) {
+        for (let x = 0; x < chunk.blocks[y].length; x += 1) {
           const block = chunk.blocks[y][x];
-          if (!block || !block.has || !block.has(FallableComponent)) continue;
+          if (!block || !block.has || !block.has(FallableComponent)) {
+            // Skip blocks that don't have FallableComponent
+            // eslint-disable-next-line no-continue
+            continue;
+          }
 
           const fallable = block.get(FallableComponent);
           const worldX = chunk.chunkX * 32 + x; // 32 is CHUNK_SIZE
@@ -99,12 +101,9 @@ export class GravitySystem extends LifecycleComponent {
 
   /**
    * Update player falling (if player has FallableComponent)
-   * @param {TerrainComponent} terrain
-   * @param {PlayerComponent} player
-   * @param {number} deltaTime
    * @private
    */
-  _updatePlayerFalling(terrain, player, deltaTime) {
+  _updatePlayerFalling() {
     // This will be used once PlayerComponent is refactored to use FallableComponent
     // For now, player still has custom gravity in PlayerComponent
     // After refactor, this method will handle player falling via FallableComponent
@@ -137,10 +136,10 @@ export class GravitySystem extends LifecycleComponent {
     const playerBottom = playerCenterY + 8;
 
     return (
-      blockLeft < playerRight &&
-      blockRight > playerLeft &&
-      blockTop < playerBottom &&
-      blockBottom > playerTop
+      blockLeft < playerRight
+      && blockRight > playerLeft
+      && blockTop < playerBottom
+      && blockBottom > playerTop
     );
   }
 

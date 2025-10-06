@@ -4,7 +4,9 @@
  */
 
 import { LifecycleComponent } from '../core/lifecycle-component.js';
-import { TILE_WIDTH, TILE_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
+import {
+  TILE_WIDTH, TILE_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
+} from '../utils/config.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
 
 /**

@@ -11,12 +11,24 @@ export class PerformanceMonitor {
   constructor() {
     this.enabled = false;
     this.metrics = {
-      frameTime: { current: 0, avg: 0, max: 0, samples: [] },
-      updateTime: { current: 0, avg: 0, max: 0, samples: [] },
-      renderTime: { current: 0, avg: 0, max: 0, samples: [] },
-      chunkGeneration: { current: 0, avg: 0, max: 0, samples: [] },
-      digOperation: { current: 0, avg: 0, max: 0, samples: [] },
-      memoryUsage: { current: 0, avg: 0, max: 0, samples: [] },
+      frameTime: {
+        current: 0, avg: 0, max: 0, samples: [],
+      },
+      updateTime: {
+        current: 0, avg: 0, max: 0, samples: [],
+      },
+      renderTime: {
+        current: 0, avg: 0, max: 0, samples: [],
+      },
+      chunkGeneration: {
+        current: 0, avg: 0, max: 0, samples: [],
+      },
+      digOperation: {
+        current: 0, avg: 0, max: 0, samples: [],
+      },
+      memoryUsage: {
+        current: 0, avg: 0, max: 0, samples: [],
+      },
     };
 
     this.sampleSize = 60; // Track last 60 samples for rolling average
@@ -88,7 +100,7 @@ export class PerformanceMonitor {
   _handlePerformanceEntry(entry) {
     if (entry.entryType !== 'measure') return;
 
-    const duration = entry.duration;
+    const { duration } = entry;
 
     switch (entry.name) {
       case 'frame':
@@ -195,7 +207,9 @@ export class PerformanceMonitor {
    */
   reset() {
     Object.keys(this.metrics).forEach((key) => {
-      this.metrics[key] = { current: 0, avg: 0, max: 0, samples: [] };
+      this.metrics[key] = {
+        current: 0, avg: 0, max: 0, samples: [],
+      };
     });
     this.warnings = [];
   }

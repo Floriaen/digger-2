@@ -81,15 +81,13 @@ export class CameraComponent extends LifecycleComponent {
 
     if (!this.game.zoomAfterRendering) {
       const zoomLevels = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
-      finalZoom = zoomLevels.reduce((prev, curr) =>
-        Math.abs(curr - this.zoom) < Math.abs(prev - this.zoom) ? curr : prev
-      );
+      finalZoom = zoomLevels.reduce((prev, curr) => (Math.abs(curr - this.zoom) < Math.abs(prev - this.zoom) ? curr : prev));
     }
 
     return {
       x: Math.floor(this.x),
       y: Math.floor(this.y),
-      zoom: finalZoom
+      zoom: finalZoom,
     };
   }
 

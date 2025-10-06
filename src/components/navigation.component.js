@@ -155,8 +155,14 @@ export class NavigationComponent extends LifecycleComponent {
 
     ctx.drawImage(
       this.spriteSheet,
-      sprite.x, sprite.y, sprite.width, sprite.height,
-      x, y, sprite.width, sprite.height,
+      sprite.x,
+      sprite.y,
+      sprite.width,
+      sprite.height,
+      x,
+      y,
+      sprite.width,
+      sprite.height,
     );
   }
 }

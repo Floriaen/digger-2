@@ -91,7 +91,7 @@ export class BackgroundComponent extends LifecycleComponent {
       0.7, 0.45,
       0.8, 1.1,
       0.88, 0.4,
-      1, 0.8
+      1, 0.8,
     ];
 
     // Draw mountain silhouette spanning screen width

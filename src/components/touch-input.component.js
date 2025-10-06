@@ -37,7 +37,7 @@ export class TouchInputComponent extends LifecycleComponent {
     this._handleTouchEnd = this._handleTouchEnd.bind(this);
 
     // Register touch events on canvas
-    const canvas = this.game.canvas;
+    const { canvas } = this.game;
     canvas.addEventListener('touchstart', this._handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', this._handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', this._handleTouchEnd, { passive: false });
@@ -118,7 +118,7 @@ export class TouchInputComponent extends LifecycleComponent {
   }
 
   destroy() {
-    const canvas = this.game.canvas;
+    const { canvas } = this.game;
     canvas.removeEventListener('touchstart', this._handleTouchStart);
     canvas.removeEventListener('touchmove', this._handleTouchMove);
     canvas.removeEventListener('touchend', this._handleTouchEnd);
@@ -134,7 +134,7 @@ export class TouchInputComponent extends LifecycleComponent {
 
     if (event.touches.length !== 1) return; // Only handle single touch
 
-    const canvas = this.game.canvas;
+    const { canvas } = this.game;
     const rect = canvas.getBoundingClientRect();
     const touch = event.touches[0];
 
@@ -158,7 +158,7 @@ export class TouchInputComponent extends LifecycleComponent {
 
     if (!this.isSwiping || event.touches.length !== 1) return;
 
-    const canvas = this.game.canvas;
+    const { canvas } = this.game;
     const rect = canvas.getBoundingClientRect();
     const touch = event.touches[0];
 

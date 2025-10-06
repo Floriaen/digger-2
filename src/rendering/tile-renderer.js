@@ -42,10 +42,14 @@ export function drawTile(ctx, spriteSheet, block, screenX, screenY, alpha = 1.0)
   // Draw the sprite
   ctx.drawImage(
     spriteSheet,
-    render.spriteX, render.spriteY,  // Source position in sprite sheet
-    TILE_WIDTH, SPRITE_HEIGHT,        // Source dimensions (16×25)
-    screenX, spriteY,                 // Destination position (offset by cap height)
-    TILE_WIDTH, SPRITE_HEIGHT,        // Destination dimensions
+    render.spriteX,
+    render.spriteY, // Source position in sprite sheet
+    TILE_WIDTH,
+    SPRITE_HEIGHT, // Source dimensions (16×25)
+    screenX,
+    spriteY, // Destination position (offset by cap height)
+    TILE_WIDTH,
+    SPRITE_HEIGHT, // Destination dimensions
   );
 
   ctx.restore();
@@ -68,7 +72,7 @@ export function drawTileDarkening(ctx, block, screenX, screenY, alpha = 1.0) {
 
   // Fixed darkening for specific block types (most use DarknessComponent now)
   const darkenFactors = {
-    32: 0.4,  // RED_FRAME (torus): 40% dark
+    32: 0.4, // RED_FRAME (torus): 40% dark
   };
 
   const darkenFactor = darkenFactors[render.spriteX] || 0;

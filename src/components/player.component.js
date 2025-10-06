@@ -445,5 +445,4 @@ export class PlayerComponent extends LifecycleComponent {
       }
     }
   }
-
 }

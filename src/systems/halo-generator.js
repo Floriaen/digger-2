@@ -21,7 +21,6 @@ export function generateHalo(centerX, centerY, minRadius = 1, maxRadius = 3, see
   const noiseScale = 0.3; // Controls organic pattern frequency
   const threshold = 0.4; // Noise threshold for block placement
 
-
   // Scan area around chest
   for (let dy = -maxRadius; dy <= maxRadius; dy++) {
     for (let dx = -maxRadius; dx <= maxRadius; dx++) {
@@ -33,7 +32,6 @@ export function generateHalo(centerX, centerY, minRadius = 1, maxRadius = 3, see
       // Skip if outside max radius
       if (distance > maxRadius) continue;
 
-
       // Get noise value for organic shape
       const noiseValue = noise.noise2D(
         (centerX + dx) * noiseScale,
@@ -43,7 +41,6 @@ export function generateHalo(centerX, centerY, minRadius = 1, maxRadius = 3, see
       // Determine if block should exist based on distance and noise
       const distanceFactor = 1 - (distance / maxRadius);
       const placementProbability = distanceFactor * 0.7 + noiseValue * 0.3;
-
 
       if (placementProbability > threshold && distance >= minRadius) {
         // Calculate darkness alpha based on distance from center
