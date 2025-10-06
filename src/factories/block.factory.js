@@ -131,6 +131,21 @@ export class BlockFactory {
   }
 
   /**
+   * Create a protective mud block (normal mud with darkness overlay)
+   * @param {number} darknessAlpha - Darkness overlay alpha (0-1)
+   * @returns {Block}
+   */
+  static createProtectiveMud(darknessAlpha = 0.5) {
+    return new Block([
+      new RenderComponent({ spriteX: 16, spriteY: 0 }),
+      new PhysicsComponent({ collidable: true }),
+      new HealthComponent({ hp: 5 }),
+      new DiggableComponent(),
+      new DarknessComponent({ alpha: darknessAlpha }),
+    ]);
+  }
+
+  /**
    * Create a block from legacy numeric type ID
    * @param {number} typeId - Legacy BLOCK_TYPES enum value
    * @param {Object} options - Additional options (hp, darkness, etc.)

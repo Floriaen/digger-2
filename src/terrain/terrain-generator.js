@@ -13,6 +13,7 @@ import { HealthComponent } from '../components/blocks/health.component.js';
 import { DiggableComponent } from '../components/blocks/diggable.component.js';
 import { LootableComponent } from '../components/blocks/lootable.component.js';
 import { LethalComponent } from '../components/blocks/lethal.component.js';
+import { DarknessComponent } from '../components/blocks/darkness.component.js';
 import { generateHalo } from '../systems/halo-generator.js';
 
 // Helper constants for block type identification
@@ -118,6 +119,9 @@ export class TerrainGenerator {
 
     // Generate chests with protective halos
     this._generateChests(chunk, chunkX, chunkY);
+
+    // Generate halos around rocks
+    this._generateRockHalos(chunk, chunkX, chunkY);
 
     // Cache the chunk
     this.chunkCache.set(key, chunk);
@@ -565,7 +569,7 @@ export class TerrainGenerator {
       // Generate protective halo
       const haloRadius = Math.floor(this._random(worldX, worldY) * 2) + 2; // 2-3
       const seed = this._random(worldX + 100, worldY + 100) * 10000;
-      const halo = generateHalo(worldX, worldY, 0, haloRadius, seed);
+      const halo = generateHalo(worldX, worldY, 1, haloRadius, seed);
 
       // Place halo blocks in chunk (if within bounds)
       halo.forEach((haloBlock) => {
@@ -588,7 +592,7 @@ export class TerrainGenerator {
             return;
           }
 
-          // Place protective block (already an ECS Block)
+          // Place protective block (already an ECS Block with progressive darkness)
           chunk.setBlock(haloLocalX, haloLocalY, haloBlock.blockData);
         }
       });
@@ -647,6 +651,133 @@ export class TerrainGenerator {
     }
 
     return null;
+  }
+
+  /**
+   * Sample darkness values from neighboring blocks
+   * @param {TerrainChunk} chunk - Chunk to check
+   * @param {number} localX - Local X in chunk
+   * @param {number} localY - Local Y in chunk
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkY - Chunk Y coordinate
+   * @returns {number} Average darkness of valid neighbors (0-0.4 typically)
+   * @private
+   */
+  _sampleNeighborDarkness(chunk, localX, localY, chunkX, chunkY) {
+    const neighbors = [
+      { dx: -1, dy: 0 },  // left
+      { dx: 1, dy: 0 },   // right
+      { dx: 0, dy: -1 },  // up
+      { dx: 0, dy: 1 },   // down
+      { dx: -1, dy: -1 }, // top-left
+      { dx: 1, dy: -1 },  // top-right
+      { dx: -1, dy: 1 },  // bottom-left
+      { dx: 1, dy: 1 },   // bottom-right
+    ];
+
+    let totalDarkness = 0;
+    let validSamples = 0;
+
+    neighbors.forEach(({ dx, dy }) => {
+      const checkX = localX + dx;
+      const checkY = localY + dy;
+
+      // Check if within chunk bounds
+      if (checkX >= 0 && checkX < CHUNK_SIZE && checkY >= 0 && checkY < CHUNK_SIZE) {
+        const neighborBlock = chunk.getBlock(checkX, checkY);
+        const render = neighborBlock.get(RenderComponent);
+        const darkness = neighborBlock.get(DarknessComponent);
+
+        // Only sample normal mud blocks (spriteX === 16)
+        // Ignore protective blocks (spriteX === 80) and other special blocks
+        if (render && render.spriteX === 16) {
+          const alpha = darkness ? darkness.alpha : 0;
+          totalDarkness += alpha;
+          validSamples += 1;
+        }
+      }
+    });
+
+    // Return average, or default to 0.2 if no valid samples
+    return validSamples > 0 ? totalDarkness / validSamples : 0.2;
+  }
+
+  /**
+   * Generate organic halos around rocks in a chunk
+   * Uses protective mud blocks with progressive darkness overlay
+   * @param {TerrainChunk} chunk - Chunk to modify
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkY - Chunk Y coordinate
+   * @private
+   */
+  _generateRockHalos(chunk, chunkX, chunkY) {
+    // Find all rocks in chunk
+    for (let y = 0; y < CHUNK_SIZE; y += 1) {
+      for (let x = 0; x < CHUNK_SIZE; x += 1) {
+        const block = chunk.getBlock(x, y);
+        const hasFallable = block.has(FallableComponent);
+        const render = block.get(RenderComponent);
+
+        // Check if it's a rock (has FallableComponent and spriteX === 48)
+        if (hasFallable && render && render.spriteX === 48) {
+          const worldX = chunkX * CHUNK_SIZE + x;
+          const worldY = chunkY * CHUNK_SIZE + y;
+
+          // Generate halo positions with radius 2-3 blocks
+          const haloRadius = Math.floor(this._random(worldX + 500, worldY + 500) * 2) + 2; // 2-3
+          const seed = this._random(worldX + 200, worldY + 200) * 10000;
+          const haloPositions = generateHalo(worldX, worldY, 1, haloRadius, seed);
+
+          // Place halo blocks in chunk (if within bounds)
+          haloPositions.forEach((haloPos) => {
+            const haloLocalX = haloPos.x - chunkX * CHUNK_SIZE;
+            const haloLocalY = haloPos.y - chunkY * CHUNK_SIZE;
+
+            // Only place if within chunk bounds
+            if (haloLocalX >= 0 && haloLocalX < CHUNK_SIZE && haloLocalY >= 0 && haloLocalY < CHUNK_SIZE) {
+              // Don't overwrite the rock itself or special blocks
+              const existingBlock = chunk.getBlock(haloLocalX, haloLocalY);
+
+              // Skip if it's a chest, rock, torus, or lava (check components)
+              const hasLoot = existingBlock.get(LootableComponent);
+              const hasFallableExisting = existingBlock.has(FallableComponent);
+              const renderExisting = existingBlock.get(RenderComponent);
+              const isRedFrame = renderExisting && renderExisting.spriteX === 32;
+              const isLava = existingBlock.has(LethalComponent);
+
+              if (hasLoot || hasFallableExisting || isRedFrame || isLava) {
+                return;
+              }
+
+              // Calculate distance from rock for progressive darkening
+              const dx = haloPos.x - worldX;
+              const dy = haloPos.y - worldY;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              // Sample neighboring blocks to get local terrain brightness
+              const neighborDarkness = this._sampleNeighborDarkness(
+                chunk,
+                haloLocalX,
+                haloLocalY,
+                chunkX,
+                chunkY,
+              );
+
+              // Calculate darkness boost based on distance from rock
+              // Closer = stronger boost, farther = weaker boost
+              const darknessBoost = 0.2 - (distance / haloRadius) * 0.1; // 0.2 -> 0.1
+
+              // Apply darkness as neighbor average + boost
+              const darknessAlpha = Math.min(0.8, neighborDarkness + darknessBoost);
+
+              // Create protective mud block with progressive darkness
+              const protectiveMud = BlockFactory.createProtectiveMud(darknessAlpha);
+              chunk.setBlock(haloLocalX, haloLocalY, protectiveMud);
+            }
+          });
+        }
+      }
+    }
   }
 
   /**
