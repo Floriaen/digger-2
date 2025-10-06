@@ -13,6 +13,7 @@ import { DiggableComponent } from './blocks/diggable.component.js';
 import { HealthComponent } from './blocks/health.component.js';
 import { LethalComponent } from './blocks/lethal.component.js';
 import { FallableComponent } from './blocks/fallable.component.js';
+import { LootableComponent } from './blocks/lootable.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -353,8 +354,17 @@ export class PlayerComponent extends LifecycleComponent {
       this.currentDigTarget.hp = result.hp;
 
       if (result.destroyed) {
-        // Block destroyed - replace with empty
-        terrain.setBlock(targetX, targetY, BlockFactory.createEmpty());
+        // Check if block has lootable component to spawn entity
+        const lootable = block.get(LootableComponent);
+        if (lootable && lootable.hasSpawnEntity()) {
+          // Spawn replacement entity instead of empty
+          const spawnConfig = lootable.getSpawnEntity();
+          const newBlock = BlockFactory[spawnConfig.factoryMethod](...(spawnConfig.args || []));
+          terrain.setBlock(targetX, targetY, newBlock);
+        } else {
+          // Regular block - replace with empty
+          terrain.setBlock(targetX, targetY, BlockFactory.createEmpty());
+        }
         this.currentDigTarget = null;
 
         performance.mark('dig-end');

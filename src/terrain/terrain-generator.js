@@ -562,8 +562,9 @@ export class TerrainGenerator {
       const worldX = chunkX * CHUNK_SIZE + x;
       const worldY = chunkY * CHUNK_SIZE + y;
 
-      // Place chest
-      const chestBlock = BlockFactory.createChest();
+      // Place covered chest (50% of the time, otherwise normal chest)
+      const useCover = this._random(worldX, worldY) > 0.5;
+      const chestBlock = useCover ? BlockFactory.createCoveredChest() : BlockFactory.createChest();
       chunk.setBlock(x, y, chestBlock);
 
       // Generate protective halo

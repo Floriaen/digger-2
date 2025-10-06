@@ -1,5 +1,6 @@
 import { Block } from '../entities/block.entity.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
+import { SpriteStackComponent } from '../components/blocks/sprite-stack.component.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
 import { DiggableComponent } from '../components/blocks/diggable.component.js';
@@ -112,6 +113,32 @@ export class BlockFactory {
       new HealthComponent({ hp: 15 }),
       new DiggableComponent(),
       new LootableComponent({ loot }),
+    ]);
+  }
+
+  /**
+   * Create a covered chest (chest with cover that must be dug first)
+   * When destroyed, spawns a regular chest at the same position
+   * @param {Array} loot - Array of loot items for the chest underneath
+   * @returns {Block}
+   */
+  static createCoveredChest(loot = [{ type: 'coin', value: 10 }]) {
+    return new Block([
+      new SpriteStackComponent({
+        layers: [
+          { spriteX: 64, spriteY: 0 }, // Chest (bottom)
+          { spriteX: 16, spriteY: 24 }, // Cover (top) - sprite position 9
+        ],
+      }),
+      new PhysicsComponent({ collidable: true }),
+      new HealthComponent({ hp: 10 }),
+      new DiggableComponent(),
+      new LootableComponent({
+        spawnEntity: {
+          factoryMethod: 'createChest',
+          args: [loot],
+        },
+      }),
     ]);
   }
 
