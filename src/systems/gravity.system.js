@@ -43,11 +43,16 @@ export class GravitySystem extends LifecycleComponent {
    * @private
    */
   _updateFallingBlocks(terrain, player, deltaTime) {
-    const chunks = terrain.chunks;
+    // Access chunks from terrain's cache (which is a Map)
+    if (!terrain.cache || !terrain.cache.chunks) {
+      return;
+    }
+    
+    const chunks = terrain.cache.chunks;
     const newFallingBlocks = new Set();
 
-    // Iterate through all chunks
-    Object.values(chunks).forEach((chunk) => {
+    // Iterate through all chunks (chunks is a Map, not an object)
+    chunks.forEach((chunk) => {
       chunk.blocks.forEach((block, index) => {
         if (!block.has(FallableComponent)) return;
 
