@@ -364,19 +364,22 @@ export class PlayerComponent extends LifecycleComponent {
           // Ignore if marks don't exist
         }
 
-        // Move player into the empty space
-        this.gridX = targetX;
-        this.gridY = targetY;
-        this.x = this.gridX * 16 + 8;
-        this.y = this.gridY * 16 + 8;
-
-        // If we dug block at our position (offset 0,0), reset to idle so gravity takes over
-        if (dx === 0 && dy === 0) {
+        // Don't teleport the player - let gravity handle movement
+        if (dy > 0) {
+          // Digging down - transition to falling state, let gravity move us
+          this.state = PLAYER_STATE.FALLING;
+          this.fallable.stopFalling(); // Reset for new fall
+        } else if (dx !== 0) {
+          // Lateral digging - move horizontally only
+          this.gridX = targetX;
+          this.x = this.gridX * 16 + 8;
+          // Keep same Y position, check if we should fall on next update
+          this.state = PLAYER_STATE.IDLE;
+        } else if (dx === 0 && dy === 0) {
+          // Dug block at our position - just go idle, gravity will take over
           this.state = PLAYER_STATE.IDLE;
           this.digDirection = { dx: 0, dy: 1 }; // Reset to down
         }
-
-        // After moving, gravity system will handle falling if needed (checked in next update)
       }
     }
   }
