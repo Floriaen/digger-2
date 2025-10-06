@@ -5,7 +5,7 @@
 
 import { LifecycleComponent } from '../core/lifecycle-component.js';
 import {
-  DIG_INTERVAL_MS, PLAYER_RADIUS, GRAVITY, FALL_SPEED_MAX,
+  DIG_INTERVAL_MS, PLAYER_RADIUS,
 } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
@@ -14,6 +14,7 @@ import { HealthComponent } from './blocks/health.component.js';
 import { RenderComponent } from './blocks/render.component.js';
 import { LootableComponent } from './blocks/lootable.component.js';
 import { LethalComponent } from './blocks/lethal.component.js';
+import { FallableComponent } from './blocks/fallable.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -40,8 +41,10 @@ export class PlayerComponent extends LifecycleComponent {
     this.x = this.gridX * 16 + 8; // Center horizontally (16/2)
     this.y = this.gridY * 16 + 8; // Center vertically on 16x16 collision box
 
+    // Gravity/falling via FallableComponent (ECS pattern)
+    this.fallable = new FallableComponent();
+
     // Movement
-    this.velocityY = 0;
     this.state = PLAYER_STATE.IDLE;
     this.digTimer = 0;
     this.currentDigTarget = null; // { x, y, hp, maxHp }
@@ -268,7 +271,7 @@ export class PlayerComponent extends LifecycleComponent {
 
         // Transition to falling state immediately
         this.state = PLAYER_STATE.FALLING;
-        this.velocityY = 0; // Start from zero velocity
+        this.fallable.stopFalling(); // Reset fallable component for new fall
         this.currentDigTarget = null;
       } else {
         // Lateral: Stop at empty space
@@ -283,7 +286,7 @@ export class PlayerComponent extends LifecycleComponent {
     if (!targetBlock.has(DiggableComponent)) {
       // Hit rock or boundary - stop and reset to down
       this.state = PLAYER_STATE.IDLE;
-      this.velocityY = 0;
+      this.fallable.stopFalling();
       this.currentDigTarget = null;
       this.digDirection = { dx: 0, dy: 1 }; // Reset to down
       return;
@@ -291,7 +294,7 @@ export class PlayerComponent extends LifecycleComponent {
 
     // Target is diggable - dig it
     this.state = dy === 0 ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;
-    this.velocityY = 0;
+    this.fallable.stopFalling();
     this._digInDirection(terrain, dx, dy);
   }
 
@@ -382,19 +385,23 @@ export class PlayerComponent extends LifecycleComponent {
 
   /**
    * Handle falling physics - called every frame when in FALLING state
+   * Uses FallableComponent for unified gravity system
    * @param {TerrainComponent} terrain
    * @param {number} deltaTime
    * @private
    */
   _updateFalling(terrain, deltaTime) {
-    // Apply gravity
-    this.velocityY += GRAVITY;
-    if (this.velocityY > FALL_SPEED_MAX) {
-      this.velocityY = FALL_SPEED_MAX;
+    // Start falling if not already (initialize FallableComponent)
+    if (!this.fallable.isFalling) {
+      this.fallable.startFalling(this.gridX, this.gridY);
+      this.fallable.pixelY = this.y; // Use current pixel position
     }
 
-    // Update position
-    this.y += this.velocityY;
+    // Apply gravity via FallableComponent
+    this.fallable.updateFalling(deltaTime);
+
+    // Update player position from fallable
+    this.y = this.fallable.pixelY;
     const newGridY = Math.floor(this.y / 16);
 
     // Check if we've entered a new grid cell
@@ -408,7 +415,7 @@ export class PlayerComponent extends LifecycleComponent {
       if (blockAtNewPos.has(LethalComponent)) {
         eventBus.emit('player:death', { cause: 'lava' });
         this.state = PLAYER_STATE.IDLE;
-        this.velocityY = 0;
+        this.fallable.stopFalling();
         return;
       }
 
@@ -417,7 +424,7 @@ export class PlayerComponent extends LifecycleComponent {
       if (physicsAtNewPos && physicsAtNewPos.isCollidable()) {
         // Stop at the previous grid position (don't enter the solid block)
         this.y = this.gridY * 16 + 8; // Snap to center of current grid cell
-        this.velocityY = 0;
+        this.fallable.stopFalling();
 
         if (blockAtNewPos.has(DiggableComponent)) {
           // Start digging the block below us
@@ -433,6 +440,8 @@ export class PlayerComponent extends LifecycleComponent {
         // Block is traversable, move into it and keep falling
         this.gridY = newGridY;
         this.gridX = newGridX;
+        this.fallable.gridY = newGridY;
+        this.fallable.gridX = newGridX;
       }
     }
   }

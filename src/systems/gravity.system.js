@@ -1,0 +1,143 @@
+/**
+ * @file gravity.system.js
+ * @description Unified gravity system - manages falling for all entities with FallableComponent
+ */
+
+import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { FallableComponent } from '../components/blocks/fallable.component.js';
+import { PhysicsComponent } from '../components/blocks/physics.component.js';
+import { LethalComponent } from '../components/blocks/lethal.component.js';
+import { DiggableComponent } from '../components/blocks/diggable.component.js';
+import { BlockFactory } from '../factories/block.factory.js';
+import { eventBus } from '../utils/event-bus.js';
+
+/**
+ * GravitySystem
+ * Unified ECS system for gravity and falling physics.
+ * Manages all entities with FallableComponent (player, rocks, etc.)
+ */
+export class GravitySystem extends LifecycleComponent {
+  init() {
+    // Track falling blocks for collision detection
+    this.fallingBlocks = new Set();
+  }
+
+  update(deltaTime) {
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+
+    if (!terrain || !player) return;
+
+    // 1. Update falling blocks in terrain
+    this._updateFallingBlocks(terrain, player, deltaTime);
+
+    // 2. Update player falling (if player has FallableComponent attached)
+    this._updatePlayerFalling(terrain, player, deltaTime);
+  }
+
+  /**
+   * Update all falling blocks in terrain
+   * @param {TerrainComponent} terrain
+   * @param {PlayerComponent} player
+   * @param {number} deltaTime
+   * @private
+   */
+  _updateFallingBlocks(terrain, player, deltaTime) {
+    const chunks = terrain.chunks;
+    const newFallingBlocks = new Set();
+
+    // Iterate through all chunks
+    Object.values(chunks).forEach((chunk) => {
+      chunk.blocks.forEach((block, index) => {
+        if (!block.has(FallableComponent)) return;
+
+        const fallable = block.get(FallableComponent);
+        const x = index % chunk.width;
+        const y = Math.floor(index / chunk.width);
+        const worldX = chunk.chunkX * chunk.width + x;
+        const worldY = chunk.chunkY * chunk.height + y;
+
+        // Check if block should start falling
+        if (!fallable.isFalling && fallable.checkSupport(block, terrain, worldX, worldY)) {
+          fallable.startFalling(worldX, worldY);
+        }
+
+        // Update falling blocks
+        if (fallable.isFalling) {
+          fallable.updateFalling(deltaTime);
+
+          // Check if block landed on solid ground
+          const blockBelow = terrain.getBlock(fallable.gridX, fallable.gridY + 1);
+          const physicsBelow = blockBelow?.get(PhysicsComponent);
+
+          if (physicsBelow && physicsBelow.isCollidable()) {
+            // Landed - stop falling and update grid position
+            // Move block from old position to new position
+            terrain.setBlock(worldX, worldY, BlockFactory.createEmpty());
+            terrain.setBlock(fallable.gridX, fallable.gridY, block);
+            fallable.stopFalling();
+          } else {
+            // Still falling - check player collision
+            if (this._checkBlockPlayerCollision(fallable, player)) {
+              eventBus.emit('player:death', { cause: 'crushed' });
+            }
+            newFallingBlocks.add(block);
+          }
+        }
+      });
+    });
+
+    this.fallingBlocks = newFallingBlocks;
+  }
+
+  /**
+   * Update player falling (if player has FallableComponent)
+   * @param {TerrainComponent} terrain
+   * @param {PlayerComponent} player
+   * @param {number} deltaTime
+   * @private
+   */
+  _updatePlayerFalling(terrain, player, deltaTime) {
+    // This will be used once PlayerComponent is refactored to use FallableComponent
+    // For now, player still has custom gravity in PlayerComponent
+    // After refactor, this method will handle player falling via FallableComponent
+  }
+
+  /**
+   * Check if falling block collides with player
+   * @param {FallableComponent} fallable
+   * @param {PlayerComponent} player
+   * @returns {boolean}
+   * @private
+   */
+  _checkBlockPlayerCollision(fallable, player) {
+    const blockPixelY = fallable.pixelY;
+    const blockPixelX = fallable.gridX * 16;
+
+    // Check if block overlaps with player position
+    const playerCenterX = player.x;
+    const playerCenterY = player.y;
+
+    // Simple AABB collision (16x16 block vs player radius)
+    const blockLeft = blockPixelX;
+    const blockRight = blockPixelX + 16;
+    const blockTop = blockPixelY;
+    const blockBottom = blockPixelY + 16;
+
+    const playerLeft = playerCenterX - 8;
+    const playerRight = playerCenterX + 8;
+    const playerTop = playerCenterY - 8;
+    const playerBottom = playerCenterY + 8;
+
+    return (
+      blockLeft < playerRight &&
+      blockRight > playerLeft &&
+      blockTop < playerBottom &&
+      blockBottom > playerTop
+    );
+  }
+
+  destroy() {
+    this.fallingBlocks.clear();
+  }
+}

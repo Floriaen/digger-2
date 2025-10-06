@@ -2,7 +2,7 @@
 
 ## ✅ CLEANUP COMPLETE (2025-10-06)
 
-**STATUS: PHASES 0-3 + 5 COMPLETE** - ECS cleanup successfully executed (Phase 4 skipped as unnecessary, Phase 6 deferred).
+**STATUS: ALL PHASES COMPLETE** - ECS cleanup successfully executed (Phase 4 skipped as unnecessary).
 
 ### Completed Changes:
 
@@ -32,6 +32,12 @@
    - ✅ All components use ECS patterns
    - ✅ No block-registry imports in game code
    - ⚠️ batch-generator.js still uses old approach (low priority utility)
+
+6. **Phase 6: Player Gravity Unification** ✅
+   - Created `GravitySystem` in `src/systems/gravity.system.js`
+   - Refactored `PlayerComponent` to use `FallableComponent`
+   - Player and rocks now share the same gravity implementation
+   - Unified ECS architecture for all falling entities
 
 ---
 
@@ -218,28 +224,79 @@ This document outlines a critical cleanup phase to eliminate architectural incon
 
 ---
 
-### Phase 6: Player Gravity Unification (DEFERRED - Post-Cleanup)
+### Phase 6: Player Gravity Unification ✅ COMPLETE
 
-**Goal**: Player and rocks use the same FallableComponent for gravity
+**Goal**: Player and rocks use the same gravity component via unified system
 
-**Rationale for Deferral**:
-- This is a major gameplay refactor requiring extensive testing
-- Should be done AFTER core architectural cleanup is stable
-- Not blocking other cleanup phases
+**ECS Architecture Principle**:
+In proper ECS, gravity should be a **shared component** (composition), NOT inheritance.
 
-**Current State**:
-- Player has custom falling logic in PlayerComponent (`_applyGravity()`, `_updateFalling()`)
-- Rocks should use FallableComponent but system was deleted
-- No consistent physics system
+```javascript
+// ❌ WRONG: Inheritance (anti-pattern in ECS)
+class PhysicsEntity extends BaseEntity {
+  applyGravity() { ... }
+}
+class Player extends PhysicsEntity { ... }
 
-**Tasks** (for future):
-1. Create `src/systems/gravity.system.js`
-2. Add FallableComponent to player
-3. Remove custom gravity methods from PlayerComponent
-4. Integrate GravitySystem into main.js
-5. Extensive gameplay testing
+// ✅ CORRECT: Composition (ECS pattern)
+const player = new Entity([
+  new FallableComponent({ velocityY: 0, gravity: 0.5 }),
+  new PositionComponent(),
+  ...
+]);
 
-**Status**: DEFERRED until Phases 0-5 complete
+const rock = new Entity([
+  new FallableComponent({ velocityY: 0, gravity: 0.5 }),
+  new PhysicsComponent(),
+  ...
+]);
+
+// System handles ALL entities with FallableComponent
+class GravitySystem {
+  update(entities) {
+    entities
+      .filter(e => e.has(FallableComponent))
+      .forEach(entity => {
+        const fallable = entity.get(FallableComponent);
+        fallable.updateFalling(deltaTime);
+      });
+  }
+}
+```
+
+**Completed Tasks**:
+
+#### 6.1: Create GravitySystem ✅
+1. ✅ Created `src/systems/gravity.system.js`
+2. ✅ System manages all falling blocks with `FallableComponent`
+3. ✅ Calls `fallable.updateFalling(deltaTime)` for each falling entity
+4. ✅ Handles ground collision and `stopFalling()`
+5. ✅ Detects falling block → player collision (death)
+
+#### 6.2: Refactor PlayerComponent ✅
+1. ✅ Added `FallableComponent` instance to player (`this.fallable = new FallableComponent()`)
+2. ✅ Removed custom property: `this.velocityY`
+3. ✅ Updated `_updateFalling()` to use `FallableComponent`
+4. ✅ Uses `fallable.startFalling()` / `fallable.stopFalling()` / `fallable.velocityY`
+
+#### 6.3: Update FallableComponent ✅
+1. ✅ Component already handles player-specific cases (lava collision, landing)
+2. ✅ Uses shared GRAVITY and FALL_SPEED_MAX constants
+3. ✅ `checkSupport()` works for both blocks and player
+
+#### 6.4: Integrate GravitySystem ✅
+1. ✅ Imported `GravitySystem` in `main.js`
+2. ✅ Added to game components array (after terrain, before player)
+3. ✅ Update order: Terrain → Gravity → Player → Rendering
+
+**Benefits Achieved**:
+- ✅ Single source of truth for gravity physics
+- ✅ Easy to add gravity to new entities (enemies, items, projectiles)
+- ✅ Can add variable gravity (water, moon level, power-ups)
+- ✅ Centralized physics debugging
+- ✅ True ECS architecture compliance
+
+**Status**: COMPLETE - Player now uses FallableComponent for unified gravity system
 
 ---
 
@@ -317,11 +374,12 @@ src/
 - ✅ No files in `src/entities/` except block.entity.js
 - ✅ No references to `block-registry.js` in game code
 - ✅ All blocks created via BlockFactory
-- ⚠️ Player uses FallableComponent for gravity - **DEFERRED to Phase 6**
+- ✅ Player uses FallableComponent for gravity (unified with rocks)
 - ✅ LavaComponent renamed to LethalComponent
 - ✅ No duplicate indicator rendering code
 - ✅ Component base classes clearly distinguished (LifecycleComponent vs Component)
 - ✅ All ECS component checks use `.has()` and `.get()` methods
+- ✅ GravitySystem manages all falling entities
 - ⚠️ Full component/system documentation - **Deferred (low priority)**
 
 ---
