@@ -8,6 +8,8 @@ import { FallableComponent } from '../components/blocks/fallable.component.js';
 import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { eventBus } from '../utils/event-bus.js';
+import { LethalComponent } from '../components/blocks/lethal.component.js';
+import { DiggableComponent } from '../components/blocks/diggable.component.js';
 
 /**
  * GravitySystem
@@ -101,12 +103,60 @@ export class GravitySystem extends LifecycleComponent {
 
   /**
    * Update player falling (if player has FallableComponent)
+   * @param {TerrainComponent} terrain
+   * @param {PlayerComponent} player
+   * @param {number} deltaTime
    * @private
    */
-  _updatePlayerFalling() {
-    // This will be used once PlayerComponent is refactored to use FallableComponent
-    // For now, player still has custom gravity in PlayerComponent
-    // After refactor, this method will handle player falling via FallableComponent
+  _updatePlayerFalling(terrain, player, deltaTime) {
+    // Only handle gravity if player is in FALLING state
+    if (player.state !== 'falling' || !player.fallable) return;
+
+    // Start falling if not already
+    if (!player.fallable.isFalling) {
+      player.fallable.startFalling(player.gridX, player.gridY);
+      player.fallable.pixelY = player.y; // Use current pixel position
+    }
+
+    // Apply gravity via FallableComponent
+    player.fallable.updateFalling(deltaTime);
+
+    // Update player position from fallable
+    player.y = player.fallable.pixelY;
+    const newGridY = Math.floor(player.y / 16);
+
+    // Check if we've entered a new grid cell
+    if (newGridY !== player.gridY) {
+      const newGridX = Math.floor(player.x / 16);
+
+      // Check what's at the new position BEFORE moving into it
+      const blockAtNewPos = terrain.getBlock(newGridX, newGridY);
+
+      // Check if we fell into lava
+      if (blockAtNewPos.has(LethalComponent)) {
+        eventBus.emit('player:death', { cause: 'lava' });
+        player.state = 'idle';
+        player.fallable.stopFalling();
+        return;
+      }
+
+      // Check if we hit a solid block
+      const physicsAtNewPos = blockAtNewPos.get(PhysicsComponent);
+      if (physicsAtNewPos && physicsAtNewPos.isCollidable()) {
+        // Stop at the previous grid position (don't enter the solid block)
+        player.y = player.gridY * 16 + 8; // Snap to center of current grid cell
+        player.fallable.stopFalling();
+
+        // Notify player component to handle landing
+        player.handleLanding(blockAtNewPos, newGridX, newGridY);
+      } else {
+        // Block is traversable, move into it and keep falling
+        player.gridY = newGridY;
+        player.gridX = newGridX;
+        player.fallable.gridY = newGridY;
+        player.fallable.gridX = newGridX;
+      }
+    }
   }
 
   /**
