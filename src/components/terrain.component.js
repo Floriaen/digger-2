@@ -9,13 +9,22 @@ import {
 } from '../utils/config.js';
 import { TerrainGenerator } from '../terrain/terrain-generator.js';
 import { ChunkCache } from '../terrain/chunk-cache.js';
-import { drawTile, drawTileDarkening } from '../rendering/tile-renderer.js';
 import { loadSpriteSheet } from '../rendering/sprite-atlas.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
 import { RenderComponent } from './blocks/render.component.js';
 import { DarknessComponent } from './blocks/darkness.component.js';
 import { LethalComponent } from './blocks/lethal.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
+import { RenderLayer } from '../rendering/render-layer.js';
+
+const BASE_DARKEN_EPSILON = 0.0001;
+const DARKNESS_EPSILON = 0.0002;
+const DIG_EPSILON = 0.0003;
+const OVERLAY_DEPTH_STEP = 0.001;
+
+const STATIC_DARKEN_FACTORS = {
+  32: 0.4, // RED_FRAME (torus): 40% dark
+};
 
 /**
  * TerrainComponent
@@ -32,6 +41,7 @@ export class TerrainComponent extends LifecycleComponent {
     try {
       this.spriteSheet = await loadSpriteSheet();
       console.log('Sprite sheet loaded successfully');
+      this.game.renderQueue.setSpriteSheet(this.spriteSheet);
     } catch (error) {
       console.error('Failed to load sprite sheet:', error);
     }
@@ -50,6 +60,14 @@ export class TerrainComponent extends LifecycleComponent {
     if (!camera) return;
 
     const transform = camera.getTransform();
+    const renderQueue = this.game.renderQueue;
+
+    if (!renderQueue || !this.spriteSheet) {
+      return;
+    }
+
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const digTarget = player ? player.currentDigTarget : null;
 
     // Calculate visible chunk range
     // World coordinates visible: from -transform to (canvasSize - transform)
@@ -63,12 +81,14 @@ export class TerrainComponent extends LifecycleComponent {
     const startChunkY = Math.floor(worldStartY / (CHUNK_SIZE * TILE_HEIGHT));
     const endChunkY = Math.floor(worldEndY / (CHUNK_SIZE * TILE_HEIGHT));
 
-    // Render visible chunks (bottom to top for proper overlap)
+    // Queue visible chunks (bottom to top for proper overlap)
     for (let cy = endChunkY; cy >= startChunkY; cy -= 1) {
       for (let cx = startChunkX; cx <= endChunkX; cx += 1) {
-        this._renderChunk(ctx, cx, cy, transform);
+        this._renderChunk(renderQueue, cx, cy, transform, digTarget);
       }
     }
+
+    renderQueue.flush(ctx);
   }
 
   destroy() {
@@ -94,73 +114,131 @@ export class TerrainComponent extends LifecycleComponent {
   }
 
   /**
-   * Render a single chunk
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
-   * @param {{x: number, y: number}} transform - Camera transform
+   * Queue draw commands for a single chunk.
+   * @param {RenderQueue} renderQueue - Shared render queue instance.
+   * @param {number} chunkX - Chunk X coordinate.
+   * @param {number} chunkY - Chunk Y coordinate.
+   * @param {{x: number, y: number}} transform - Camera transform (position only).
+   * @param {{x: number, y: number, hp: number, maxHp: number} | null} digTarget - Active dig target (world coords).
    * @private
    */
-  _renderChunk(ctx, chunkX, chunkY, transform) {
+  _renderChunk(renderQueue, chunkX, chunkY, transform, digTarget) {
     const chunk = this.cache.getChunk(chunkX, chunkY);
     if (!chunk || !this.spriteSheet) return;
 
     const worldOffsetX = chunkX * CHUNK_SIZE * TILE_WIDTH;
     const worldOffsetY = chunkY * CHUNK_SIZE * TILE_HEIGHT;
 
-    // Get player's current dig target for transparency
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
-    const digTarget = player ? player.currentDigTarget : null;
-
     // Render tiles bottom to top for proper overlap
     for (let localY = CHUNK_SIZE - 1; localY >= 0; localY -= 1) {
       for (let localX = 0; localX < CHUNK_SIZE; localX += 1) {
         const block = chunk.getBlock(localX, localY);
 
-        // Skip empty blocks (check PhysicsComponent for traversability)
         const physics = block.get(PhysicsComponent);
         const render = block.get(RenderComponent);
 
-        // Skip if no render component, or is empty (not collidable and not lava)
         if (!render) continue;
         const isLava = block.has(LethalComponent);
         if (physics && !physics.isCollidable() && !isLava) continue;
 
-        const screenX = worldOffsetX + localX * TILE_WIDTH + transform.x;
-        const screenY = worldOffsetY + localY * TILE_HEIGHT + transform.y;
+        const baseLayer = render.getBaseLayer();
+        if (!baseLayer) continue;
 
-        // Calculate dig progress darkness
+        const worldTileX = worldOffsetX + localX * TILE_WIDTH;
+        const worldTileY = worldOffsetY + localY * TILE_HEIGHT;
+        const screenBaseX = worldTileX + transform.x;
+        const screenBaseY = worldTileY + transform.y;
+
+        const baseDestX = screenBaseX + baseLayer.offsetX;
+        const baseDestY = screenBaseY + TILE_HEIGHT - baseLayer.height + baseLayer.offsetY;
+        const baseDepth = -(screenBaseY + TILE_HEIGHT) + (render.depthOffset ?? 0);
+
+        renderQueue.queueDraw({
+          layer: render.layer ?? RenderLayer.TERRAIN_BASE,
+          depth: baseDepth,
+          spriteX: baseLayer.spriteX,
+          spriteY: baseLayer.spriteY,
+          width: baseLayer.width,
+          height: baseLayer.height,
+          destX: baseDestX,
+          destY: baseDestY,
+          alpha: baseLayer.alpha ?? 1.0,
+        });
+
+        const overlayLayers = render.getOverlayLayers();
+        for (let i = 0; i < overlayLayers.length; i += 1) {
+          const overlay = overlayLayers[i];
+          const overlayDestX = screenBaseX + overlay.offsetX;
+          const overlayDestY = screenBaseY + TILE_HEIGHT - overlay.height + overlay.offsetY;
+          const overlayDepth = baseDepth
+            + (overlay.depthOffset ?? 0)
+            + (i + 1) * OVERLAY_DEPTH_STEP;
+
+          renderQueue.queueDraw({
+            layer: overlay.layer ?? RenderLayer.TERRAIN_OVERLAY,
+            depth: overlayDepth,
+            spriteX: overlay.spriteX,
+            spriteY: overlay.spriteY,
+            width: overlay.width,
+            height: overlay.height,
+            destX: overlayDestX,
+            destY: overlayDestY,
+            alpha: overlay.alpha ?? 1.0,
+          });
+        }
+
+        const blockDarken = STATIC_DARKEN_FACTORS[baseLayer.spriteX] ?? 0;
+        if (blockDarken > 0) {
+          renderQueue.queueDraw({
+            layer: RenderLayer.TERRAIN_BASE,
+            depth: baseDepth + BASE_DARKEN_EPSILON,
+            destX: baseDestX,
+            destY: baseDestY,
+            width: baseLayer.width,
+            height: baseLayer.height,
+            alpha: 1.0,
+            type: 'fill-rect',
+            fillStyle: `rgba(0, 0, 0, ${blockDarken})`,
+          });
+        }
+
+        const darkness = block.get(DarknessComponent);
+        if (darkness && darkness.alpha > 0) {
+          renderQueue.queueDraw({
+            layer: RenderLayer.TERRAIN_BASE,
+            depth: baseDepth + DARKNESS_EPSILON,
+            destX: screenBaseX,
+            destY: screenBaseY - TILE_CAP_HEIGHT,
+            width: TILE_WIDTH,
+            height: SPRITE_HEIGHT,
+            alpha: 1.0,
+            type: 'fill-rect',
+            fillStyle: `rgba(0, 0, 0, ${darkness.alpha})`,
+          });
+        }
+
+        let digDarkness = 0;
         const worldX = chunkX * CHUNK_SIZE + localX;
         const worldY = chunkY * CHUNK_SIZE + localY;
-        let digDarkness = 0; // Default: no dig darkness
-
         const isDigTarget = digTarget && digTarget.x === worldX && digTarget.y === worldY;
 
         if (isDigTarget) {
-          // This block is being actively dug - increase darkness
           const damagePercent = 1 - (digTarget.hp / digTarget.maxHp);
-          digDarkness = damagePercent * 0.5; // Max 50% darkening as block is dug
+          digDarkness = damagePercent * 0.5;
         }
 
-        // 1. Draw block sprite (always full opacity)
-        drawTile(ctx, this.spriteSheet, block, screenX, screenY, 1.0);
-
-        // 2. Draw block type darkening overlay
-        drawTileDarkening(ctx, block, screenX, screenY, 1.0);
-
-        // 3. Draw darkness overlay (if block has DarknessComponent)
-        const darkness = block.get(DarknessComponent);
-        if (darkness) {
-          darkness.render(ctx, screenX, screenY);
-        }
-
-        // 4. Draw dig progress darkening (on top of everything)
         if (digDarkness > 0) {
-          const spriteY = screenY - TILE_CAP_HEIGHT;
-          ctx.save();
-          ctx.fillStyle = `rgba(0, 0, 0, ${digDarkness})`;
-          ctx.fillRect(screenX, spriteY, TILE_WIDTH, SPRITE_HEIGHT);
-          ctx.restore();
+          renderQueue.queueDraw({
+            layer: RenderLayer.TERRAIN_BASE,
+            depth: baseDepth + DIG_EPSILON,
+            destX: screenBaseX,
+            destY: screenBaseY - TILE_CAP_HEIGHT,
+            width: TILE_WIDTH,
+            height: SPRITE_HEIGHT,
+            alpha: 1.0,
+            type: 'fill-rect',
+            fillStyle: `rgba(0, 0, 0, ${digDarkness})`,
+          });
         }
       }
     }

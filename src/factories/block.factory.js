@@ -56,7 +56,13 @@ export class BlockFactory {
    */
   static createRock() {
     return new Block([
-      new RenderComponent({ spriteX: 48, spriteY: 0 }),
+      new RenderComponent({
+        spriteX: 48,
+        spriteY: 0,
+        width: 16,
+        height: 25
+        //offsetY : -9
+      }),
       new PhysicsComponent({ collidable: true }),
       new FallableComponent(),
     ]);
@@ -127,7 +133,13 @@ export class BlockFactory {
       new RenderComponent({
         layers: [
           { spriteX: 64, spriteY: 0 }, // Chest (bottom)
-          { spriteX: 16, spriteY: 24 }, // Cover (top) - sprite position 9
+          {
+            spriteX: 9,
+            spriteY: 25,
+            width: 23,
+            height: 25,
+            offsetX: -4,
+          }, // Cover (top) - sprite position 9
         ],
       }),
       new PhysicsComponent({ collidable: true }),

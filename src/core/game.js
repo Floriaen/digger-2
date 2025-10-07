@@ -5,6 +5,7 @@
 
 import { TARGET_FPS } from '../utils/config.js';
 import { PerformanceMonitor } from '../utils/performance-monitor.js';
+import { RenderQueue } from '../rendering/render-queue.js';
 
 /**
  * Main Game class
@@ -32,6 +33,9 @@ export class Game {
     // Performance monitoring
     this.performanceMonitor = new PerformanceMonitor();
     this.memoryUpdateCounter = 0; // Update memory every 60 frames
+
+    // Shared render queue prototype for layer-based rendering.
+    this.renderQueue = new RenderQueue();
   }
 
   /**
@@ -102,6 +106,9 @@ export class Game {
     // Reset transform and clear canvas
     this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to identity matrix
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Prepare render queue for the upcoming frame.
+    this.renderQueue.clear();
 
     // Performance: Start render timing
     this.performanceMonitor.startMark('render');

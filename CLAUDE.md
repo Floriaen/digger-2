@@ -20,6 +20,7 @@ This document tracks AI-assisted development sessions for Digger 2, including to
 3. **Factory Pattern**: BlockFactory is the ONLY way to create block entities
 4. **Event-driven communication**: Event bus for decoupled systems
 5. **NO FALLBACKS**: Errors surface immediately during development
+6. **YAGNI / DRY / KISS**: Build only what’s needed now, avoid repetition, keep solutions simple
 
 ### Directory Structure
 ```
