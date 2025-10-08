@@ -18,6 +18,7 @@ import { DebugComponent } from './components/debug.component.js';
 import { TouchInputComponent } from './components/touch-input.component.js';
 import { InputSystem } from './systems/input.system.js';
 import { GravitySystem } from './systems/gravity.system.js';
+import { CoinEffectSystem } from './systems/coin-effect.system.js';
 import { eventBus } from './utils/event-bus.js';
 
 /**
@@ -108,6 +109,7 @@ function init() {
   game.addComponent(new ShadowComponent(game)); // Shadow renders before player
   game.addComponent(new NavigationComponent(game));
   game.addComponent(new PlayerComponent(game));
+  game.addComponent(new CoinEffectSystem(game));
   game.addComponent(new CameraComponent(game));
   game.addComponent(new HUDComponent(game));
   game.addComponent(new TouchInputComponent(game)); // Touch input for mobile
@@ -120,57 +122,6 @@ function init() {
   eventBus.on('input:pause-toggle', () => {
     game.togglePause();
   });
-
-  // Setup dat.GUI for performance monitoring
-  if (typeof dat !== 'undefined') {
-    const gui = new dat.GUI();
-    const perfFolder = gui.addFolder('Performance');
-
-    const perfData = {
-      enabled: false,
-      fps: 0,
-      frameTime: '0.00',
-      updateTime: '0.00',
-      renderTime: '0.00',
-      chunkGenTime: '0.00',
-      digTime: '0.00',
-      memoryMB: '0.00',
-      warnings: '',
-    };
-
-    perfFolder.add(perfData, 'enabled').name('Enable Profiling').onChange((value) => {
-      if (value) {
-        game.performanceMonitor.enable();
-      } else {
-        game.performanceMonitor.disable();
-      }
-    });
-    perfFolder.add(perfData, 'fps').name('FPS').listen();
-    perfFolder.add(perfData, 'frameTime').name('Frame (ms)').listen();
-    perfFolder.add(perfData, 'updateTime').name('Update (ms)').listen();
-    perfFolder.add(perfData, 'renderTime').name('Render (ms)').listen();
-    perfFolder.add(perfData, 'chunkGenTime').name('Chunk Gen (ms)').listen();
-    perfFolder.add(perfData, 'digTime').name('Dig (ms)').listen();
-    perfFolder.add(perfData, 'memoryMB').name('Memory (MB)').listen();
-    perfFolder.add(perfData, 'warnings').name('Warnings').listen();
-
-    // Update GUI values every frame
-    setInterval(() => {
-      if (perfData.enabled) {
-        const metrics = game.performanceMonitor.getMetrics();
-        perfData.fps = Math.round(metrics.fps);
-        perfData.frameTime = metrics.frameTime.avg;
-        perfData.updateTime = metrics.updateTime.avg;
-        perfData.renderTime = metrics.renderTime.avg;
-        perfData.chunkGenTime = metrics.chunkGeneration.avg;
-        perfData.digTime = metrics.digOperation.avg;
-        perfData.memoryMB = metrics.memoryUsage.current;
-        perfData.warnings = metrics.warnings.length > 0 ? metrics.warnings[metrics.warnings.length - 1] : '';
-      }
-    }, 100);
-
-    perfFolder.open();
-  }
 
   // Hide loading screen
   loading.classList.add('hidden');

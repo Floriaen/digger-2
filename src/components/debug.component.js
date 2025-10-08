@@ -17,11 +17,14 @@ export class DebugComponent extends LifecycleComponent {
     this.showGridPos = true;
     this.fps = 60;
     this.fpsHistory = [];
+    this.perfData = null;
+    this.perfUpdateTimer = 0;
 
     this._initGUI();
   }
 
   update(deltaTime) {
+    /*
     // Calculate FPS
     if (deltaTime > 0) {
       const currentFPS = 1000 / deltaTime;
@@ -31,9 +34,28 @@ export class DebugComponent extends LifecycleComponent {
         this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length,
       );
     }
+      */
+    if (this.perfData && this.perfData.enabled) {
+      this.perfUpdateTimer += deltaTime;
+      if (this.perfUpdateTimer >= 100) {
+        this.perfUpdateTimer = 0;
+        const metrics = this.game.performanceMonitor.getMetrics();
+        this.perfData.fps = Math.round(metrics.fps);
+        this.perfData.frameTime = metrics.frameTime.avg;
+        this.perfData.updateTime = metrics.updateTime.avg;
+        this.perfData.renderTime = metrics.renderTime.avg;
+        this.perfData.chunkGenTime = metrics.chunkGeneration.avg;
+        this.perfData.digTime = metrics.digOperation.avg;
+        this.perfData.memoryMB = metrics.memoryUsage.current;
+        this.perfData.warnings = metrics.warnings.length > 0
+          ? metrics.warnings[metrics.warnings.length - 1]
+          : '';
+      }
+    }
   }
 
   render(ctx) {
+    /*
     // Save context to prevent zoom from affecting debug text
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to identity matrix
@@ -67,11 +89,16 @@ export class DebugComponent extends LifecycleComponent {
     if (this.showChunkBounds) {
       this._drawChunkBounds(ctx);
     }
+    */
   }
 
   destroy() {
     if (this.gui) {
       this.gui.destroy();
+    }
+
+    if (this.perfData && this.perfData.enabled) {
+      this.game.performanceMonitor.disable();
     }
   }
 
@@ -144,6 +171,40 @@ export class DebugComponent extends LifecycleComponent {
     debugFolder.add(this.game, 'zoomAfterRendering').name('Zoom After Rendering');
 
     debugFolder.open();
+
+    // Performance monitoring
+    const perfFolder = this.gui.addFolder('Performance');
+    this.perfData = {
+      enabled: false,
+      fps: 0,
+      frameTime: '0.00',
+      updateTime: '0.00',
+      renderTime: '0.00',
+      chunkGenTime: '0.00',
+      digTime: '0.00',
+      memoryMB: '0.00',
+      warnings: '',
+    };
+
+    perfFolder.add(this.perfData, 'enabled').name('Enable Profiling').onChange((value) => {
+      if (value) {
+        this.perfUpdateTimer = 0;
+        this.game.performanceMonitor.enable();
+      } else {
+        this.game.performanceMonitor.disable();
+        this._resetPerfMetrics();
+      }
+    });
+    perfFolder.add(this.perfData, 'fps').name('FPS').listen();
+    perfFolder.add(this.perfData, 'frameTime').name('Frame (ms)').listen();
+    perfFolder.add(this.perfData, 'updateTime').name('Update (ms)').listen();
+    perfFolder.add(this.perfData, 'renderTime').name('Render (ms)').listen();
+    perfFolder.add(this.perfData, 'chunkGenTime').name('Chunk Gen (ms)').listen();
+    perfFolder.add(this.perfData, 'digTime').name('Dig (ms)').listen();
+    perfFolder.add(this.perfData, 'memoryMB').name('Memory (MB)').listen();
+    perfFolder.add(this.perfData, 'warnings').name('Warnings').listen();
+
+    perfFolder.open();
   }
 
   /**
@@ -169,5 +230,18 @@ export class DebugComponent extends LifecycleComponent {
         ctx.strokeRect(x, y, CHUNK_SIZE * TILE_WIDTH, CHUNK_SIZE * TILE_HEIGHT);
       }
     }
+  }
+
+  _resetPerfMetrics() {
+    if (!this.perfData) return;
+
+    this.perfData.fps = 0;
+    this.perfData.frameTime = '0.00';
+    this.perfData.updateTime = '0.00';
+    this.perfData.renderTime = '0.00';
+    this.perfData.chunkGenTime = '0.00';
+    this.perfData.digTime = '0.00';
+    this.perfData.memoryMB = '0.00';
+    this.perfData.warnings = '';
   }
 }
