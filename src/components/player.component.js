@@ -14,6 +14,7 @@ import { HealthComponent } from './blocks/health.component.js';
 import { LethalComponent } from './blocks/lethal.component.js';
 import { FallableComponent } from './blocks/fallable.component.js';
 import { LootableComponent } from './blocks/lootable.component.js';
+import { PauseOnDestroyComponent } from './blocks/pause-on-destroy.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -354,6 +355,9 @@ export class PlayerComponent extends LifecycleComponent {
       this.currentDigTarget.hp = result.hp;
 
       if (result.destroyed) {
+        if (block.has(PauseOnDestroyComponent)) {
+          this.game.pause();
+        }
         // Check if block has lootable component to spawn entity
         const lootable = block.get(LootableComponent);
         if (lootable && lootable.hasSpawnEntity()) {

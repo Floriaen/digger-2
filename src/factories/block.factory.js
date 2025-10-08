@@ -7,6 +7,7 @@ import { FallableComponent } from '../components/blocks/fallable.component.js';
 import { DarknessComponent } from '../components/blocks/darkness.component.js';
 import { LootableComponent } from '../components/blocks/lootable.component.js';
 import { LethalComponent } from '../components/blocks/lethal.component.js';
+import { PauseOnDestroyComponent } from '../components/blocks/pause-on-destroy.component.js';
 
 /**
  * BlockFactory
@@ -47,7 +48,9 @@ export class BlockFactory {
       components.push(new DarknessComponent({ alpha: darknessAlpha }));
     }
 
-    return new Block(components);
+    const block = new Block(components);
+    block.type = 'mud';
+    return block;
   }
 
   /**
@@ -65,6 +68,25 @@ export class BlockFactory {
       }),
       new PhysicsComponent({ collidable: true }),
       new FallableComponent(),
+    ]);
+  }
+
+  /**
+   * Create a pause crystal block (pauses game when destroyed)
+   * @returns {Block}
+   */
+  static createPauseCrystal() {
+    return new Block([
+      new RenderComponent({
+        spriteX: 64,
+        spriteY: 24,
+        spriteWidth: 16,
+        spriteHeight: 25,
+      }),
+      new PhysicsComponent({ collidable: true }),
+      new HealthComponent({ hp: 5 }),
+      new DiggableComponent(),
+      new PauseOnDestroyComponent(),
     ]);
   }
 
@@ -175,13 +197,24 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createProtectiveMud(darknessAlpha = 0.5) {
-    return new Block([
+    const block = new Block([
       new RenderComponent({ spriteX: 16, spriteY: 0 }),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
       new DarknessComponent({ alpha: darknessAlpha }),
     ]);
+    block.type = 'mud';
+    return block;
+  }
+
+  /**
+   * Determine whether the provided block should be treated as mud.
+   * @param {Block|null|undefined} block
+   * @returns {boolean}
+   */
+  static isMud(block) {
+    return Boolean(block && block.type === 'mud');
   }
 
   /**
