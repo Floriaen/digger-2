@@ -23,7 +23,6 @@ export class GridOverlayComponent extends LifecycleComponent {
   }
 
   render(ctx) {
-    return;
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
 
@@ -51,7 +50,6 @@ export class GridOverlayComponent extends LifecycleComponent {
 
         // Skip blocks without collision
         if (!physics || !physics.isCollidable()) {
-          // eslint-disable-next-line no-continue
           continue;
         }
 

@@ -30,7 +30,7 @@ export class CameraComponent extends LifecycleComponent {
     this.manualZoom = false; // Flag to disable auto-zoom when manually controlled
   }
 
-  update(deltaTime) {
+  update(_deltaTime) {
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
     if (!player) return;
 
@@ -80,8 +80,27 @@ export class CameraComponent extends LifecycleComponent {
     let finalZoom = this.zoom;
 
     if (!this.game.zoomAfterRendering) {
-      const zoomLevels = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
-      finalZoom = zoomLevels.reduce((prev, curr) => (Math.abs(curr - this.zoom) < Math.abs(prev - this.zoom) ? curr : prev));
+      const zoomLevels = [
+        1.0,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        3.5,
+        4.0,
+        4.5,
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+      ];
+      finalZoom = zoomLevels.reduce((prev, curr) => {
+        const currentDiff = Math.abs(curr - this.zoom);
+        const previousDiff = Math.abs(prev - this.zoom);
+        return currentDiff < previousDiff ? curr : prev;
+      });
     }
 
     return {

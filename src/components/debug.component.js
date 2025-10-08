@@ -4,7 +4,6 @@
  */
 
 import { LifecycleComponent } from '../core/lifecycle-component.js';
-import { CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
 
 /**
  * DebugComponent
@@ -24,17 +23,6 @@ export class DebugComponent extends LifecycleComponent {
   }
 
   update(deltaTime) {
-    /*
-    // Calculate FPS
-    if (deltaTime > 0) {
-      const currentFPS = 1000 / deltaTime;
-      this.fpsHistory.push(currentFPS);
-      if (this.fpsHistory.length > 30) this.fpsHistory.shift();
-      this.fps = Math.round(
-        this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length,
-      );
-    }
-      */
     if (this.perfData && this.perfData.enabled) {
       this.perfUpdateTimer += deltaTime;
       if (this.perfUpdateTimer >= 100) {
@@ -52,44 +40,6 @@ export class DebugComponent extends LifecycleComponent {
           : '';
       }
     }
-  }
-
-  render(ctx) {
-    /*
-    // Save context to prevent zoom from affecting debug text
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to identity matrix
-
-    // FPS counter (always visible)
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '12px monospace';
-    ctx.fillText(`FPS: ${this.fps}`, 10, 20);
-
-    // Player grid position and zoom
-    if (this.showGridPos) {
-      const player = this.game.components.find(
-        (c) => c.constructor.name === 'PlayerComponent',
-      );
-      const camera = this.game.components.find(
-        (c) => c.constructor.name === 'CameraComponent',
-      );
-      if (player) {
-        ctx.fillText(`Grid: (${player.gridX}, ${player.gridY})`, 10, 35);
-        ctx.fillText(`State: ${player.state}`, 10, 50);
-      }
-      if (camera) {
-        const transform = camera.getTransform();
-        ctx.fillText(`Zoom: ${camera.zoom.toFixed(2)} → ${transform.zoom.toFixed(2)} (target: ${camera.targetZoom.toFixed(2)})`, 10, 65);
-      }
-    }
-
-    ctx.restore();
-
-    // Chunk bounds
-    if (this.showChunkBounds) {
-      this._drawChunkBounds(ctx);
-    }
-    */
   }
 
   destroy() {
@@ -205,31 +155,6 @@ export class DebugComponent extends LifecycleComponent {
     perfFolder.add(this.perfData, 'warnings').name('Warnings').listen();
 
     perfFolder.open();
-  }
-
-  /**
-   * Draw chunk boundary lines
-   * @param {CanvasRenderingContext2D} ctx
-   * @private
-   */
-  _drawChunkBounds(ctx) {
-    const camera = this.game.components.find(
-      (c) => c.constructor.name === 'CameraComponent',
-    );
-    if (!camera) return;
-
-    const transform = camera.getTransform();
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-    ctx.lineWidth = 1;
-
-    // Draw visible chunk grid
-    for (let cx = -2; cx <= 2; cx += 1) {
-      for (let cy = -2; cy <= 2; cy += 1) {
-        const x = cx * CHUNK_SIZE * TILE_WIDTH + transform.x;
-        const y = cy * CHUNK_SIZE * TILE_HEIGHT + transform.y;
-        ctx.strokeRect(x, y, CHUNK_SIZE * TILE_WIDTH, CHUNK_SIZE * TILE_HEIGHT);
-      }
-    }
   }
 
   _resetPerfMetrics() {

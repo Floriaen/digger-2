@@ -10,7 +10,6 @@ import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { FallableComponent } from '../components/blocks/fallable.component.js';
 import { RenderComponent } from '../components/blocks/render.component.js';
 import { HealthComponent } from '../components/blocks/health.component.js';
-import { DiggableComponent } from '../components/blocks/diggable.component.js';
 import { DarknessComponent } from '../components/blocks/darkness.component.js';
 import { generateHalo } from '../systems/halo-generator.js';
 
@@ -149,7 +148,7 @@ export class TerrainGenerator {
    * @returns {Block} Block entity
    * @private
    */
-  _createBlock(blockType, worldY) {
+  _createBlock(blockType, _worldY) {
     switch (blockType) {
       case BLOCK_TYPE.EMPTY:
         return BlockFactory.createEmpty();
@@ -327,7 +326,6 @@ export class TerrainGenerator {
 
               // Skip if out of chunk bounds
               if (localX < 0 || localX >= CHUNK_SIZE || localY < 0 || localY >= CHUNK_SIZE) {
-                // eslint-disable-next-line no-continue
                 continue;
               }
 
@@ -336,7 +334,9 @@ export class TerrainGenerator {
 
               // If neighbor is empty and not part of torus interior, fill with mud
               const neighborTorusBlock = this._getTorusBlock(neighborWorldX, neighborWorldY);
-              if (neighborPhysics && neighborPhysics.traversable && neighborTorusBlock !== BLOCK_TYPE.EMPTY) {
+              const neighborIsTraversable = neighborPhysics && neighborPhysics.traversable;
+              const fillsTorus = neighborTorusBlock !== BLOCK_TYPE.EMPTY;
+              if (neighborIsTraversable && fillsTorus) {
                 // Fill with appropriate mud based on depth
                 const mudType = this._getMudTypeByDepth(neighborWorldY);
                 const mudBlock = this._createBlock(mudType, neighborWorldY);
@@ -436,7 +436,7 @@ export class TerrainGenerator {
         }
 
         // Calculate distance to nearest empty tile
-        const distanceToEmpty = this._getDistanceToEmpty(chunk, x, y, chunkX, chunkY);
+        const distanceToEmpty = this._getDistanceToEmpty(chunk, x, y);
 
         // Add noise-based variation to create organic patterns
         const noiseValue = this._noise(worldX * 0.15, worldY * 0.15);
@@ -514,12 +514,10 @@ export class TerrainGenerator {
    * @param {TerrainChunk} chunk - Chunk to check
    * @param {number} x - Local X in chunk
    * @param {number} y - Local Y in chunk
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
    * @returns {number} Distance to nearest empty tile (1-6)
    * @private
    */
-  _getDistanceToEmpty(chunk, x, y, chunkX, chunkY) {
+  _getDistanceToEmpty(chunk, x, y) {
     const maxDistance = 6;
 
     // Check in expanding squares
@@ -556,12 +554,10 @@ export class TerrainGenerator {
    * @param {TerrainChunk} chunk - Chunk to check
    * @param {number} localX - Local X in chunk
    * @param {number} localY - Local Y in chunk
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
    * @returns {number} Average darkness of valid neighbors (0-0.4 typically)
    * @private
    */
-  _sampleNeighborDarkness(chunk, localX, localY, chunkX, chunkY) {
+  _sampleNeighborDarkness(chunk, localX, localY) {
     const neighbors = [
       { dx: -1, dy: 0 }, // left
       { dx: 1, dy: 0 }, // right
@@ -806,13 +802,7 @@ export class TerrainGenerator {
       const dy = y - centerY;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      const neighborDarkness = this._sampleNeighborDarkness(
-        chunk,
-        localX,
-        localY,
-        chunkX,
-        chunkY,
-      );
+      const neighborDarkness = this._sampleNeighborDarkness(chunk, localX, localY);
 
       const darknessBoost = 0.2 - (distance / effectiveRadius) * 0.1;
       const darknessAlpha = Math.min(0.8, neighborDarkness + darknessBoost);

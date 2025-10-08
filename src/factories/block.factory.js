@@ -17,13 +17,28 @@ import { PauseOnDestroyComponent } from '../components/blocks/pause-on-destroy.c
  */
 export class BlockFactory {
   /**
+   * Attach metadata to a newly created block and return it.
+   * @param {Block} block
+   * @param {string} type
+   * @param {Object} extra
+   * @returns {Block}
+   * @private
+   */
+  static finalizeBlock(block, type, extra = {}) {
+    block.type = type;
+    Object.assign(block, extra);
+    return block;
+  }
+
+  /**
    * Create an empty (air) block
    * @returns {Block}
    */
   static createEmpty() {
-    return new Block([
+    const block = new Block([
       new PhysicsComponent({ collidable: false }),
     ]);
+    return BlockFactory.finalizeBlock(block, 'empty');
   }
 
   /**
@@ -49,8 +64,7 @@ export class BlockFactory {
     }
 
     const block = new Block(components);
-    block.type = 'mud';
-    return block;
+    return BlockFactory.finalizeBlock(block, 'mud', { variant });
   }
 
   /**
@@ -58,7 +72,7 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createRock() {
-    return new Block([
+    const block = new Block([
       new RenderComponent({
         spriteX: 48,
         spriteY: 0,
@@ -69,6 +83,7 @@ export class BlockFactory {
       new PhysicsComponent({ collidable: true }),
       new FallableComponent(),
     ]);
+    return BlockFactory.finalizeBlock(block, 'rock');
   }
 
   /**
@@ -76,7 +91,7 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createPauseCrystal() {
-    return new Block([
+    const block = new Block([
       new RenderComponent({
         spriteX: 64,
         spriteY: 24,
@@ -88,6 +103,7 @@ export class BlockFactory {
       new DiggableComponent(),
       new PauseOnDestroyComponent(),
     ]);
+    return BlockFactory.finalizeBlock(block, 'pause_crystal');
   }
 
   /**
@@ -95,12 +111,13 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createRedFrame() {
-    return new Block([
+    const block = new Block([
       new RenderComponent({ spriteX: 32, spriteY: 0 }),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
     ]);
+    return BlockFactory.finalizeBlock(block, 'red_frame');
   }
 
   /**
@@ -108,11 +125,12 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createLava() {
-    return new Block([
+    const block = new Block([
       new RenderComponent({ spriteX: 64, spriteY: 0 }),
       new PhysicsComponent({ collidable: false }),
       new LethalComponent(),
     ]);
+    return BlockFactory.finalizeBlock(block, 'lava');
   }
 
   /**
@@ -120,12 +138,13 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createGrass() {
-    return new Block([
+    const block = new Block([
       new RenderComponent({ spriteX: 0, spriteY: 0 }),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
     ]);
+    return BlockFactory.finalizeBlock(block, 'grass');
   }
 
   /**
@@ -134,7 +153,7 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createChest(loot = [{ type: 'coin', value: 10 }]) {
-    return new Block([
+    const block = new Block([
       new RenderComponent({ spriteX: 64, spriteY: 0 }),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 15 }),
@@ -142,6 +161,7 @@ export class BlockFactory {
       new LootableComponent({ loot }),
       new FallableComponent(),
     ]);
+    return BlockFactory.finalizeBlock(block, 'chest');
   }
 
   /**
@@ -151,7 +171,7 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createCoveredChest(loot = [{ type: 'coin', value: 10 }]) {
-    return new Block([
+    const block = new Block([
       new RenderComponent({
         layers: [
           { spriteX: 64, spriteY: 0 }, // Chest (bottom)
@@ -174,6 +194,7 @@ export class BlockFactory {
         },
       }),
     ]);
+    return BlockFactory.finalizeBlock(block, 'covered_chest');
   }
 
   /**
@@ -182,13 +203,14 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createProtectiveBlock(darknessAlpha = 0.5) {
-    return new Block([
+    const block = new Block([
       new RenderComponent({ spriteX: 80, spriteY: 0 }),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 10 }),
       new DiggableComponent(),
       new DarknessComponent({ alpha: darknessAlpha }),
     ]);
+    return BlockFactory.finalizeBlock(block, 'protective_block', { darknessAlpha });
   }
 
   /**
@@ -204,8 +226,8 @@ export class BlockFactory {
       new DiggableComponent(),
       new DarknessComponent({ alpha: darknessAlpha }),
     ]);
-    block.type = 'mud';
-    return block;
+    const normalizedVariant = Math.min(5, Math.max(1, Math.round(darknessAlpha / 0.1) + 1));
+    return BlockFactory.finalizeBlock(block, 'mud', { variant: normalizedVariant });
   }
 
   /**

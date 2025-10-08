@@ -160,14 +160,18 @@ export class CoinEffectSystem extends LifecycleComponent {
 
   _getTerrain() {
     if (!this.cachedTerrain || !this.game.components.includes(this.cachedTerrain)) {
-      this.cachedTerrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+      this.cachedTerrain = this.game.components.find(
+        (c) => c.constructor.name === 'TerrainComponent',
+      );
     }
     return this.cachedTerrain;
   }
 
   _getCamera() {
     if (!this.cachedCamera || !this.game.components.includes(this.cachedCamera)) {
-      this.cachedCamera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
+      this.cachedCamera = this.game.components.find(
+        (c) => c.constructor.name === 'CameraComponent',
+      );
     }
     return this.cachedCamera;
   }

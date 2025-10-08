@@ -17,6 +17,24 @@
     "no-underscore-dangle": ["error", { "allowAfterThis": true }],
     "import/extensions": ["error", "always"],
     "max-len": ["error", { "code": 100, "ignoreComments": true }],
-    "import/prefer-default-export": "off"
+    "import/prefer-default-export": "off",
+    "import/no-mutable-exports": "off",
+    "no-continue": "off",
+    "no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+    "no-param-reassign": ["error", { "props": false }],
+    "no-bitwise": "off",
+    "no-restricted-syntax": [
+      "error",
+      "ForInStatement",
+      "LabeledStatement",
+      "WithStatement"
+    ],
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ]
   }
 }

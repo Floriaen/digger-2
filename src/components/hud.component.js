@@ -28,7 +28,7 @@ export class HUDComponent extends LifecycleComponent {
     });
   }
 
-  update(deltaTime) {
+  update(_deltaTime) {
     // Score events will be implemented in Milestone 3
   }
 

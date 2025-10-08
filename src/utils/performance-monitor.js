@@ -106,7 +106,8 @@ export class PerformanceMonitor {
       case 'frame':
         this._updateMetric('frameTime', duration);
         if (duration > this.frameTimeThreshold) {
-          this.warnings.push(`Frame drop: ${duration.toFixed(2)}ms (>${this.frameTimeThreshold}ms)`);
+          const warning = `Frame drop: ${duration.toFixed(2)}ms (>${this.frameTimeThreshold}ms)`;
+          this.warnings.push(warning);
           if (this.warnings.length > 10) this.warnings.shift();
         }
         break;

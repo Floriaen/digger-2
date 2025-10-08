@@ -96,7 +96,9 @@ export class PlayerComponent extends LifecycleComponent {
     // Check block at current position (in case we fell into it)
     const blockAtPosition = terrain.getBlock(this.gridX, this.gridY);
     const physics = blockAtPosition.get(PhysicsComponent);
-    const stuckInBlock = physics && physics.isCollidable() && blockAtPosition.has(DiggableComponent);
+    const stuckInBlock = physics
+      && physics.isCollidable()
+      && blockAtPosition.has(DiggableComponent);
 
     if (stuckInBlock) {
       // We're inside a block, dig it while also allowing movement
@@ -115,7 +117,7 @@ export class PlayerComponent extends LifecycleComponent {
 
     // Unified directional digging (unless stuck and digging in place)
     if (!stuckInBlock) {
-      this._updateDirectionalDig(terrain, deltaTime);
+      this._updateDirectionalDig(terrain);
     }
   }
 
@@ -241,10 +243,9 @@ export class PlayerComponent extends LifecycleComponent {
   /**
    * Update directional digging (unified for all directions)
    * @param {TerrainComponent} terrain
-   * @param {number} deltaTime - Time since last update
    * @private
    */
-  _updateDirectionalDig(terrain, deltaTime) {
+  _updateDirectionalDig(terrain) {
     const { dx, dy } = this.digDirection;
     const targetX = this.gridX + dx;
     const targetY = this.gridY + dy;
@@ -404,7 +405,7 @@ export class PlayerComponent extends LifecycleComponent {
    * @param {number} landX - X position of the block
    * @param {number} landY - Y position of the block
    */
-  handleLanding(blockLandedOn, landX, landY) {
+  handleLanding(blockLandedOn, _landX, _landY) {
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
 
     if (blockLandedOn.has(DiggableComponent)) {

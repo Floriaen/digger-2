@@ -9,7 +9,6 @@ import { PhysicsComponent } from '../components/blocks/physics.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { eventBus } from '../utils/event-bus.js';
 import { LethalComponent } from '../components/blocks/lethal.component.js';
-import { DiggableComponent } from '../components/blocks/diggable.component.js';
 
 /**
  * GravitySystem
@@ -59,7 +58,6 @@ export class GravitySystem extends LifecycleComponent {
           const block = chunk.blocks[y][x];
           if (!block || !block.has || !block.has(FallableComponent)) {
             // Skip blocks that don't have FallableComponent
-            // eslint-disable-next-line no-continue
             continue;
           }
 

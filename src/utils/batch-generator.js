@@ -5,7 +5,31 @@
 
 import { CHUNK_SIZE } from './config.js';
 import { TerrainGenerator } from '../terrain/terrain-generator.js';
-import { getBlock } from '../terrain/block-registry.js';
+
+const MUD_VARIANT_NAMES = {
+  1: 'mud_light',
+  2: 'mud_medium',
+  3: 'mud_dark',
+  4: 'mud_dense',
+  5: 'mud_core',
+};
+
+const FALLBACK_BLOCK_TYPE = 'unknown';
+
+const describeBlock = (block) => {
+  if (!block) return 'empty';
+
+  if (block.type === 'mud') {
+    const variantName = MUD_VARIANT_NAMES[block.variant] ?? 'mud';
+    return variantName;
+  }
+
+  if (typeof block.type === 'string') {
+    return block.type;
+  }
+
+  return FALLBACK_BLOCK_TYPE;
+};
 
 /**
  * BatchGenerator
@@ -44,21 +68,23 @@ export class BatchGenerator {
         const chunkX = startChunkX + cx;
         const chunkY = startChunkY + cy;
         const chunk = this.generator.generateChunk(chunkX, chunkY);
-
-        // Collect chunk data
         const chunkData = {
           x: chunkX,
           y: chunkY,
-          blocks: chunk.blocks.slice(), // Copy block array
+          blocks: [],
         };
 
-        chunks.push(chunkData);
+        for (let y = 0; y < CHUNK_SIZE; y += 1) {
+          chunkData.blocks[y] = [];
+          for (let x = 0; x < CHUNK_SIZE; x += 1) {
+            const block = chunk.getBlock(x, y);
+            const blockType = describeBlock(block);
+            chunkData.blocks[y][x] = blockType;
+            metadata.blockCounts[blockType] = (metadata.blockCounts[blockType] || 0) + 1;
+          }
+        }
 
-        // Count block types
-        chunk.blocks.forEach((blockType) => {
-          const blockName = getBlock(blockType).name;
-          metadata.blockCounts[blockName] = (metadata.blockCounts[blockName] || 0) + 1;
-        });
+        chunks.push(chunkData);
       }
     }
 
@@ -113,11 +139,8 @@ export class BatchGenerator {
 
         const chunkIndex = chunkY * batchSize + chunkX;
         const chunk = chunks[chunkIndex];
-        const blockIndex = localY * CHUNK_SIZE + localX;
-        const blockType = chunk.blocks[blockIndex];
-
-        const blockName = getBlock(blockType).name;
-        line += blockChars[blockName] || '?';
+        const blockType = chunk.blocks[localY][localX];
+        line += blockChars[blockType] || '?';
       }
 
       ascii += `${line}\n`;
@@ -168,11 +191,8 @@ export class BatchGenerator {
 
         const chunkIndex = chunkY * batchSize + chunkX;
         const chunk = chunks[chunkIndex];
-        const blockIndex = localY * CHUNK_SIZE + localX;
-        const blockType = chunk.blocks[blockIndex];
-
-        const blockName = getBlock(blockType).name;
-        const color = blockColors[blockName] || '#FF00FF';
+        const blockType = chunk.blocks[localY][localX];
+        const color = blockColors[blockType] || '#FF00FF';
 
         ctx.fillStyle = color;
         ctx.fillRect(worldX * blockSize, worldY * blockSize, blockSize, blockSize);

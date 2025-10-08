@@ -197,7 +197,7 @@ export class Game {
     this.performanceMonitor.endMark('frame');
 
     // Update memory usage every 60 frames
-    this.memoryUpdateCounter++;
+    this.memoryUpdateCounter += 1;
     if (this.memoryUpdateCounter >= 60) {
       this.performanceMonitor.updateMemory();
       this.memoryUpdateCounter = 0;

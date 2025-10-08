@@ -47,7 +47,7 @@ export class TerrainComponent extends LifecycleComponent {
     }
   }
 
-  update(deltaTime) {
+  update(_deltaTime) {
     // Stream chunks based on camera/player position
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
     if (player) {

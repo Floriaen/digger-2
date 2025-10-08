@@ -113,7 +113,6 @@ export class TerrainChunk {
     // ECS format
     for (let y = 0; y < CHUNK_SIZE; y += 1) {
       for (let x = 0; x < CHUNK_SIZE; x += 1) {
-        const componentData = data.blocks[y][x];
         // Block reconstruction from component data will be implemented in Phase 4
         // For now, just create empty blocks
         chunk.blocks[y][x] = BlockFactory.createEmpty();

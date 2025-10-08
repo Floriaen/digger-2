@@ -202,9 +202,6 @@ export class TouchInputComponent extends LifecycleComponent {
       return;
     }
 
-    // Calculate swipe angle (in degrees, 0 = right, 90 = down, 180 = left, 270 = up)
-    const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-
     // Determine primary direction
     let direction = null;
 
@@ -240,7 +237,9 @@ export class TouchInputComponent extends LifecycleComponent {
    * @private
    */
   _isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      || ('ontouchstart' in window);
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
+      .test(navigator.userAgent);
+    const hasTouchSupport = 'ontouchstart' in window;
+    return isMobileUA || hasTouchSupport;
   }
 }

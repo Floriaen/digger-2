@@ -23,7 +23,7 @@ export class PhysicsSystem {
    * Update physics simulation
    * @param {number} deltaTime - Time elapsed since last frame (ms)
    */
-  update(deltaTime) {
+  update(_deltaTime) {
     // TODO: Implement in Milestone 1
     // - Apply gravity to player
     // - Check for falling solid blocks (rock)
@@ -36,7 +36,7 @@ export class PhysicsSystem {
    * @param {number} y - World y coordinate
    * @returns {boolean}
    */
-  isSolid(x, y) {
+  isSolid(_x, _y) {
     // TODO: Query terrain component in Milestone 0
     return false;
   }

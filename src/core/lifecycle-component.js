@@ -31,7 +31,7 @@ export class LifecycleComponent {
    * Update component logic
    * @param {number} deltaTime - Time elapsed since last frame (ms)
    */
-  update(deltaTime) {
+  update(_deltaTime) {
     // Override in subclass
   }
 
@@ -39,7 +39,7 @@ export class LifecycleComponent {
    * Render component visuals
    * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
    */
-  render(ctx) {
+  render(_ctx) {
     // Override in subclass
   }
 

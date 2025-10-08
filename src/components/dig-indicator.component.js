@@ -16,7 +16,7 @@ export class DigIndicatorComponent extends LifecycleComponent {
     // No initialization needed
   }
 
-  update(deltaTime) {
+  update(_deltaTime) {
     // No update logic needed
   }
 
