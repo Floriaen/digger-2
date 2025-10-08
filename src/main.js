@@ -4,7 +4,7 @@
  */
 
 import { Game } from './core/game.js';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, updateCanvasDimensions } from './utils/config.js';
+import { updateCanvasDimensions } from './utils/config.js';
 import { BackgroundComponent } from './components/background.component.js';
 import { TerrainComponent } from './components/terrain.component.js';
 import { PlayerComponent } from './components/player.component.js';
