@@ -41,6 +41,12 @@ export class PlayerComponent extends LifecycleComponent {
     this.x = this.gridX * 16 + 8; // Center horizontally (16/2)
     this.y = this.gridY * 16 + 8; // Center vertically on 16x16 collision box
 
+    // Spawn reference for restart logic
+    this.spawnGridX = this.gridX;
+    this.spawnGridY = this.gridY;
+    this.spawnX = this.x;
+    this.spawnY = this.y;
+
     // Gravity/falling via FallableComponent (ECS pattern)
     this.fallable = new FallableComponent();
 
@@ -65,6 +71,9 @@ export class PlayerComponent extends LifecycleComponent {
     });
     this.unsubscribeDeath = eventBus.on('player:death', () => {
       this.dead = true;
+    });
+    this.unsubscribeRestart = eventBus.on('player:restart', () => {
+      this.resetToSpawn();
     });
   }
 
@@ -211,6 +220,7 @@ export class PlayerComponent extends LifecycleComponent {
     this.unsubscribeRight();
     this.unsubscribeDown();
     this.unsubscribeDeath();
+    this.unsubscribeRestart();
   }
 
   /**
@@ -397,6 +407,24 @@ export class PlayerComponent extends LifecycleComponent {
         }
       }
     }
+  }
+
+  /**
+   * Restore player to spawn point without affecting terrain state
+   */
+  resetToSpawn() {
+    this.gridX = this.spawnGridX;
+    this.gridY = this.spawnGridY;
+    this.x = this.spawnX;
+    this.y = this.spawnY;
+    this.state = PLAYER_STATE.IDLE;
+    this.digTimer = 0;
+    this.currentDigTarget = null;
+    this.digDirection = { dx: 0, dy: 1 };
+    this.requestedDirection = null;
+    this.hasStarted = false;
+    this.dead = false;
+    this.fallable.stopFalling();
   }
 
   /**
