@@ -57,6 +57,7 @@ export class TerrainGenerator {
     }
 
     const chunk = new TerrainChunk(chunkX, chunkY);
+    const specialPlacements = [];
 
     // Generate terrain based on depth
     for (let y = 0; y < CHUNK_SIZE; y += 1) {
@@ -74,28 +75,21 @@ export class TerrainGenerator {
           // Surface row: grass blocks (Y = 3)
           blockType = BLOCK_TYPE.GRASS;
         } else if (worldY < 33) {
-          // First 30 rows below surface: no caverns/holes, but rocks allowed (Y = 4 to 32)
-          if (this._isRock(worldX, worldY)) {
-            blockType = BLOCK_TYPE.ROCK;
-          } else {
-            blockType = this._getMudTypeByDepth(worldY);
-          }
+          // Early depth: keep terrain fully mud (no special blocks yet)
+          blockType = this._getMudTypeByDepth(worldY);
         } else if (this._isLavaZone(worldY)) {
           // Lava termination zone (deep underground)
           blockType = BLOCK_TYPE.LAVA;
         } else {
-          // Below 30 rows: normal terrain generation with caverns and rocks
+          // Below 33 rows: normal terrain generation with caverns and rocks
           const torusBlock = this._getTorusBlock(worldX, worldY);
           if (torusBlock !== null) {
             blockType = torusBlock;
           } else if (this._isCavern(worldX, worldY)) {
             // Cavern (procedural holes)
             blockType = BLOCK_TYPE.EMPTY;
-          } else if (this._isRock(worldX, worldY)) {
-            // Rare falling rock
-            blockType = BLOCK_TYPE.ROCK;
           } else {
-            // Stratified mud based on depth
+            // Base mud by depth
             blockType = this._getMudTypeByDepth(worldY);
           }
         }
@@ -115,11 +109,11 @@ export class TerrainGenerator {
     // Apply organic visual variant distribution based on proximity to empty tiles
     this._applyOrganicVariant(chunk, chunkX, chunkY);
 
-    // Generate chests with protective halos
-    this._generateChests(chunk, chunkX, chunkY);
+    // Collect potential special placement points
+    this._collectSpecialPlacements(chunk, chunkX, chunkY, specialPlacements);
 
-    // Generate halos around rocks
-    this._generateRockHalos(chunk, chunkX, chunkY);
+    // Apply queued special placements (blocks + halos)
+    this._applySpecialPlacements(chunk, chunkX, chunkY, specialPlacements);
 
     // Cache the chunk
     this.chunkCache.set(key, chunk);
@@ -257,19 +251,6 @@ export class TerrainGenerator {
     const threshold = 0.6 - depthFactor * 0.2; // Lower threshold = more caverns at depth
 
     return noise > threshold;
-  }
-
-  /**
-   * Check if position should be a rare falling rock
-   * @param {number} worldX - World X coordinate
-   * @param {number} worldY - World Y coordinate
-   * @returns {boolean}
-   * @private
-   */
-  _isRock(worldX, worldY) {
-    // Rare rocks (1-2% chance)
-    const rand = this._random(worldX, worldY);
-    return rand > 0.98;
   }
 
   /**
@@ -485,6 +466,50 @@ export class TerrainGenerator {
   }
 
   /**
+   * Collect potential positions for special blocks based on terrain state.
+   * @param {TerrainChunk} chunk
+   * @param {number} chunkX
+   * @param {number} chunkY
+   * @param {Array} specialPlacements
+   * @private
+   */
+  _collectSpecialPlacements(chunk, chunkX, chunkY, specialPlacements) {
+    for (let localY = 0; localY < CHUNK_SIZE; localY += 1) {
+      for (let localX = 0; localX < CHUNK_SIZE; localX += 1) {
+        const block = chunk.getBlock(localX, localY);
+        if (!BlockFactory.isMud(block)) {
+          continue; // eslint-disable-line no-continue
+        }
+
+        const worldX = chunkX * CHUNK_SIZE + localX;
+        const worldY = chunkY * CHUNK_SIZE + localY;
+
+        const minSpecialDepth = 6; // Start a few tiles below grass layer
+
+        if (worldY < minSpecialDepth || this._isLavaZone(worldY)) {
+          continue; // eslint-disable-line no-continue
+        }
+
+        const depthRange = Math.max(1, this.lavaDepth - minSpecialDepth);
+        const depthFactor = Math.min(1, Math.max(0, (worldY - minSpecialDepth) / depthRange));
+        const minSpawnChance = 0.02;
+        const maxSpawnChance = 0.5;
+        const spawnChance = minSpawnChance + depthFactor * (maxSpawnChance - minSpawnChance);
+        const roll = this._random(worldX + 411, worldY + 917);
+
+        if (roll < spawnChance) {
+          specialPlacements.push({
+            worldX,
+            worldY,
+            localX,
+            localY,
+          });
+        }
+      }
+    }
+  }
+
+  /**
    * Get distance to nearest empty tile (flood fill up to 6 blocks)
    * @param {TerrainChunk} chunk - Chunk to check
    * @param {number} x - Local X in chunk
@@ -524,111 +549,6 @@ export class TerrainGenerator {
     }
 
     return maxDistance;
-  }
-
-  /**
-   * Generate chests with protective halos in a chunk
-   * Max 2 chests per chunk, high spawn probability for testing
-   * @param {TerrainChunk} chunk - Chunk to modify
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
-   * @private
-   */
-  _generateChests(chunk, chunkX, chunkY) {
-    const worldYStart = chunkY * CHUNK_SIZE;
-
-    // Don't spawn chests in very top chunks or lava zone
-    if (worldYStart < 4 || worldYStart >= this.lavaDepth) return;
-
-    // TESTING: High spawn rate to verify functionality
-    const baseProbability = 0.8; // 80% chance for testing
-
-    // Determine number of chests to spawn (0-2)
-    const rand1 = this._random(chunkX * 1000, chunkY * 1000);
-    const rand2 = this._random(chunkX * 1000 + 1, chunkY * 1000 + 1);
-
-    const chestsToSpawn = [];
-    if (rand1 < baseProbability) chestsToSpawn.push(0);
-    if (rand2 < baseProbability) chestsToSpawn.push(1);
-
-    // Spawn up to 2 chests
-    chestsToSpawn.forEach((chestIndex) => {
-      // Find a valid position for the chest
-      const position = this._findChestPosition(chunk, chunkX, chunkY, chestIndex);
-      if (!position) return;
-
-      const { x, y } = position;
-      const worldX = chunkX * CHUNK_SIZE + x;
-      const worldY = chunkY * CHUNK_SIZE + y;
-
-      // Place covered chest (50% of the time, otherwise normal chest)
-      const useCover = this._random(worldX, worldY) > 0.5;
-      const chestBlock = useCover ? BlockFactory.createCoveredChest() : BlockFactory.createChest();
-      chunk.setBlock(x, y, chestBlock);
-
-      // Generate protective halo
-      const haloRadius = Math.floor(this._random(worldX, worldY) * 2) + 2; // 2-3
-      const seed = this._random(worldX + 100, worldY + 100) * 10000;
-      this._applyHalo({
-        chunk,
-        chunkX,
-        chunkY,
-        centerX: worldX,
-        centerY: worldY,
-        radius: haloRadius,
-        seed,
-        buildBlock: ({ darknessAlpha }) => BlockFactory.createProtectiveBlock(darknessAlpha),
-      });
-    });
-  }
-
-  /**
-   * Find a valid position for a chest in the chunk
-   * @param {TerrainChunk} chunk - Chunk to search
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
-   * @param {number} chestIndex - Chest index for randomization
-   * @returns {Object|null} {x, y} position or null if no valid position
-   * @private
-   */
-  _findChestPosition(chunk, chunkX, chunkY, chestIndex) {
-    const maxAttempts = 20;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const x = Math.floor(this._random(chunkX * 100 + chestIndex, chunkY * 100 + attempt) * CHUNK_SIZE);
-      const y = Math.floor(this._random(chunkX * 100 + chestIndex + 1, chunkY * 100 + attempt + 1) * CHUNK_SIZE);
-
-      const block = chunk.getBlock(x, y);
-
-      if (!BlockFactory.isMud(block)) {
-        continue; // eslint-disable-line no-continue
-      }
-
-      // Check that there's some solid ground around it (not in a large cavern)
-      let solidNeighbors = 0;
-      for (let dy = -1; dy <= 1; dy += 1) {
-        for (let dx = -1; dx <= 1; dx += 1) {
-          if (dx === 0 && dy === 0) continue; // eslint-disable-line no-continue
-
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx >= 0 && nx < CHUNK_SIZE && ny >= 0 && ny < CHUNK_SIZE) {
-            const neighborBlock = chunk.getBlock(nx, ny);
-
-            if (BlockFactory.isMud(neighborBlock)) {
-              solidNeighbors += 1;
-            }
-          }
-        }
-      }
-
-      // Need at least 4 solid neighbors to be a good spot
-      if (solidNeighbors >= 4) {
-        return { x, y };
-      }
-    }
-
-    return null;
   }
 
   /**
@@ -676,6 +596,163 @@ export class TerrainGenerator {
 
     // Return average, or default to 0.2 if no valid samples
     return validSamples > 0 ? totalDarkness / validSamples : 0.2;
+  }
+
+  /**
+   * Apply all queued special block placements (placement + halo).
+   * @param {TerrainChunk} chunk
+   * @param {number} chunkX
+   * @param {number} chunkY
+   * @param {Array} specialPlacements
+   * @private
+   */
+  _applySpecialPlacements(chunk, chunkX, chunkY, specialPlacements) {
+    specialPlacements.forEach((placement) => {
+      const { localX, localY, worldX, worldY } = placement;
+
+      if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
+        return;
+      }
+
+      const type = this._determineSpecialType(worldX, worldY);
+
+      if (type === 'chest' && this._placeChestSpecial(chunk, chunkX, chunkY, placement)) {
+        return;
+      }
+
+      if (type === 'pause' && this._placePauseCrystalSpecial(chunk, chunkX, chunkY, placement)) {
+        return;
+      }
+
+      this._placeRockSpecial(chunk, chunkX, chunkY, placement);
+    });
+  }
+
+  _determineSpecialType(worldX, worldY) {
+    const minSpecialDepth = 6;
+    const depth = Math.max(0, worldY - minSpecialDepth);
+    const depthRange = Math.max(1, this.lavaDepth - minSpecialDepth);
+    const depthFactor = Math.min(1, depth / depthRange);
+
+    const chestChance = 0.05 + depthFactor * 0.4;
+    const pauseChance = 0.02 + depthFactor * 0.06;
+    const roll = this._random(worldX + 521, worldY + 823);
+
+    if (roll < chestChance) {
+      return 'chest';
+    }
+
+    if (roll < chestChance + pauseChance) {
+      return 'pause';
+    }
+
+    return 'rock';
+  }
+
+  _placeChestSpecial(chunk, chunkX, chunkY, placement) {
+    const { localX, localY, worldX, worldY } = placement;
+
+    if (!this._canPlaceChest(chunk, localX, localY)) {
+      return false;
+    }
+
+    const useCover = this._random(worldX + 333, worldY + 333) > 0.5;
+    const chestBlock = useCover ? BlockFactory.createCoveredChest() : BlockFactory.createChest();
+    chunk.setBlock(localX, localY, chestBlock);
+
+    const haloRadius = Math.floor(this._random(worldX + 101, worldY + 101) * 2) + 2;
+    const haloSeed = this._random(worldX + 202, worldY + 202) * 10000;
+
+    this._applyHalo({
+      chunk,
+      chunkX,
+      chunkY,
+      centerX: worldX,
+      centerY: worldY,
+      radius: haloRadius,
+      seed: haloSeed,
+      buildBlock: ({ darknessAlpha }) => BlockFactory.createProtectiveBlock(darknessAlpha),
+    });
+
+    return true;
+  }
+
+  _placePauseCrystalSpecial(chunk, chunkX, chunkY, placement) {
+    const { localX, localY, worldX, worldY } = placement;
+
+    if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
+      return false;
+    }
+
+    const pauseBlock = BlockFactory.createPauseCrystal();
+    chunk.setBlock(localX, localY, pauseBlock);
+
+    const haloRadius = Math.floor(this._random(worldX + 303, worldY + 303) * 2) + 2;
+    const haloSeed = this._random(worldX + 404, worldY + 404) * 10000;
+
+    this._applyHalo({
+      chunk,
+      chunkX,
+      chunkY,
+      centerX: worldX,
+      centerY: worldY,
+      radius: haloRadius,
+      seed: haloSeed,
+      buildBlock: ({ darknessAlpha }) => BlockFactory.createProtectiveMud(darknessAlpha),
+    });
+
+    return true;
+  }
+
+  _placeRockSpecial(chunk, chunkX, chunkY, placement) {
+    const { localX, localY, worldX, worldY } = placement;
+
+    if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
+      return;
+    }
+
+    const rockBlock = BlockFactory.createRock();
+    chunk.setBlock(localX, localY, rockBlock);
+
+    const haloRadius = Math.floor(this._random(worldX + 505, worldY + 505) * 2) + 2;
+    const haloSeed = this._random(worldX + 606, worldY + 606) * 10000;
+
+    this._applyHalo({
+      chunk,
+      chunkX,
+      chunkY,
+      centerX: worldX,
+      centerY: worldY,
+      radius: haloRadius,
+      seed: haloSeed,
+      buildBlock: ({ darknessAlpha }) => BlockFactory.createProtectiveMud(darknessAlpha),
+    });
+  }
+
+  _canPlaceChest(chunk, localX, localY) {
+    if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
+      return false;
+    }
+
+    let solidNeighbors = 0;
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        if (dx === 0 && dy === 0) continue; // eslint-disable-line no-continue
+
+        const nx = localX + dx;
+        const ny = localY + dy;
+        if (nx < 0 || nx >= CHUNK_SIZE || ny < 0 || ny >= CHUNK_SIZE) {
+          continue; // eslint-disable-line no-continue
+        }
+
+        const neighbor = chunk.getBlock(nx, ny);
+        if (BlockFactory.isMud(neighbor)) {
+          solidNeighbors += 1;
+        }
+      }
+    }
+
+    return solidNeighbors >= 4;
   }
 
   /**
@@ -737,45 +814,6 @@ export class TerrainGenerator {
         chunk.setBlock(localX, localY, blockToPlace);
       }
     });
-  }
-
-  /**
-   * Generate organic halos around rocks in a chunk
-   * Uses protective mud blocks with progressive darkness overlay
-   * @param {TerrainChunk} chunk - Chunk to modify
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
-   * @private
-   */
-  _generateRockHalos(chunk, chunkX, chunkY) {
-    // Find all rocks in chunk
-    for (let y = 0; y < CHUNK_SIZE; y += 1) {
-      for (let x = 0; x < CHUNK_SIZE; x += 1) {
-        const block = chunk.getBlock(x, y);
-        const hasFallable = block.has(FallableComponent);
-        const render = block.get(RenderComponent);
-
-        // Check if it's a rock (has FallableComponent and spriteX === 48)
-        if (hasFallable && render && render.spriteX === 48) {
-          const worldX = chunkX * CHUNK_SIZE + x;
-          const worldY = chunkY * CHUNK_SIZE + y;
-
-          // Generate halo positions with radius 2-3 blocks
-          const haloRadius = Math.floor(this._random(worldX + 500, worldY + 500) * 2) + 2; // 2-3
-          const seed = this._random(worldX + 200, worldY + 200) * 10000;
-          this._applyHalo({
-            chunk,
-            chunkX,
-            chunkY,
-            centerX: worldX,
-            centerY: worldY,
-            radius: haloRadius,
-            seed,
-            buildBlock: ({ darknessAlpha }) => BlockFactory.createProtectiveMud(darknessAlpha),
-          });
-        }
-      }
-    }
   }
 
   /**
