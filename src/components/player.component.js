@@ -406,7 +406,7 @@ export class PlayerComponent extends LifecycleComponent {
    */
   handleLanding(blockLandedOn, landX, landY) {
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
-    
+
     if (blockLandedOn.has(DiggableComponent)) {
       // Start digging the block below us
       this.state = PLAYER_STATE.DIGGING;

@@ -60,7 +60,7 @@ export class TerrainComponent extends LifecycleComponent {
     if (!camera) return;
 
     const transform = camera.getTransform();
-    const renderQueue = this.game.renderQueue;
+    const { renderQueue } = this.game;
 
     if (!renderQueue || !this.spriteSheet) {
       return;

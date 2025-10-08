@@ -63,8 +63,8 @@ export class BlockFactory {
         spriteX: 48,
         spriteY: 0,
         width: 16,
-        height: 25
-        //offsetY : -9
+        height: 25,
+        // offsetY : -9
       }),
       new PhysicsComponent({ collidable: true }),
       new FallableComponent(),
@@ -140,7 +140,7 @@ export class BlockFactory {
       new HealthComponent({ hp: 15 }),
       new DiggableComponent(),
       new LootableComponent({ loot }),
-      new FallableComponent()
+      new FallableComponent(),
     ]);
   }
 

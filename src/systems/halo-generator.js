@@ -60,13 +60,13 @@ export function generateHalo(centerX, centerY, minRadius = 1, maxRadius = 3, see
   // Ensure at least one block exists in each cardinal/ordinal direction
   // Define 8 directions: N, NE, E, SE, S, SW, W, NW
   const directions = [
-    { dx: 0, dy: -1, name: 'N' },   // North
-    { dx: 1, dy: -1, name: 'NE' },  // Northeast
-    { dx: 1, dy: 0, name: 'E' },    // East
-    { dx: 1, dy: 1, name: 'SE' },   // Southeast
-    { dx: 0, dy: 1, name: 'S' },    // South
-    { dx: -1, dy: 1, name: 'SW' },  // Southwest
-    { dx: -1, dy: 0, name: 'W' },   // West
+    { dx: 0, dy: -1, name: 'N' }, // North
+    { dx: 1, dy: -1, name: 'NE' }, // Northeast
+    { dx: 1, dy: 0, name: 'E' }, // East
+    { dx: 1, dy: 1, name: 'SE' }, // Southeast
+    { dx: 0, dy: 1, name: 'S' }, // South
+    { dx: -1, dy: 1, name: 'SW' }, // Southwest
+    { dx: -1, dy: 0, name: 'W' }, // West
     { dx: -1, dy: -1, name: 'NW' }, // Northwest
   ];
 

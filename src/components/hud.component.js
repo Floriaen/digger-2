@@ -4,6 +4,17 @@
  */
 
 import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { eventBus } from '../utils/event-bus.js';
+import { RenderLayer } from '../rendering/render-layer.js';
+
+const HUD_COIN_SPRITE = {
+  x: 48,
+  y: 50,
+  width: 16,
+  height: 16,
+  destX: 12,
+  destY: 12,
+};
 
 /**
  * HUDComponent
@@ -12,6 +23,9 @@ import { LifecycleComponent } from '../core/lifecycle-component.js';
 export class HUDComponent extends LifecycleComponent {
   init() {
     this.score = 0;
+    this.unsubscribeScore = eventBus.on('score:add', ({ amount = 0 } = {}) => {
+      this.score += amount;
+    });
   }
 
   update(deltaTime) {
@@ -19,19 +33,33 @@ export class HUDComponent extends LifecycleComponent {
   }
 
   render(ctx) {
-    // Coin icon (simple circle placeholder)
-    ctx.fillStyle = '#FFD700';
-    ctx.beginPath();
-    ctx.arc(20, 20, 8, 0, Math.PI * 2);
-    ctx.fill();
+    const { renderQueue } = this.game;
+    if (!renderQueue) return;
 
-    // Score text
+    renderQueue.queueDraw({
+      layer: RenderLayer.HUD,
+      spriteX: HUD_COIN_SPRITE.x,
+      spriteY: HUD_COIN_SPRITE.y,
+      width: HUD_COIN_SPRITE.width,
+      height: HUD_COIN_SPRITE.height,
+      destX: HUD_COIN_SPRITE.destX,
+      destY: HUD_COIN_SPRITE.destY,
+    });
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    renderQueue.flush(ctx);
+
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '16px monospace';
     ctx.fillText(`${this.score}`, 35, 25);
+    ctx.restore();
   }
 
   destroy() {
-    // Cleanup if needed
+    if (this.unsubscribeScore) {
+      this.unsubscribeScore();
+      this.unsubscribeScore = null;
+    }
   }
 }

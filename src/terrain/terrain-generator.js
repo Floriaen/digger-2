@@ -164,7 +164,7 @@ export class TerrainGenerator {
       case BLOCK_TYPE.MUD_CORE:
         return BlockFactory.createMud(5, 5); // HP=5, variant=5 (darkest)
       case BLOCK_TYPE.ROCK:
-        //return BlockFactory.createPauseCrystal();
+        // return BlockFactory.createPauseCrystal();
         return BlockFactory.createRock();
       case BLOCK_TYPE.RED_FRAME:
         return BlockFactory.createRedFrame();
@@ -563,14 +563,14 @@ export class TerrainGenerator {
    */
   _sampleNeighborDarkness(chunk, localX, localY, chunkX, chunkY) {
     const neighbors = [
-      { dx: -1, dy: 0 },  // left
-      { dx: 1, dy: 0 },   // right
-      { dx: 0, dy: -1 },  // up
-      { dx: 0, dy: 1 },   // down
+      { dx: -1, dy: 0 }, // left
+      { dx: 1, dy: 0 }, // right
+      { dx: 0, dy: -1 }, // up
+      { dx: 0, dy: 1 }, // down
       { dx: -1, dy: -1 }, // top-left
-      { dx: 1, dy: -1 },  // top-right
-      { dx: -1, dy: 1 },  // bottom-left
-      { dx: 1, dy: 1 },   // bottom-right
+      { dx: 1, dy: -1 }, // top-right
+      { dx: -1, dy: 1 }, // bottom-left
+      { dx: 1, dy: 1 }, // bottom-right
     ];
 
     let totalDarkness = 0;
@@ -608,7 +608,9 @@ export class TerrainGenerator {
    */
   _applySpecialPlacements(chunk, chunkX, chunkY, specialPlacements) {
     specialPlacements.forEach((placement) => {
-      const { localX, localY, worldX, worldY } = placement;
+      const {
+        localX, localY, worldX, worldY,
+      } = placement;
 
       if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
         return;
@@ -650,7 +652,9 @@ export class TerrainGenerator {
   }
 
   _placeChestSpecial(chunk, chunkX, chunkY, placement) {
-    const { localX, localY, worldX, worldY } = placement;
+    const {
+      localX, localY, worldX, worldY,
+    } = placement;
 
     if (!this._canPlaceChest(chunk, localX, localY)) {
       return false;
@@ -678,7 +682,9 @@ export class TerrainGenerator {
   }
 
   _placePauseCrystalSpecial(chunk, chunkX, chunkY, placement) {
-    const { localX, localY, worldX, worldY } = placement;
+    const {
+      localX, localY, worldX, worldY,
+    } = placement;
 
     if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
       return false;
@@ -705,7 +711,9 @@ export class TerrainGenerator {
   }
 
   _placeRockSpecial(chunk, chunkX, chunkY, placement) {
-    const { localX, localY, worldX, worldY } = placement;
+    const {
+      localX, localY, worldX, worldY,
+    } = placement;
 
     if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
       return;
