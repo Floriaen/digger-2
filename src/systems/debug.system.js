@@ -3,7 +3,7 @@
  * @description Debug component - dat.GUI controls, de-zoom, overlays
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 
 /**
  * DebugComponent

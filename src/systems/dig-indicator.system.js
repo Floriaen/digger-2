@@ -3,9 +3,9 @@
  * @description Renders dig target outline on top of all terrain
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { TILE_WIDTH, SPRITE_HEIGHT, TILE_CAP_HEIGHT } from '../utils/config.js';
-import { PhysicsComponent } from './blocks/physics.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
 
 /**
  * DigIndicatorComponent

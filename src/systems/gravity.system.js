@@ -3,7 +3,7 @@
  * @description Unified gravity system - manages falling for all entities with FallableComponent
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { FallableComponent } from '../components/block/fallable.component.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
 import { BlockFactory } from '../factories/block.factory.js';

@@ -3,7 +3,7 @@
  * @description Camera component - handles viewport tracking and smooth following
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { CAMERA_LERP_FACTOR, CAMERA_OFFSET_Y, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp, easeInQuad } from '../utils/math.js';
 

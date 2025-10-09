@@ -3,7 +3,7 @@
  * @description System that manages and orchestrates all NPC entities.
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
 import { PositionComponent } from '../components/npc/position.component.js';
 

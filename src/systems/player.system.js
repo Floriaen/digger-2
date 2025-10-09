@@ -3,7 +3,7 @@
  * @description Player component - handles red ball movement, digging, and state machine
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import {
   DIG_INTERVAL_MS, PLAYER_RADIUS,
 } from '../utils/config.js';

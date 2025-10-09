@@ -1,4 +1,4 @@
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { Block } from '../entities/block.entity.js';
 import { RenderComponent } from '../components/block/render.component.js';
 import { LootEffectComponent } from '../components/block/loot-effect.component.js';

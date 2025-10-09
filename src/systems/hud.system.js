@@ -3,7 +3,7 @@
  * @description HUD component - displays score, UI overlays
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { eventBus } from '../utils/event-bus.js';
 import { RenderLayer } from '../rendering/render-layer.js';
 

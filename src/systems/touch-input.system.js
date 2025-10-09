@@ -3,7 +3,7 @@
  * @description Touch input component - handles mobile swipe gestures for movement
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
 

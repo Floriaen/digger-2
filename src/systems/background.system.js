@@ -1,9 +1,9 @@
 /**
- * @file background.component.js
- * @description Background component - renders sky, mountains, sun, and lava
+ * @file background.system.js
+ * @description Background system - renders sky, mountains, sun, and lava
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 
 /**

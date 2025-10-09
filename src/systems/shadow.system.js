@@ -3,7 +3,7 @@
  * @description Player shadow component - renders shadow on ground below player
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { PLAYER_RADIUS } from '../utils/config.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
 

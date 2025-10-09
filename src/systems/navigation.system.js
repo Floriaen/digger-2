@@ -3,7 +3,7 @@
  * @description Navigation guidance - white triangle markers for valid movement directions
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import { SPRITE_ATLAS, loadSpriteSheet } from '../rendering/sprite-atlas.js';
 import { DiggableComponent } from './blocks/diggable.component.js';
 

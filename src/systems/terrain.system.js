@@ -3,7 +3,7 @@
  * @description Terrain component - manages chunks, generation, and block data
  */
 
-import { System } from "../core/system.js';
+import { System } from '../core/system.js';
 import {
   CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, SPRITE_HEIGHT, TILE_CAP_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
 } from '../utils/config.js';
