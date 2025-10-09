@@ -37,9 +37,9 @@ export class FallableComponent extends Component {
 
   /**
    * Update falling physics
-   * @param {number} deltaTime - Time since last frame
+   * @param {number} _deltaTime - Time since last frame
    */
-  updateFalling(deltaTime) {
+  updateFalling(_deltaTime) {
     this.velocityY += GRAVITY;
     if (this.velocityY > FALL_SPEED_MAX) {
       this.velocityY = FALL_SPEED_MAX;

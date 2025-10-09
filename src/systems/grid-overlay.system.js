@@ -7,7 +7,7 @@ import { System } from '../core/system.js';
 import {
   TILE_WIDTH, TILE_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
 } from '../utils/config.js';
-import { PhysicsComponent } from './blocks/physics.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
 
 /**
  * GridOverlayComponent

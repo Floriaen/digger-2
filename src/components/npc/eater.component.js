@@ -5,8 +5,8 @@
 
 import { Component } from '../../core/component.js';
 import { BlockFactory } from '../../factories/block.factory.js';
-import { PhysicsComponent } from '../../components/block/physics.component.js';
-import { DiggableComponent } from '../../components/block/diggable.component.js';
+import { PhysicsComponent } from '../block/physics.component.js';
+import { DiggableComponent } from '../block/diggable.component.js';
 
 const INSTANT_DAMAGE = Number.MAX_SAFE_INTEGER;
 

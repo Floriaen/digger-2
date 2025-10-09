@@ -5,7 +5,7 @@
 
 import { System } from '../core/system.js';
 import { SPRITE_ATLAS, loadSpriteSheet } from '../rendering/sprite-atlas.js';
-import { DiggableComponent } from './blocks/diggable.component.js';
+import { DiggableComponent } from '../components/block/diggable.component.js';
 
 const GUIDANCE_DELAY_MS = 400;
 

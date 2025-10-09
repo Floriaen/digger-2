@@ -8,13 +8,13 @@ import {
   DIG_INTERVAL_MS, PLAYER_RADIUS,
 } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
-import { PhysicsComponent } from './blocks/physics.component.js';
-import { DiggableComponent } from './blocks/diggable.component.js';
-import { HealthComponent } from './blocks/health.component.js';
-import { LethalComponent } from './blocks/lethal.component.js';
-import { FallableComponent } from './blocks/fallable.component.js';
-import { LootableComponent } from './blocks/lootable.component.js';
-import { PauseOnDestroyComponent } from './blocks/pause-on-destroy.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
+import { DiggableComponent } from '../components/block/diggable.component.js';
+import { HealthComponent } from '../components/block/health.component.js';
+import { LethalComponent } from '../components/block/lethal.component.js';
+import { FallableComponent } from '../components/block/fallable.component.js';
+import { LootableComponent } from '../components/block/lootable.component.js';
+import { PauseOnDestroyComponent } from '../components/block/pause-on-destroy.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**

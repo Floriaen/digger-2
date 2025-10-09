@@ -5,7 +5,7 @@
 
 import { System } from '../core/system.js';
 import { PLAYER_RADIUS } from '../utils/config.js';
-import { PhysicsComponent } from './blocks/physics.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
 
 /**
  * ShadowComponent

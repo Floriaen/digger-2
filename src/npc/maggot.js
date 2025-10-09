@@ -4,14 +4,14 @@
  */
 
 import { NPC } from '../entities/npc.entity.js';
-import { PositionComponent } from './components/npc-position.component.js';
-import { StateComponent } from './components/npc-state.component.js';
-import { EaterComponent } from './components/npc-eater.component.js';
-import { WalkerComponent } from './components/npc-walker.component.js';
-import { RenderComponent } from './components/npc-render.component.js';
-import { SpawnComponent } from './components/npc-spawn.component.js';
-import { FallComponent } from './components/npc-fall.component.js';
-import { KillComponent } from './components/npc-kill.component.js';
+import { PositionComponent } from '../components/npc/position.component.js';
+import { StateComponent } from '../components/npc/state.component.js';
+import { EaterComponent } from '../components/npc/eater.component.js';
+import { WalkerComponent } from '../components/npc/walker.component.js';
+import { RenderComponent } from '../components/npc/render.component.js';
+import { SpawnComponent } from '../components/npc/spawn.component.js';
+import { FallComponent } from '../components/npc/fall.component.js';
+import { KillComponent } from '../components/npc/kill.component.js';
 
 export function createMaggot(spawn) {
   if (!spawn) {

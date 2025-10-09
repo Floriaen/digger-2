@@ -19,14 +19,14 @@ describe('generateHalo', () => {
       // Define 8 directional sectors (45° each)
       // N: 337.5° - 22.5° (0°), NE: 22.5° - 67.5°, E: 67.5° - 112.5°, etc.
       const directions = {
-        N: { min: -22.5, max: 22.5 },      // North (0°)
-        NE: { min: 22.5, max: 67.5 },      // Northeast (45°)
-        E: { min: 67.5, max: 112.5 },      // East (90°)
-        SE: { min: 112.5, max: 157.5 },    // Southeast (135°)
-        S: { min: 157.5, max: 202.5 },     // South (180°)
-        SW: { min: 202.5, max: 247.5 },    // Southwest (225°)
-        W: { min: 247.5, max: 292.5 },     // West (270°)
-        NW: { min: 292.5, max: 337.5 },    // Northwest (315°)
+        N: { min: -22.5, max: 22.5 }, // North (0°)
+        NE: { min: 22.5, max: 67.5 }, // Northeast (45°)
+        E: { min: 67.5, max: 112.5 }, // East (90°)
+        SE: { min: 112.5, max: 157.5 }, // Southeast (135°)
+        S: { min: 157.5, max: 202.5 }, // South (180°)
+        SW: { min: 202.5, max: 247.5 }, // Southwest (225°)
+        W: { min: 247.5, max: 292.5 }, // West (270°)
+        NW: { min: 292.5, max: 337.5 }, // Northwest (315°)
       };
 
       // Count blocks in each direction

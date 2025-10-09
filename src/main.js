@@ -9,7 +9,7 @@ import { BackgroundSystem } from './systems/background.system.js';
 import { TerrainSystem } from './systems/terrain.system.js';
 import { PlayerSystem } from './systems/player.system.js';
 import { ShadowSystem } from './systems/shadow.system.js';
-import { GridOverlaySystem } from './systems/grid-overlay.system.js';
+// import { GridOverlaySystem } from './systems/grid-overlay.system.js';
 import { NavigationSystem } from './systems/navigation.system.js';
 import { DigIndicatorSystem } from './systems/dig-indicator.system.js';
 import { CameraSystem } from './systems/camera.system.js';
@@ -120,7 +120,7 @@ function init() {
   game.addComponent(new TerrainSystem(game));
   game.addComponent(new NPCSystem(game));
   game.addComponent(new GravitySystem(game)); // Gravity system updates after terrain
-  //game.addComponent(new GridOverlaySystem(game)); // Grid overlay on blocks
+  // game.addComponent(new GridOverlaySystem(game)); // Grid overlay on blocks
   game.addComponent(new DigIndicatorSystem(game)); // Dig outline on top of terrain
   game.addComponent(new ShadowSystem(game)); // Shadow renders before player
   game.addComponent(new NavigationSystem(game));

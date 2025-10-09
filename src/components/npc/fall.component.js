@@ -5,8 +5,8 @@
 
 import { Component } from '../../core/component.js';
 import { TILE_HEIGHT } from '../../utils/config.js';
-import { PhysicsComponent } from '../../components/block/physics.component.js';
-import { PositionComponent } from './npc-position.component.js';
+import { PhysicsComponent } from '../block/physics.component.js';
+import { PositionComponent } from './position.component.js';
 
 const FALL_SPEED_PX_PER_MS = 0.3;
 

@@ -7,7 +7,4 @@ import { Component } from '../../core/component.js';
  * Blocks with this component kill the player on contact.
  */
 export class LethalComponent extends Component {
-  constructor() {
-    super();
-  }
 }
