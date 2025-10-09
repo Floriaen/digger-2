@@ -16,6 +16,7 @@ import { DarknessComponent } from './blocks/darkness.component.js';
 import { LethalComponent } from './blocks/lethal.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { RenderLayer } from '../rendering/render-layer.js';
+import { createMaggot } from '../npc/maggot.js';
 
 const BASE_DARKEN_EPSILON = 0.0001;
 const DARKNESS_EPSILON = 0.0002;
@@ -36,6 +37,7 @@ export class TerrainComponent extends LifecycleComponent {
     this.generator = new TerrainGenerator(this.seed);
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded
+    this.npcList = null;
 
     // Load sprite sheet
     try {
@@ -108,9 +110,42 @@ export class TerrainComponent extends LifecycleComponent {
     // Load 3x3 chunk area around player
     for (let dy = -1; dy <= 1; dy += 1) {
       for (let dx = -1; dx <= 1; dx += 1) {
-        this.cache.getChunk(chunkX + dx, chunkY + dy);
+        const chunk = this.cache.getChunk(chunkX + dx, chunkY + dy);
+        this._spawnMaggotsForChunk(chunk);
       }
     }
+  }
+
+  _spawnMaggotsForChunk(chunk) {
+    if (!chunk || !Array.isArray(chunk.maggotSpawns) || chunk.maggotSpawns.length === 0) {
+      return;
+    }
+
+    const npcList = this._getNPCList();
+    if (!npcList) {
+      return;
+    }
+
+    chunk.maggotSpawns.forEach((spawn) => {
+      if (!spawn || spawn.active) {
+        return;
+      }
+
+      const npc = createMaggot(spawn);
+      npcList.add(npc);
+    });
+  }
+
+  _getNPCList() {
+    if (this.npcList && this.game.components.includes(this.npcList)) {
+      return this.npcList;
+    }
+
+    this.npcList = this.game.components.find(
+      (component) => component.constructor.name === 'NPCListComponent',
+    ) || null;
+
+    return this.npcList;
   }
 
   /**

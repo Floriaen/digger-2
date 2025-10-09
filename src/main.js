@@ -16,6 +16,7 @@ import { CameraComponent } from './components/camera.component.js';
 import { HUDComponent } from './components/hud.component.js';
 import { DebugComponent } from './components/debug.component.js';
 import { TouchInputComponent } from './components/touch-input.component.js';
+import { NPCListComponent } from './components/npc-list.component.js';
 import { InputSystem } from './systems/input.system.js';
 import { GravitySystem } from './systems/gravity.system.js';
 import { CoinEffectSystem } from './systems/coin-effect.system.js';
@@ -75,6 +76,20 @@ function resizeCanvas(canvas, game) {
 }
 
 /**
+ * Map death cause to dialog text
+ */
+function getDeathMessage(cause) {
+  switch (cause) {
+    case 'crushed':
+      return 'Crushed by falling rock';
+    case 'lava':
+      return 'Melted by lava';
+    default:
+      return '';
+  }
+}
+
+/**
  * Initialize the game when DOM is ready
  */
 function init() {
@@ -103,8 +118,9 @@ function init() {
   // Add components (order matters for rendering and update logic)
   game.addComponent(new BackgroundComponent(game));
   game.addComponent(new TerrainComponent(game));
+  game.addComponent(new NPCListComponent(game));
   game.addComponent(new GravitySystem(game)); // Gravity system updates after terrain
-  game.addComponent(new GridOverlayComponent(game)); // Grid overlay on blocks
+  //game.addComponent(new GridOverlayComponent(game)); // Grid overlay on blocks
   game.addComponent(new DigIndicatorComponent(game)); // Dig outline on top of terrain
   game.addComponent(new ShadowComponent(game)); // Shadow renders before player
   game.addComponent(new NavigationComponent(game));
@@ -120,7 +136,12 @@ function init() {
 
   // Subscribe to pause toggle event
   eventBus.on('input:pause-toggle', () => {
-    game.togglePause();
+    game.handlePauseInput();
+  });
+
+  eventBus.on('player:death', ({ cause } = {}) => {
+    const message = getDeathMessage(cause);
+    game.showOverlay('death', { message });
   });
 
   // Hide loading screen

@@ -6,6 +6,7 @@
 import { TARGET_FPS } from '../utils/config.js';
 import { PerformanceMonitor } from '../utils/performance-monitor.js';
 import { RenderQueue } from '../rendering/render-queue.js';
+import { eventBus } from '../utils/event-bus.js';
 
 /**
  * Main Game class
@@ -25,6 +26,7 @@ export class Game {
     this.components = [];
     this.running = false;
     this.paused = false;
+    this.overlay = null;
     this.lastTime = 0;
     this.deltaTime = 0;
     this.frameInterval = 1000 / TARGET_FPS;
@@ -185,9 +187,9 @@ export class Game {
       this.ctx.restore();
     }
 
-    // Render pause overlay if paused (after restore, so it's not zoomed)
-    if (this.paused) {
-      this._renderPauseOverlay();
+    // Render overlay last so it is not affected by zoom transforms
+    if (this.overlay) {
+      this._renderOverlay();
     }
 
     // Performance: End render timing
@@ -225,28 +227,93 @@ export class Game {
    * Toggle pause state
    */
   togglePause() {
-    this.paused = !this.paused;
+    this.handlePauseInput();
   }
 
   /**
    * Pause the game
    */
   pause() {
-    this.paused = true;
+    this.showOverlay('pause');
   }
 
   /**
    * Resume the game
    */
   resume() {
+    this.hideOverlay();
+  }
+
+  /**
+   * Handle pause input (Space/Escape)
+   */
+  handlePauseInput() {
+    if (this.overlay?.type === 'death') {
+      this._restartAfterDeath();
+      return;
+    }
+
+    if (this.overlay?.type === 'pause') {
+      this.hideOverlay();
+      return;
+    }
+
+    if (!this.paused) {
+      this.showOverlay('pause');
+    } else {
+      this.hideOverlay();
+    }
+  }
+
+  /**
+   * Show modal overlay and pause the game
+   * @param {'pause'|'death'} type
+   * @param {{title?: string, message?: string, instruction?: string}} overrides
+   */
+  showOverlay(type, overrides = {}) {
+    const presets = {
+      pause: {
+        title: 'PAUSED',
+        message: '',
+        instruction: 'SPACE to resume',
+      },
+      death: {
+        title: 'YOU DIED',
+        message: '',
+        instruction: 'SPACE to restart',
+      },
+    };
+
+    this.overlay = {
+      type,
+      ...presets[type],
+      ...overrides,
+    };
+    this.paused = true;
+  }
+
+  /**
+   * Hide overlay and resume updates
+   */
+  hideOverlay() {
+    this.overlay = null;
     this.paused = false;
   }
 
   /**
-   * Render pause overlay
+   * Restart the player while preserving terrain state
    * @private
    */
-  _renderPauseOverlay() {
+  _restartAfterDeath() {
+    eventBus.emit('player:restart');
+    this.hideOverlay();
+  }
+
+  /**
+   * Render overlay dialog
+   * @private
+   */
+  _renderOverlay() {
     const { ctx } = this;
     const { width, height } = this.canvas;
 
@@ -254,17 +321,30 @@ export class Game {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, width, height);
 
-    // "SPACE" text (large)
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 48px Arial';
+    const title = this.overlay?.title;
+    const message = this.overlay?.message;
+    const instruction = this.overlay?.instruction;
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('SPACE', width / 2, height / 2 - 20);
 
-    // "to resume" text (smaller below)
-    ctx.font = '20px Arial';
-    ctx.fillStyle = '#CCCCCC';
-    ctx.fillText('to resume', width / 2, height / 2 + 20);
+    if (title) {
+      ctx.font = 'bold 48px Arial';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(title, width / 2, height / 2 - 60);
+    }
+
+    if (message) {
+      ctx.font = '24px Arial';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(message, width / 2, height / 2 - 10);
+    }
+
+    if (instruction) {
+      ctx.font = '20px Arial';
+      ctx.fillStyle = '#CCCCCC';
+      ctx.fillText(instruction, width / 2, height / 2 + 40);
+    }
   }
 
   /**

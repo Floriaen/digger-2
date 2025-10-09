@@ -19,6 +19,7 @@ export class TerrainChunk {
     this.chunkX = chunkX;
     this.chunkY = chunkY;
     this.blocks = this._createEmptyGrid();
+    this.maggotSpawns = [];
   }
 
   /**

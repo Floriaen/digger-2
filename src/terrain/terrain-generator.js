@@ -56,6 +56,7 @@ export class TerrainGenerator {
     }
 
     const chunk = new TerrainChunk(chunkX, chunkY);
+    chunk.maggotSpawns = [];
     const specialPlacements = [];
 
     // Generate terrain based on depth
@@ -73,7 +74,7 @@ export class TerrainGenerator {
         } else if (worldY === 3) {
           // Surface row: grass blocks (Y = 3)
           blockType = BLOCK_TYPE.GRASS;
-        } else if (worldY < 33) {
+        } else if (worldY < 10) {
           // Early depth: keep terrain fully mud (no special blocks yet)
           blockType = this._getMudTypeByDepth(worldY);
         } else if (this._isLavaZone(worldY)) {
@@ -622,6 +623,10 @@ export class TerrainGenerator {
         return;
       }
 
+      if (type === 'maggot' && this._placeMaggotSpecial(chunk, chunkX, chunkY, placement)) {
+        return;
+      }
+
       this._placeRockSpecial(chunk, chunkX, chunkY, placement);
     });
   }
@@ -641,10 +646,45 @@ export class TerrainGenerator {
     }
 
     if (roll < chestChance + pauseChance) {
+      const maggotRoll = this._random(worldX + 727, worldY + 929);
+      if (maggotRoll < 1 / 3) {
+        return 'maggot';
+      }
       return 'pause';
     }
 
     return 'rock';
+  }
+
+  _placeMaggotSpecial(chunk, chunkX, chunkY, placement) {
+    const {
+      localX, localY, worldX, worldY,
+    } = placement;
+
+    if (!BlockFactory.isMud(chunk.getBlock(localX, localY))) {
+      return false;
+    }
+
+    chunk.setBlock(localX, localY, BlockFactory.createEmpty());
+
+    if (!Array.isArray(chunk.maggotSpawns)) {
+      chunk.maggotSpawns = [];
+    }
+
+    const direction = this._random(worldX + 737, worldY + 149) > 0.5 ? 1 : -1;
+
+    chunk.maggotSpawns.push({
+      id: `maggot:${chunkX},${chunkY}:${localX},${localY}`,
+      worldX,
+      worldY,
+      localX,
+      localY,
+      direction,
+      active: false,
+      npc: null,
+    });
+
+    return true;
   }
 
   _placeChestSpecial(chunk, chunkX, chunkY, placement) {

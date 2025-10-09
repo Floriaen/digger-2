@@ -14,13 +14,13 @@ This document tracks AI-assisted development sessions for Digger 2, including to
 
 ### Core Principles
 1. **ECS (Entity-Component-System)**: Blocks are entities composed of components (data + behavior)
-2. **Two Component Types**:
+2. **YAGNI / DRY / KISS**: Build only what’s needed now, avoid repetition, keep solutions simple
+3. **Two Component Types**:
    - **LifecycleComponent** (`src/core/lifecycle-component.js`): Game loop systems (player, camera, terrain, HUD)
-   - **Component** (`src/core/component.js`): ECS data containers for block entities
-3. **Factory Pattern**: BlockFactory is the ONLY way to create block entities
-4. **Event-driven communication**: Event bus for decoupled systems
-5. **NO FALLBACKS**: Errors surface immediately during development
-6. **YAGNI / DRY / KISS**: Build only what’s needed now, avoid repetition, keep solutions simple
+   - **Component** (`src/core/component.js`): ECS component for block entities
+4. **Factory Pattern**: BlockFactory is the ONLY way to create block entities
+5. **Event-driven communication**: Event bus for decoupled systems
+6. **NO FALLBACKS**: Errors surface immediately during development
 
 ### Directory Structure
 ```
