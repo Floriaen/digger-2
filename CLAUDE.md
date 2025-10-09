@@ -50,7 +50,23 @@ This document tracks AI-assisted development sessions for Digger 2, including to
   - `/npc/components/` → `/components/npc/` (unified component location)
   - NPC component class prefixes removed: `NpcPositionComponent` → `PositionComponent`
 
-See [ECS_CLEANUP.md](Docs/ECS_CLEANUP.md) and [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) for details.
+### Known Architectural Inconsistency ⚠️
+
+**Two patterns exist for component logic**:
+
+1. **System-Driven (Block components)** ❌ NOT DESIRED
+   - Example: `FallableComponent` — Logic split between component and `GravitySystem`
+   - System iterates entities, calls component methods
+   - Tight coupling, harder to reuse
+
+2. **Component-Owned (NPC components)** ✅ DESIRED
+   - Example: `WalkerComponent` — Component owns all logic
+   - System just calls `component.update(entity, deltaTime)`
+   - Self-contained, reusable, loosely coupled
+
+**Migration needed**: Block components should adopt Pattern 2 (component-owned logic) for consistency with NPC components.
+
+See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) Section 5 for detailed analysis and migration plan.
 
 ---
 

@@ -294,6 +294,121 @@ This is a **pragmatic deviation** from pure ECS (where components are data-only 
 
 ---
 
+### 5. **Component Logic Inconsistency** ⚠️
+
+**Current Problem**: We have **two different patterns** for component logic:
+
+#### Pattern 1: System-Driven (Block Components) ❌ NOT DESIRED
+
+**Example**: `FallableComponent` (rocks falling)
+- Component has methods but **delegates to `GravitySystem`**
+- `GravitySystem` iterates all chunks, finds blocks with `FallableComponent`, calls component methods
+- **Problem**: Logic split between component and system
+
+```javascript
+// GravitySystem controls the logic
+class GravitySystem extends System {
+  update(deltaTime) {
+    chunks.forEach(chunk => {
+      chunk.blocks.forEach(block => {
+        const fallable = block.get(FallableComponent);
+        if (fallable && !fallable.isFalling) {
+          fallable.checkSupport(block, terrain, x, y);
+          fallable.startFalling(x, y);
+        }
+        if (fallable && fallable.isFalling) {
+          fallable.updateFalling(deltaTime);
+        }
+      });
+    });
+  }
+}
+```
+
+#### Pattern 2: Component-Owned (NPC Components) ✅ DESIRED
+
+**Example**: `WalkerComponent` (maggot walking)
+- Component **owns its logic completely**
+- `NPCSystem` just calls `component.update(npc, deltaTime)`
+- **Benefit**: Self-contained, reusable, no system dependency
+
+```javascript
+// WalkerComponent owns the logic
+class WalkerComponent extends Component {
+  update(npc, deltaTime) {
+    // All logic here - no system involvement
+    this.x += this.direction * this.speed * deltaTime;
+    if (this.shouldTurn()) this.direction *= -1;
+  }
+}
+
+// NPCSystem just delegates
+class NPCSystem extends System {
+  update(deltaTime) {
+    this.npcs.forEach(npc => {
+      const walker = npc.get(WalkerComponent);
+      if (walker) walker.update(npc, deltaTime);  // Component handles everything
+    });
+  }
+}
+```
+
+#### Why Pattern 2 is Better
+
+| Pattern 1 (System-Driven) | Pattern 2 (Component-Owned) |
+|---------------------------|------------------------------|
+| Logic split (system + component) | Logic in one place (component) |
+| System must iterate all entities | System delegates to components |
+| Hard to reuse component elsewhere | Easy to reuse (just add to entity) |
+| Tight coupling to system | Loose coupling, self-contained |
+
+#### Migration Plan
+
+**Goal**: Migrate all block components to Pattern 2 (component-owned logic)
+
+**Affected Components**:
+- `FallableComponent` (currently needs `GravitySystem`)
+- `DiggableComponent` (currently needs `PlayerSystem`)
+- `LootableComponent` (currently needs system interaction)
+
+**Strategy**:
+1. Move all logic from `GravitySystem` into `FallableComponent.update()`
+2. Make `GravitySystem` a simple delegator (like `NPCSystem`)
+3. Same for other block components
+4. Eventually, we may not need `GravitySystem` at all (just `TerrainSystem` calling component updates)
+
+**Future State**:
+```javascript
+// FallableComponent owns ALL logic
+class FallableComponent extends Component {
+  update(block, terrain, x, y, deltaTime) {
+    if (!this.isFalling && this.checkSupport(block, terrain, x, y)) {
+      this.startFalling(x, y);
+    }
+    if (this.isFalling) {
+      this.updateFalling(deltaTime);
+      this.checkLanding(block, terrain);
+    }
+  }
+}
+
+// GravitySystem (or TerrainSystem) just delegates
+class GravitySystem extends System {
+  update(deltaTime) {
+    chunks.forEach(chunk => {
+      chunk.blocks.forEach(block => {
+        const fallable = block.get(FallableComponent);
+        if (fallable) fallable.update(block, terrain, x, y, deltaTime);
+      });
+    });
+  }
+}
+```
+
+**Note**: This migration is **not yet done** but should be prioritized for architectural consistency.
+
+---
+
 ## Game Loop Flow
 
 ```
@@ -766,6 +881,7 @@ eventBus.on('player:collect', ({ points }) => {
 4. **Factory Pattern**: Centralized entity creation
 5. **Component Behaviors**: Components have methods, not just data
 6. **Pragmatic Design**: YAGNI/DRY/KISS over architectural purity
+7. ⚠️ **Known Issue**: Block components use system-driven pattern (Pattern 1), should migrate to component-owned pattern (Pattern 2) like NPC components
 
 ### When to Use What
 
