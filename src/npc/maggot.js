@@ -4,26 +4,33 @@
  */
 
 import { NPC } from '../entities/npc.entity.js';
-import { MaggotPositionComponent } from './components/maggot-position.component.js';
-import { MaggotStateComponent } from './components/maggot-state.component.js';
-import { MaggotEaterComponent } from './components/maggot-eater.component.js';
-import { MaggotWalkerComponent } from './components/maggot-walker.component.js';
-import { MaggotRenderComponent } from './components/maggot-render.component.js';
-import { MaggotSpawnComponent } from './components/maggot-spawn.component.js';
-import { MaggotFallComponent } from './components/maggot-fall.component.js';
-import { MaggotKillComponent } from './components/maggot-kill.component.js';
+import { NpcPositionComponent } from './components/npc-position.component.js';
+import { NpcStateComponent } from './components/npc-state.component.js';
+import { NpcEaterComponent } from './components/npc-eater.component.js';
+import { NpcWalkerComponent } from './components/npc-walker.component.js';
+import { NpcRenderComponent } from './components/npc-render.component.js';
+import { NpcSpawnComponent } from './components/npc-spawn.component.js';
+import { NpcFallComponent } from './components/npc-fall.component.js';
+import { NpcKillComponent } from './components/npc-kill.component.js';
 
 export function createMaggot(spawn) {
   if (!spawn) {
     throw new Error('createMaggot requires spawn metadata');
   }
 
-  const gridX = typeof spawn.worldX === 'number'
-    ? spawn.worldX
-    : (typeof spawn.localX === 'number' ? spawn.localX : 0);
-  const gridY = typeof spawn.worldY === 'number'
-    ? spawn.worldY
-    : (typeof spawn.localY === 'number' ? spawn.localY : 0);
+  let gridX = 0;
+  if (typeof spawn.worldX === 'number') {
+    gridX = spawn.worldX;
+  } else if (typeof spawn.localX === 'number') {
+    gridX = spawn.localX;
+  }
+
+  let gridY = 0;
+  if (typeof spawn.worldY === 'number') {
+    gridY = spawn.worldY;
+  } else if (typeof spawn.localY === 'number') {
+    gridY = spawn.localY;
+  }
   const direction = typeof spawn.direction === 'number' ? spawn.direction : -1;
 
   spawn.worldX = gridX;
@@ -31,14 +38,14 @@ export function createMaggot(spawn) {
   spawn.direction = direction;
 
   const npc = new NPC([
-    new MaggotSpawnComponent({ spawn }),
-    new MaggotPositionComponent({ gridX, gridY, spawn }),
-    new MaggotStateComponent({ direction, spawn }),
-    new MaggotEaterComponent({ spawn }),
-    new MaggotFallComponent(),
-    new MaggotWalkerComponent(),
-    new MaggotKillComponent(),
-    new MaggotRenderComponent(),
+    new NpcSpawnComponent({ spawn }),
+    new NpcPositionComponent({ gridX, gridY, spawn }),
+    new NpcStateComponent({ direction, spawn }),
+    new NpcEaterComponent({ spawn }),
+    new NpcFallComponent(),
+    new NpcWalkerComponent(),
+    new NpcKillComponent(),
+    new NpcRenderComponent(),
   ]);
 
   return npc;

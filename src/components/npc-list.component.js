@@ -5,7 +5,7 @@
 
 import { LifecycleComponent } from '../core/lifecycle-component.js';
 import { TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
-import { MaggotPositionComponent } from '../npc/components/maggot-position.component.js';
+import { NpcPositionComponent } from '../npc/components/npc-position.component.js';
 
 /**
  * NPCListComponent
@@ -102,7 +102,12 @@ export class NPCListComponent extends LifecycleComponent {
     const minY = -transform.y;
     const maxY = -transform.y + height;
 
-    return { minX, maxX, minY, maxY };
+    return {
+      minX,
+      maxX,
+      minY,
+      maxY,
+    };
   }
 
   _isVisible(npc, bounds) {
@@ -131,7 +136,7 @@ export class NPCListComponent extends LifecycleComponent {
 
   _getPositionComponent(npc) {
     if (npc && typeof npc.get === 'function') {
-      const position = npc.get(MaggotPositionComponent);
+      const position = npc.get(NpcPositionComponent);
       if (position) {
         return position;
       }
@@ -139,7 +144,6 @@ export class NPCListComponent extends LifecycleComponent {
 
     return null;
   }
-
 
   _getTerrain() {
     if (this.cachedTerrain && this.game.components.includes(this.cachedTerrain)) {
