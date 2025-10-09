@@ -22,7 +22,7 @@ export class FallableComponent extends Component {
   /**
    * Check if this entity should fall (has no support below)
    * @param {Block} block - The block entity
-   * @param {TerrainComponent} terrain - Terrain to check
+   * @param {TerrainSystem} terrain - Terrain to check
    * @param {number} gridX - Block X position
    * @param {number} gridY - Block Y position
    * @returns {boolean} True if should fall

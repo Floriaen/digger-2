@@ -22,7 +22,7 @@ export class FallComponent extends Component {
     }
 
     const terrainRef = terrain
-      || game.components.find((component) => component.constructor.name === 'TerrainComponent');
+      || game.components.find((component) => component.constructor.name === 'TerrainSystem');
 
     if (!terrainRef) {
       return;

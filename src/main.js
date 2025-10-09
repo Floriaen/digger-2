@@ -68,7 +68,7 @@ function resizeCanvas(canvas, game) {
 
   // Update camera if it exists
   if (game) {
-    const camera = game.components.find((c) => c.constructor.name === 'CameraComponent');
+    const camera = game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (camera && camera.updateViewport) {
       camera.updateViewport();
     }
