@@ -3,16 +3,16 @@
  * @description Player shadow component - renders shadow on ground below player
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import { PLAYER_RADIUS } from '../utils/config.js';
-import { PhysicsComponent } from './blocks/physics.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
 
 /**
  * ShadowComponent
  * Renders player shadow on the first solid block below
  * Handles coyote time and falling states
  */
-export class ShadowComponent extends LifecycleComponent {
+export class ShadowSystem extends System {
   init() {
     // Shadow will track player position
   }
@@ -22,9 +22,9 @@ export class ShadowComponent extends LifecycleComponent {
   }
 
   render(ctx) {
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
     if (!player || !camera || !terrain) return;
 

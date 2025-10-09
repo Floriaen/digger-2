@@ -1,13 +1,13 @@
 import { Block } from '../entities/block.entity.js';
-import { RenderComponent } from '../components/blocks/render.component.js';
-import { PhysicsComponent } from '../components/blocks/physics.component.js';
-import { HealthComponent } from '../components/blocks/health.component.js';
-import { DiggableComponent } from '../components/blocks/diggable.component.js';
-import { FallableComponent } from '../components/blocks/fallable.component.js';
-import { DarknessComponent } from '../components/blocks/darkness.component.js';
-import { LootableComponent } from '../components/blocks/lootable.component.js';
-import { LethalComponent } from '../components/blocks/lethal.component.js';
-import { PauseOnDestroyComponent } from '../components/blocks/pause-on-destroy.component.js';
+import { RenderComponent } from '../components/block/render.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
+import { HealthComponent } from '../components/block/health.component.js';
+import { DiggableComponent } from '../components/block/diggable.component.js';
+import { FallableComponent } from '../components/block/fallable.component.js';
+import { DarknessComponent } from '../components/block/darkness.component.js';
+import { LootableComponent } from '../components/block/lootable.component.js';
+import { LethalComponent } from '../components/block/lethal.component.js';
+import { PauseOnDestroyComponent } from '../components/block/pause-on-destroy.component.js';
 
 /**
  * BlockFactory

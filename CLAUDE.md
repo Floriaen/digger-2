@@ -1,47 +1,61 @@
-# Claude Development Journal
+# Claude Development Guide
 
-This document tracks AI-assisted development sessions for Digger 2, including token usage, architectural decisions, and feature estimates.
-
-## Project Status
-
-**All milestones complete** (M0-M4) as of 2025-10-06. See [TOKEN_ESTIMATES.md](Docs/TOKEN_ESTIMATES.md) for detailed breakdown.
-
-**Total tokens used**: 371,448 (vs original estimate of 10,040 - 37x multiplier due to architectural complexity)
+Project instructions for AI-assisted development of Digger 2.
 
 ---
 
-## Current Architecture (Post-ECS Refactor)
+## Architecture Overview
+
+**Hybrid ECS** (Entity-Component-System) architecture combining pure ECS for entities with game loop systems for managers.
 
 ### Core Principles
-1. **ECS (Entity-Component-System)**: Blocks are entities composed of components (data + behavior)
-2. **YAGNI / DRY / KISS**: Build only what’s needed now, avoid repetition, keep solutions simple
-3. **Two Component Types**:
-   - **LifecycleComponent** (`src/core/lifecycle-component.js`): Game loop systems (player, camera, terrain, HUD)
-   - **Component** (`src/core/component.js`): ECS component for block entities
+
+1. **ECS Pattern**: Pure ECS for game entities (blocks, NPCs)
+2. **YAGNI / DRY / KISS**: Build only what's needed, avoid repetition, keep it simple
+3. **Two Base Classes**:
+   - **System** (`src/core/system.js`): Game loop managers (player, camera, terrain, gravity, etc.)
+   - **Component** (`src/core/component.js`): ECS components (data + behavior for entities)
 4. **Factory Pattern**: BlockFactory is the ONLY way to create block entities
-5. **Event-driven communication**: Event bus for decoupled systems
-6. **NO FALLBACKS**: Errors surface immediately during development
+5. **Event-driven**: Event bus for decoupled system communication
+6. **No Fallbacks**: Errors surface immediately during development
 
 ### Directory Structure
+
 ```
 /src
-  /components       → Game systems (player, terrain, camera, HUD, etc.)
-    /blocks         → Block ECS components (health, physics, diggable, etc.)
-  /systems          → Cross-entity orchestration (gravity, input, score)
-  /factories        → BlockFactory (entity composition)
+  /core             → Engine primitives (Game, System, Component, Entity)
+  /systems          → Game loop systems (player, terrain, camera, gravity, NPC, etc.)
+  /components       → ECS components
+    /block          → Block entity components (health, physics, diggable, etc.)
+    /npc            → NPC entity components (position, walker, eater, etc.)
+  /entities         → Entity classes (Block, NPC)
+  /factories        → Entity factories (BlockFactory)
   /terrain          → Procedural generation, chunk management
-  /rendering        → Sprite atlas, tile rendering
-  /core             → Base classes (LifecycleComponent, Component, Entity)
+  /rendering        → Sprite atlas, tile rendering, render queue
   /utils            → Event bus, math helpers, config
 ```
 
-### Key Architectural Changes
-- **Deleted**: `block-registry.js` (replaced by ECS component checks)
-- **Deleted**: Standalone entity classes (`chest.js`, `protective-block.js`)
-- **Unified**: Player and rocks use same `FallableComponent` via `GravitySystem`
-- **Renamed**: `LavaComponent` → `LethalComponent` (generic reusability)
+---
 
-See [ECS_CLEANUP.md](Docs/ECS_CLEANUP.md) for full refactor details.
+## Known Architectural Inconsistency ⚠️
+
+**Two patterns exist for component logic**:
+
+### Pattern 1: System-Driven (Block components) ❌ NOT DESIRED
+
+- **Example**: `FallableComponent` — Logic split between component and `GravitySystem`
+- System iterates entities, calls component methods
+- **Problem**: Tight coupling, harder to reuse
+
+### Pattern 2: Component-Owned (NPC components) ✅ DESIRED
+
+- **Example**: `WalkerComponent` — Component owns ALL logic
+- System just calls `component.update(entity, deltaTime)`
+- **Benefit**: Self-contained, reusable, loosely coupled
+
+**Migration needed**: Block components should adopt Pattern 2 for architectural consistency.
+
+See [ARCHITECTURE.md](Docs/ARCHITECTURE.md) Section 5 for detailed analysis and migration plan.
 
 ---
 
@@ -55,62 +69,104 @@ See [ECS_CLEANUP.md](Docs/ECS_CLEANUP.md) for full refactor details.
 
 ---
 
-## Token Usage Commitment
+## Development Guidelines
 
-**Before implementing any new feature or milestone**:
-1. Provide token estimate (base + buffer with reasoning)
-2. Log estimate in [TOKEN_ESTIMATES.md](Docs/TOKEN_ESTIMATES.md)
-3. Track actual usage after completion
-4. Highlight deviations >20% for accuracy assessment
+### Before Implementing Features
 
----
+When proposing new features:
 
-## Development Milestones Summary
+1. **Describe**: What the feature does and why it's needed
+2. **Design**: How it fits into the architecture
+3. **Impact**: Files affected, dependencies, risk level
 
-All milestones completed. See [DEVELOPMENT_PLAN.md](Docs/DEVELOPMENT_PLAN.md) for specifications.
+### Code Quality Standards
 
-| Milestone | Status | Token Budget | Actual | Delta |
-|-----------|--------|--------------|--------|-------|
-| Pre-M0 | ✅ Complete | 1,000 | 26,832 | +2583% |
-| M0: Pure Mud Sandbox | ✅ Complete | 2,400 | 47,752 | +1890% |
-| M1: Navigation & Safety | ✅ Complete | 1,560 | 22,900 | +1368% |
-| M2: Terrain Variants | ✅ Complete | 2,760 | 111,912 | +3956% |
-| M3: Visual & UX Polish | ✅ Complete | 1,560 | 62,543 | +3909% |
-| M4: Stabilization | ✅ Complete | 1,560 | 99,509 | +6279% |
-
-**Key Learnings**:
-- Architectural/rendering work: 3-4x revised estimates
-- Polish work: 1-2x revised estimates
-- Stabilization/docs: 1x revised estimates (most predictable)
-- Major bugs expensive (chunk visibility: 10k, fake-3D rendering: 40k tokens)
-
----
-
-## Feature Addition Template
-
-When proposing new features not in the original spec, use this format:
-
-### Feature: [Name]
-**Proposed Date**: YYYY-MM-DD
-**Rationale**: Why this feature enhances the game
-**Token Estimate**:
-- Base: XXX tokens
-- Buffer: XX% (reason)
-- Total: XXX tokens
-
-**Impact**:
-- Files affected: [list]
-- Dependencies: [list]
-- Risk level: Low/Medium/High
-
-**Approval Status**: Pending / Approved / Rejected
+- Follow existing patterns (see [ARCHITECTURE.md](Docs/ARCHITECTURE.md))
+- Use ESLint (`npm run lint` must pass)
+- Prefer component-owned logic (Pattern 2)
+- Use factories for entity creation
+- Event bus for cross-system communication
 
 ---
 
 ## Related Documentation
 
-- [Development Plan](Docs/archive/DEVELOPMENT_PLAN.md) - Milestone specifications (archived)
-- [Token Estimates](Docs/TOKEN_ESTIMATES.md) - Detailed usage tracking
-- [ECS Cleanup](Docs/ECS_CLEANUP.md) - Architecture refactor documentation
-- [Dev Tools](Docs/DEV_TOOLS.md) - Debugging and testing utilities
-- [Game Spec](Docs/GAME_SPEC.md) - Original game design document
+- **[ARCHITECTURE.md](Docs/ARCHITECTURE.md)** — Complete architecture guide (READ THIS FIRST)
+- **[GAME_SPEC.md](Docs/GAME_SPEC.md)** — Game design document
+- **[DEV_TOOLS.md](Docs/DEV_TOOLS.md)** — Debugging and testing tools
+- **[TOKEN_ESTIMATES.md](Docs/TOKEN_ESTIMATES.md)** — Historical token usage data
+- **[ECS_CLEANUP.md](Docs/ECS_CLEANUP.md)** — ECS refactor documentation
+
+---
+
+## Quick Reference
+
+### Creating a New Block Type
+
+```javascript
+// In src/factories/block.factory.js
+static createMyBlock(x, y) {
+  return new Block([
+    new HealthComponent({ health: 3 }),
+    new PhysicsComponent({ collidable: true }),
+    new RenderComponent({ sprite: 'myblock', x, y }),
+  ]);
+}
+```
+
+### Creating a New Component
+
+```javascript
+// In src/components/block/my.component.js
+import { Component } from '../../core/component.js';
+
+export class MyComponent extends Component {
+  constructor({ value = 0 } = {}) {
+    super();
+    this.value = value;
+  }
+
+  update(entity, deltaTime) {
+    // Component owns its logic (Pattern 2)
+    this.value += deltaTime;
+  }
+}
+```
+
+### Creating a New System
+
+```javascript
+// In src/systems/my.system.js
+import { System } from '../core/system.js';
+
+export class MySystem extends System {
+  init() {
+    // Setup
+  }
+
+  update(deltaTime) {
+    // Game loop logic
+  }
+
+  render(ctx) {
+    // Rendering
+  }
+}
+```
+
+### Using Event Bus
+
+```javascript
+// Emit event
+import { eventBus } from '../utils/event-bus.js';
+eventBus.emit('event:name', { data: 'value' });
+
+// Listen to event
+eventBus.on('event:name', ({ data }) => {
+  console.log(data);
+});
+```
+
+---
+
+**For complete architecture details, see [ARCHITECTURE.md](Docs/ARCHITECTURE.md)**

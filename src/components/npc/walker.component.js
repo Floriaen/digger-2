@@ -5,31 +5,31 @@
 
 import { Component } from '../../core/component.js';
 import { TILE_WIDTH } from '../../utils/config.js';
-import { PhysicsComponent } from '../../components/blocks/physics.component.js';
-import { NpcPositionComponent } from './npc-position.component.js';
-import { NpcStateComponent } from './npc-state.component.js';
-import { NpcEaterComponent } from './npc-eater.component.js';
-import { NpcFallComponent } from './npc-fall.component.js';
+import { PhysicsComponent } from '../block/physics.component.js';
+import { PositionComponent } from './position.component.js';
+import { StateComponent } from './state.component.js';
+import { EaterComponent } from './eater.component.js';
+import { FallComponent } from './fall.component.js';
 
 const WALK_SPEED_PX_PER_MS = 0.01; // ~2 tiles per second
 
-export class NpcWalkerComponent extends Component {
+export class WalkerComponent extends Component {
   update(entity, deltaTime, { game, terrain }) {
     if (!game || deltaTime <= 0) {
       return;
     }
 
     const terrainRef = terrain
-      || game.components.find((component) => component.constructor.name === 'TerrainComponent');
+      || game.components.find((component) => component.constructor.name === 'TerrainSystem');
 
     if (!terrainRef) {
       return;
     }
 
-    const position = entity.get(NpcPositionComponent);
-    const state = entity.get(NpcStateComponent);
-    const eater = entity.get(NpcEaterComponent);
-    const fall = entity.get(NpcFallComponent);
+    const position = entity.get(PositionComponent);
+    const state = entity.get(StateComponent);
+    const eater = entity.get(EaterComponent);
+    const fall = entity.get(FallComponent);
 
     if (!position || !state) {
       return;

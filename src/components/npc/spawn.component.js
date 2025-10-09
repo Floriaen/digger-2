@@ -5,7 +5,7 @@
 
 import { Component } from '../../core/component.js';
 
-export class NpcSpawnComponent extends Component {
+export class SpawnComponent extends Component {
   constructor({ spawn }) {
     super({ spawn });
   }

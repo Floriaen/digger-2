@@ -5,7 +5,7 @@
 
 import { Component } from '../../core/component.js';
 
-export class NpcStateComponent extends Component {
+export class StateComponent extends Component {
   constructor({ direction, spawn }) {
     super({ direction, spawn });
   }

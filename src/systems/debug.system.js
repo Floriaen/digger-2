@@ -3,13 +3,13 @@
  * @description Debug component - dat.GUI controls, de-zoom, overlays
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 
 /**
  * DebugComponent
  * Provides dat.GUI interface and debug visualizations
  */
-export class DebugComponent extends LifecycleComponent {
+export class DebugSystem extends System {
   init() {
     this.gui = null;
     this.showChunkBounds = false;
@@ -68,7 +68,7 @@ export class DebugComponent extends LifecycleComponent {
     // Terrain controls
     const terrainFolder = this.gui.addFolder('Terrain');
     const terrainComponent = this.game.components.find(
-      (c) => c.constructor.name === 'TerrainComponent',
+      (c) => c.constructor.name === 'TerrainSystem',
     );
     if (terrainComponent) {
       const seedControl = {
@@ -96,7 +96,7 @@ export class DebugComponent extends LifecycleComponent {
 
     // Zoom control
     const camera = this.game.components.find(
-      (c) => c.constructor.name === 'CameraComponent',
+      (c) => c.constructor.name === 'CameraSystem',
     );
     if (camera) {
       // Manual zoom toggle

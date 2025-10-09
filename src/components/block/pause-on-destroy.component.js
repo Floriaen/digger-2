@@ -6,7 +6,4 @@ import { Component } from '../../core/component.js';
  * Marker component used by blocks that should pause the game when they break.
  */
 export class PauseOnDestroyComponent extends Component {
-  constructor() {
-    super();
-  }
 }

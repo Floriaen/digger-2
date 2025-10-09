@@ -5,12 +5,12 @@
 
 import { Component } from '../../core/component.js';
 import { TILE_HEIGHT } from '../../utils/config.js';
-import { PhysicsComponent } from '../../components/blocks/physics.component.js';
-import { NpcPositionComponent } from './npc-position.component.js';
+import { PhysicsComponent } from '../block/physics.component.js';
+import { PositionComponent } from './position.component.js';
 
 const FALL_SPEED_PX_PER_MS = 0.3;
 
-export class NpcFallComponent extends Component {
+export class FallComponent extends Component {
   constructor() {
     super();
     this.isFalling = false;
@@ -22,13 +22,13 @@ export class NpcFallComponent extends Component {
     }
 
     const terrainRef = terrain
-      || game.components.find((component) => component.constructor.name === 'TerrainComponent');
+      || game.components.find((component) => component.constructor.name === 'TerrainSystem');
 
     if (!terrainRef) {
       return;
     }
 
-    const position = entity.get(NpcPositionComponent);
+    const position = entity.get(PositionComponent);
     if (!position) {
       return;
     }

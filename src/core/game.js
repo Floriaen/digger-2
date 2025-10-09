@@ -116,8 +116,8 @@ export class Game {
     this.performanceMonitor.startMark('render');
 
     // Get camera and player for zoom
-    const camera = this.components.find((c) => c.constructor.name === 'CameraComponent');
-    const player = this.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const camera = this.components.find((c) => c.constructor.name === 'CameraSystem');
+    const player = this.components.find((c) => c.constructor.name === 'PlayerSystem');
     const zoom = camera ? camera.getTransform().zoom : 1.0;
 
     if (this.zoomAfterRendering) {
@@ -151,10 +151,10 @@ export class Game {
       this.ctx.drawImage(tempCanvas, 0, 0);
       this.ctx.restore();
 
-      // Render debug component separately (not zoomed)
-      const debugComponent = this.components.find((c) => c.constructor.name === 'DebugComponent');
-      if (debugComponent && debugComponent.render) {
-        debugComponent.render(this.ctx);
+      // Render debug system separately (not zoomed)
+      const debugSystem = this.components.find((c) => c.constructor.name === 'DebugSystem');
+      if (debugSystem && debugSystem.render) {
+        debugSystem.render(this.ctx);
       }
     } else {
       // STRATEGY 1: Apply zoom BEFORE rendering (current approach)

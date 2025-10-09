@@ -3,18 +3,18 @@
  * @description Camera component - handles viewport tracking and smooth following
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import { CAMERA_LERP_FACTOR, CAMERA_OFFSET_Y, CANVAS_WIDTH } from '../utils/config.js';
-import { lerp, easeInQuad } from '../utils/math.js';
+import { lerp } from '../utils/math.js';
 
 /**
- * CameraComponent
+ * CameraSystem
  * Manages viewport position and smooth player tracking
  */
-export class CameraComponent extends LifecycleComponent {
+export class CameraSystem extends System {
   init() {
     // Initialize camera position centered on player immediately
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (player) {
       // Floor the initial position to ensure pixel-perfect alignment from the start
       this.x = Math.floor(CANVAS_WIDTH / 2 - player.x);
@@ -25,29 +25,30 @@ export class CameraComponent extends LifecycleComponent {
     }
     this.targetX = this.x;
     this.targetY = this.y;
-    this.zoom = 2.0;
-    this.targetZoom = 3.0; // Start with target at 3.0 for smooth zoom-in animation
+    this.zoom = 3.0;
+    this.targetZoom = 3.0;
     this.manualZoom = false; // Flag to disable auto-zoom when manually controlled
   }
 
   update(_deltaTime) {
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (!player) return;
 
+    // Progressive zoom disabled - maintaining constant zoom of 3.0
     // Only auto-adjust zoom if not manually controlled
-    if (!this.manualZoom) {
-      // Smoothly increase zoom based on pixel depth (zoom IN as you dig deeper)
-      const playerDepthPixels = player.y;
-      const playerDepthTiles = playerDepthPixels / 16; // Convert pixels to tiles (smooth)
-      // Gradually zoom from 2.0 at depth 0 to 3.0 at depth 12+
-      const t = Math.min(playerDepthTiles / 12, 1.0); // Normalized depth (0 to 1)
-      // Ease-in curve: less zoom at beginning, more zoom at end
-      const eased = easeInQuad(t);
-      const rawZoom = 2.0 + eased * 1.0;
-      this.targetZoom = rawZoom;
-    }
+    // if (!this.manualZoom) {
+    //   // Smoothly increase zoom based on pixel depth (zoom IN as you dig deeper)
+    //   const playerDepthPixels = player.y;
+    //   const playerDepthTiles = playerDepthPixels / 16; // Convert pixels to tiles (smooth)
+    //   // Gradually zoom from 2.0 at depth 0 to 3.0 at depth 12+
+    //   const t = Math.min(playerDepthTiles / 12, 1.0); // Normalized depth (0 to 1)
+    //   // Ease-in curve: less zoom at beginning, more zoom at end
+    //   const eased = easeInQuad(t);
+    //   const rawZoom = 2.0 + eased * 1.0;
+    //   this.targetZoom = rawZoom;
+    // }
 
-    // Smooth zoom lerp
+    // Smooth zoom lerp (not needed when zoom is constant, but keeping for manual zoom)
     this.zoom = lerp(this.zoom, this.targetZoom, 0.1);
 
     // Target: center player horizontally, offset vertically

@@ -5,18 +5,18 @@
 
 import { Game } from './core/game.js';
 import { updateCanvasDimensions } from './utils/config.js';
-import { BackgroundComponent } from './components/background.component.js';
-import { TerrainComponent } from './components/terrain.component.js';
-import { PlayerComponent } from './components/player.component.js';
-import { ShadowComponent } from './components/shadow.component.js';
-import { GridOverlayComponent } from './components/grid-overlay.component.js';
-import { NavigationComponent } from './components/navigation.component.js';
-import { DigIndicatorComponent } from './components/dig-indicator.component.js';
-import { CameraComponent } from './components/camera.component.js';
-import { HUDComponent } from './components/hud.component.js';
-import { DebugComponent } from './components/debug.component.js';
-import { TouchInputComponent } from './components/touch-input.component.js';
-import { NPCListComponent } from './components/npc-list.component.js';
+import { BackgroundSystem } from './systems/background.system.js';
+import { TerrainSystem } from './systems/terrain.system.js';
+import { PlayerSystem } from './systems/player.system.js';
+import { ShadowSystem } from './systems/shadow.system.js';
+// import { GridOverlaySystem } from './systems/grid-overlay.system.js';
+import { NavigationSystem } from './systems/navigation.system.js';
+import { DigIndicatorSystem } from './systems/dig-indicator.system.js';
+import { CameraSystem } from './systems/camera.system.js';
+import { HUDSystem } from './systems/hud.system.js';
+import { DebugSystem } from './systems/debug.system.js';
+import { TouchInputSystem } from './systems/touch-input.system.js';
+import { NPCSystem } from './systems/npc.system.js';
 import { InputSystem } from './systems/input.system.js';
 import { GravitySystem } from './systems/gravity.system.js';
 import { CoinEffectSystem } from './systems/coin-effect.system.js';
@@ -68,7 +68,7 @@ function resizeCanvas(canvas, game) {
 
   // Update camera if it exists
   if (game) {
-    const camera = game.components.find((c) => c.constructor.name === 'CameraComponent');
+    const camera = game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (camera && camera.updateViewport) {
       camera.updateViewport();
     }
@@ -115,21 +115,21 @@ function init() {
   inputSystem.init();
   game.inputSystem = inputSystem;
 
-  // Add components (order matters for rendering and update logic)
-  game.addComponent(new BackgroundComponent(game));
-  game.addComponent(new TerrainComponent(game));
-  game.addComponent(new NPCListComponent(game));
+  // Add systems (order matters for rendering and update logic)
+  game.addComponent(new BackgroundSystem(game));
+  game.addComponent(new TerrainSystem(game));
+  game.addComponent(new NPCSystem(game));
   game.addComponent(new GravitySystem(game)); // Gravity system updates after terrain
-  //game.addComponent(new GridOverlayComponent(game)); // Grid overlay on blocks
-  game.addComponent(new DigIndicatorComponent(game)); // Dig outline on top of terrain
-  game.addComponent(new ShadowComponent(game)); // Shadow renders before player
-  game.addComponent(new NavigationComponent(game));
-  game.addComponent(new PlayerComponent(game));
+  // game.addComponent(new GridOverlaySystem(game)); // Grid overlay on blocks
+  game.addComponent(new DigIndicatorSystem(game)); // Dig outline on top of terrain
+  game.addComponent(new ShadowSystem(game)); // Shadow renders before player
+  game.addComponent(new NavigationSystem(game));
+  game.addComponent(new PlayerSystem(game));
   game.addComponent(new CoinEffectSystem(game));
-  game.addComponent(new CameraComponent(game));
-  game.addComponent(new HUDComponent(game));
-  game.addComponent(new TouchInputComponent(game)); // Touch input for mobile
-  game.addComponent(new DebugComponent(game));
+  game.addComponent(new CameraSystem(game));
+  game.addComponent(new HUDSystem(game));
+  game.addComponent(new TouchInputSystem(game)); // Touch input for mobile
+  game.addComponent(new DebugSystem(game));
 
   // Initialize game
   game.init();

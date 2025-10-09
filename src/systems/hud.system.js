@@ -3,7 +3,7 @@
  * @description HUD component - displays score, UI overlays
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import { eventBus } from '../utils/event-bus.js';
 import { RenderLayer } from '../rendering/render-layer.js';
 
@@ -20,7 +20,7 @@ const HUD_COIN_SPRITE = {
  * HUDComponent
  * Renders score display and UI elements
  */
-export class HUDComponent extends LifecycleComponent {
+export class HUDSystem extends System {
   init() {
     this.score = 0;
     this.unsubscribeScore = eventBus.on('score:add', ({ amount = 0 } = {}) => {

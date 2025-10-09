@@ -5,23 +5,25 @@
 
 import { Component } from '../../core/component.js';
 import { eventBus } from '../../utils/event-bus.js';
-import { NpcPositionComponent } from './npc-position.component.js';
+import { PositionComponent } from './position.component.js';
 
 const HITBOX_WIDTH = 16;
 const HITBOX_HEIGHT = 9;
 
-export class NpcKillComponent extends Component {
+export class KillComponent extends Component {
   update(entity, _deltaTime, { game }) {
     if (!game) {
       return;
     }
 
-    const player = game.components.find((component) => component.constructor.name === 'PlayerComponent');
+    const player = game.components.find(
+      (component) => component.constructor.name === 'PlayerSystem',
+    );
     if (!player || player.dead) {
       return;
     }
 
-    const position = entity.get(NpcPositionComponent);
+    const position = entity.get(PositionComponent);
     if (!position) {
       return;
     }

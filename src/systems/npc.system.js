@@ -1,18 +1,18 @@
 /**
- * @file npc-list.component.js
- * @description Minimal container that updates and renders active NPCs.
+ * @file npc.system.js
+ * @description System that manages and orchestrates all NPC entities.
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import { TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
-import { NpcPositionComponent } from '../npc/components/npc-position.component.js';
+import { PositionComponent } from '../components/npc/position.component.js';
 
 /**
- * NPCListComponent
- * Holds a collection of NPC objects and forwards update/render calls.
- * NPC objects are expected to expose optional `init`, `update`, `render`, `destroy` methods.
+ * NPCSystem
+ * Manages a collection of NPC entities and orchestrates their update/render lifecycle.
+ * NPC entities are expected to expose optional `init`, `update`, `render`, `destroy` methods.
  */
-export class NPCListComponent extends LifecycleComponent {
+export class NPCSystem extends System {
   init() {
     this.npcs = [];
   }
@@ -87,7 +87,7 @@ export class NPCListComponent extends LifecycleComponent {
 
   _getVisibilityBounds() {
     const camera = this.game.components.find(
-      (component) => component.constructor.name === 'CameraComponent',
+      (component) => component.constructor.name === 'CameraSystem',
     );
 
     if (!camera) {
@@ -136,7 +136,7 @@ export class NPCListComponent extends LifecycleComponent {
 
   _getPositionComponent(npc) {
     if (npc && typeof npc.get === 'function') {
-      const position = npc.get(NpcPositionComponent);
+      const position = npc.get(PositionComponent);
       if (position) {
         return position;
       }
@@ -151,7 +151,7 @@ export class NPCListComponent extends LifecycleComponent {
     }
 
     this.cachedTerrain = this.game.components.find(
-      (component) => component.constructor.name === 'TerrainComponent',
+      (component) => component.constructor.name === 'TerrainSystem',
     ) || null;
 
     return this.cachedTerrain;

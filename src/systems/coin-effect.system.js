@@ -1,8 +1,8 @@
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import { Block } from '../entities/block.entity.js';
-import { RenderComponent } from '../components/blocks/render.component.js';
-import { LootEffectComponent } from '../components/blocks/loot-effect.component.js';
-import { CollectableComponent } from '../components/blocks/collectable.component.js';
+import { RenderComponent } from '../components/block/render.component.js';
+import { LootEffectComponent } from '../components/block/loot-effect.component.js';
+import { CollectableComponent } from '../components/block/collectable.component.js';
 import { RenderLayer } from '../rendering/render-layer.js';
 import { eventBus } from '../utils/event-bus.js';
 import { TILE_HEIGHT, TILE_WIDTH, SPRITE_HEIGHT } from '../utils/config.js';
@@ -20,7 +20,7 @@ const DEFAULT_DURATION = 700;
  *
  * Spawns and animates floating coin visuals when chests drop loot.
  */
-export class CoinEffectSystem extends LifecycleComponent {
+export class CoinEffectSystem extends System {
   init() {
     this.effects = [];
     this.unsubscribeLoot = eventBus.on('block:loot', (payload) => this._handleLootEvent(payload));
@@ -161,7 +161,7 @@ export class CoinEffectSystem extends LifecycleComponent {
   _getTerrain() {
     if (!this.cachedTerrain || !this.game.components.includes(this.cachedTerrain)) {
       this.cachedTerrain = this.game.components.find(
-        (c) => c.constructor.name === 'TerrainComponent',
+        (c) => c.constructor.name === 'TerrainSystem',
       );
     }
     return this.cachedTerrain;
@@ -170,7 +170,7 @@ export class CoinEffectSystem extends LifecycleComponent {
   _getCamera() {
     if (!this.cachedCamera || !this.game.components.includes(this.cachedCamera)) {
       this.cachedCamera = this.game.components.find(
-        (c) => c.constructor.name === 'CameraComponent',
+        (c) => c.constructor.name === 'CameraSystem',
       );
     }
     return this.cachedCamera;

@@ -3,9 +3,9 @@
  * @description Navigation guidance - white triangle markers for valid movement directions
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import { SPRITE_ATLAS, loadSpriteSheet } from '../rendering/sprite-atlas.js';
-import { DiggableComponent } from './blocks/diggable.component.js';
+import { DiggableComponent } from '../components/block/diggable.component.js';
 
 const GUIDANCE_DELAY_MS = 400;
 
@@ -14,7 +14,7 @@ const GUIDANCE_DELAY_MS = 400;
  * Displays white triangle markers after 400ms of player inactivity
  * to indicate valid dig directions (left, right, down)
  */
-export class NavigationComponent extends LifecycleComponent {
+export class NavigationSystem extends System {
   init() {
     this.inactivityTimer = 0;
     this.showGuidance = false;
@@ -31,8 +31,8 @@ export class NavigationComponent extends LifecycleComponent {
   }
 
   update(deltaTime) {
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
     if (!player || !terrain) return;
 
@@ -63,8 +63,8 @@ export class NavigationComponent extends LifecycleComponent {
   render(ctx) {
     if (!this.showGuidance || !this.spriteSheet) return;
 
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
 
     if (!player || !camera) return;
 
@@ -104,8 +104,8 @@ export class NavigationComponent extends LifecycleComponent {
 
   /**
    * Update which directions are valid for digging
-   * @param {PlayerComponent} player
-   * @param {TerrainComponent} terrain
+   * @param {PlayerSystem} player
+   * @param {TerrainSystem} terrain
    * @private
    */
   _updateValidDirections(player, terrain) {

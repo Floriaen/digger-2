@@ -4,14 +4,14 @@
  */
 
 import { NPC } from '../entities/npc.entity.js';
-import { NpcPositionComponent } from './components/npc-position.component.js';
-import { NpcStateComponent } from './components/npc-state.component.js';
-import { NpcEaterComponent } from './components/npc-eater.component.js';
-import { NpcWalkerComponent } from './components/npc-walker.component.js';
-import { NpcRenderComponent } from './components/npc-render.component.js';
-import { NpcSpawnComponent } from './components/npc-spawn.component.js';
-import { NpcFallComponent } from './components/npc-fall.component.js';
-import { NpcKillComponent } from './components/npc-kill.component.js';
+import { PositionComponent } from '../components/npc/position.component.js';
+import { StateComponent } from '../components/npc/state.component.js';
+import { EaterComponent } from '../components/npc/eater.component.js';
+import { WalkerComponent } from '../components/npc/walker.component.js';
+import { RenderComponent } from '../components/npc/render.component.js';
+import { SpawnComponent } from '../components/npc/spawn.component.js';
+import { FallComponent } from '../components/npc/fall.component.js';
+import { KillComponent } from '../components/npc/kill.component.js';
 
 export function createMaggot(spawn) {
   if (!spawn) {
@@ -38,14 +38,14 @@ export function createMaggot(spawn) {
   spawn.direction = direction;
 
   const npc = new NPC([
-    new NpcSpawnComponent({ spawn }),
-    new NpcPositionComponent({ gridX, gridY, spawn }),
-    new NpcStateComponent({ direction, spawn }),
-    new NpcEaterComponent({ spawn }),
-    new NpcFallComponent(),
-    new NpcWalkerComponent(),
-    new NpcKillComponent(),
-    new NpcRenderComponent(),
+    new SpawnComponent({ spawn }),
+    new PositionComponent({ gridX, gridY, spawn }),
+    new StateComponent({ direction, spawn }),
+    new EaterComponent({ spawn }),
+    new FallComponent(),
+    new WalkerComponent(),
+    new KillComponent(),
+    new RenderComponent(),
   ]);
 
   return npc;

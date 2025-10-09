@@ -1,16 +1,16 @@
 /**
- * @file background.component.js
- * @description Background component - renders sky, mountains, sun, and lava
+ * @file background.system.js
+ * @description Background system - renders sky, mountains, sun, and lava
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 
 /**
  * BackgroundComponent
  * Renders orange sky, black mountains, parallax, and lava lake
  */
-export class BackgroundComponent extends LifecycleComponent {
+export class BackgroundSystem extends System {
   init() {
     this.sunX = null; // Sun X position (set from player's initial position)
     this.sunY = null; // Sun Y position (set from player's initial position)
@@ -22,7 +22,7 @@ export class BackgroundComponent extends LifecycleComponent {
   }
 
   render(ctx) {
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
     const transform = camera.getTransform();
@@ -32,7 +32,7 @@ export class BackgroundComponent extends LifecycleComponent {
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Sun and mountains: both fixed at initial world position (like sun)
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (player) {
       // Set sun and mountain positions once from player's initial position
       if (this.sunX === null || this.sunY === null) {

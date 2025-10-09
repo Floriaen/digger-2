@@ -3,17 +3,17 @@
  * @description Grid overlay component - renders subtle grid lines on solid blocks
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import {
   TILE_WIDTH, TILE_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
 } from '../utils/config.js';
-import { PhysicsComponent } from './blocks/physics.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
 
 /**
  * GridOverlayComponent
  * Renders a subtle grid on top of solid blocks (not on empty or red torus)
  */
-export class GridOverlayComponent extends LifecycleComponent {
+export class GridOverlaySystem extends System {
   init() {
     // No initialization needed
   }
@@ -23,8 +23,8 @@ export class GridOverlayComponent extends LifecycleComponent {
   }
 
   render(ctx) {
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
     if (!camera || !terrain) return;
 

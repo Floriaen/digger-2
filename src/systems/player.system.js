@@ -3,18 +3,18 @@
  * @description Player component - handles red ball movement, digging, and state machine
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from '../core/system.js';
 import {
   DIG_INTERVAL_MS, PLAYER_RADIUS,
 } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
-import { PhysicsComponent } from './blocks/physics.component.js';
-import { DiggableComponent } from './blocks/diggable.component.js';
-import { HealthComponent } from './blocks/health.component.js';
-import { LethalComponent } from './blocks/lethal.component.js';
-import { FallableComponent } from './blocks/fallable.component.js';
-import { LootableComponent } from './blocks/lootable.component.js';
-import { PauseOnDestroyComponent } from './blocks/pause-on-destroy.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
+import { DiggableComponent } from '../components/block/diggable.component.js';
+import { HealthComponent } from '../components/block/health.component.js';
+import { LethalComponent } from '../components/block/lethal.component.js';
+import { FallableComponent } from '../components/block/fallable.component.js';
+import { LootableComponent } from '../components/block/lootable.component.js';
+import { PauseOnDestroyComponent } from '../components/block/pause-on-destroy.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -28,10 +28,10 @@ const PLAYER_STATE = {
 };
 
 /**
- * PlayerComponent
+ * PlayerSystem
  * Manages player position, state, and digging behavior
  */
-export class PlayerComponent extends LifecycleComponent {
+export class PlayerSystem extends System {
   init() {
     // Grid position (tiles) - start position (in grass layer, first line)
     this.gridX = 12;
@@ -78,7 +78,7 @@ export class PlayerComponent extends LifecycleComponent {
   }
 
   update(deltaTime) {
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
     if (!terrain) return;
 
     // Stop updating if dead
@@ -131,8 +131,8 @@ export class PlayerComponent extends LifecycleComponent {
   }
 
   render(ctx) {
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
     if (!camera) return;
 
     const transform = camera.getTransform();
@@ -236,7 +236,7 @@ export class PlayerComponent extends LifecycleComponent {
 
   /**
    * Try to change direction - succeeds if target block is diggable
-   * @param {TerrainComponent} terrain
+   * @param {TerrainSystem} terrain
    * @returns {boolean} True if direction change allowed
    * @private
    */
@@ -252,7 +252,7 @@ export class PlayerComponent extends LifecycleComponent {
 
   /**
    * Update directional digging (unified for all directions)
-   * @param {TerrainComponent} terrain
+   * @param {TerrainSystem} terrain
    * @private
    */
   _updateDirectionalDig(terrain) {
@@ -311,7 +311,7 @@ export class PlayerComponent extends LifecycleComponent {
 
   /**
    * Dig block in direction (respects HP, moves player on completion)
-   * @param {TerrainComponent} terrain
+   * @param {TerrainSystem} terrain
    * @param {number} dx - Delta X
    * @param {number} dy - Delta Y
    * @private
@@ -434,7 +434,7 @@ export class PlayerComponent extends LifecycleComponent {
    * @param {number} landY - Y position of the block
    */
   handleLanding(blockLandedOn, _landX, _landY) {
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
     if (blockLandedOn.has(DiggableComponent)) {
       // Start digging the block below us
