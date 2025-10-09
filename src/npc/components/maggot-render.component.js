@@ -11,7 +11,7 @@ import { MaggotStateComponent } from './maggot-state.component.js';
 
 const SPRITE = {
   x: 96,
-  y: 24,
+  y: 25,
   width: 16,
   height: 9,
 };
