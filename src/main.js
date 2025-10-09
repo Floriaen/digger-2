@@ -16,6 +16,7 @@ import { CameraComponent } from './components/camera.component.js';
 import { HUDComponent } from './components/hud.component.js';
 import { DebugComponent } from './components/debug.component.js';
 import { TouchInputComponent } from './components/touch-input.component.js';
+import { NPCListComponent } from './components/npc-list.component.js';
 import { InputSystem } from './systems/input.system.js';
 import { GravitySystem } from './systems/gravity.system.js';
 import { CoinEffectSystem } from './systems/coin-effect.system.js';
@@ -117,6 +118,7 @@ function init() {
   // Add components (order matters for rendering and update logic)
   game.addComponent(new BackgroundComponent(game));
   game.addComponent(new TerrainComponent(game));
+  game.addComponent(new NPCListComponent(game));
   game.addComponent(new GravitySystem(game)); // Gravity system updates after terrain
   //game.addComponent(new GridOverlayComponent(game)); // Grid overlay on blocks
   game.addComponent(new DigIndicatorComponent(game)); // Dig outline on top of terrain
