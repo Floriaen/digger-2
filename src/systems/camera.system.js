@@ -25,8 +25,8 @@ export class CameraSystem extends System {
     }
     this.targetX = this.x;
     this.targetY = this.y;
-    this.zoom = 2.0;
-    this.targetZoom = 3.0; // Start with target at 3.0 for smooth zoom-in animation
+    this.zoom = 3.0;
+    this.targetZoom = 3.0;
     this.manualZoom = false; // Flag to disable auto-zoom when manually controlled
   }
 
@@ -34,20 +34,21 @@ export class CameraSystem extends System {
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (!player) return;
 
+    // Progressive zoom disabled - maintaining constant zoom of 3.0
     // Only auto-adjust zoom if not manually controlled
-    if (!this.manualZoom) {
-      // Smoothly increase zoom based on pixel depth (zoom IN as you dig deeper)
-      const playerDepthPixels = player.y;
-      const playerDepthTiles = playerDepthPixels / 16; // Convert pixels to tiles (smooth)
-      // Gradually zoom from 2.0 at depth 0 to 3.0 at depth 12+
-      const t = Math.min(playerDepthTiles / 12, 1.0); // Normalized depth (0 to 1)
-      // Ease-in curve: less zoom at beginning, more zoom at end
-      const eased = easeInQuad(t);
-      const rawZoom = 2.0 + eased * 1.0;
-      this.targetZoom = rawZoom;
-    }
+    // if (!this.manualZoom) {
+    //   // Smoothly increase zoom based on pixel depth (zoom IN as you dig deeper)
+    //   const playerDepthPixels = player.y;
+    //   const playerDepthTiles = playerDepthPixels / 16; // Convert pixels to tiles (smooth)
+    //   // Gradually zoom from 2.0 at depth 0 to 3.0 at depth 12+
+    //   const t = Math.min(playerDepthTiles / 12, 1.0); // Normalized depth (0 to 1)
+    //   // Ease-in curve: less zoom at beginning, more zoom at end
+    //   const eased = easeInQuad(t);
+    //   const rawZoom = 2.0 + eased * 1.0;
+    //   this.targetZoom = rawZoom;
+    // }
 
-    // Smooth zoom lerp
+    // Smooth zoom lerp (not needed when zoom is constant, but keeping for manual zoom)
     this.zoom = lerp(this.zoom, this.targetZoom, 0.1);
 
     // Target: center player horizontally, offset vertically
