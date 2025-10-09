@@ -5,7 +5,7 @@
 
 import { System } from '../core/system.js';
 import { CAMERA_LERP_FACTOR, CAMERA_OFFSET_Y, CANVAS_WIDTH } from '../utils/config.js';
-import { lerp, easeInQuad } from '../utils/math.js';
+import { lerp } from '../utils/math.js';
 
 /**
  * CameraSystem
