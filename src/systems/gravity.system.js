@@ -52,8 +52,20 @@ export class GravitySystem extends System {
 
     // Iterate through all chunks (chunks is a Map, not an object)
     chunks.forEach((chunk) => {
+      // Safety check: ensure chunk has blocks array
+      if (!chunk.blocks || !Array.isArray(chunk.blocks)) {
+        console.error(`GravitySystem: Chunk ${chunk.chunkX},${chunk.chunkY} has invalid blocks array`);
+        return;
+      }
+
       // Iterate through 2D block array
       for (let y = 0; y < chunk.blocks.length; y += 1) {
+        // Safety check: ensure row exists
+        if (!chunk.blocks[y] || !Array.isArray(chunk.blocks[y])) {
+          console.error(`GravitySystem: Chunk ${chunk.chunkX},${chunk.chunkY} row ${y} is invalid`);
+          continue;
+        }
+
         for (let x = 0; x < chunk.blocks[y].length; x += 1) {
           const block = chunk.blocks[y][x];
           if (!block || !block.has || !block.has(FallableComponent)) {

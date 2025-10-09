@@ -48,6 +48,11 @@ export class TerrainChunk {
     if (localX < 0 || localX >= CHUNK_SIZE || localY < 0 || localY >= CHUNK_SIZE) {
       return BlockFactory.createEmpty();
     }
+    // Safety check: ensure row exists
+    if (!this.blocks[localY]) {
+      console.error(`TerrainChunk.getBlock: Row ${localY} is undefined in chunk ${this.chunkX},${this.chunkY}`);
+      return BlockFactory.createEmpty();
+    }
     return this.blocks[localY][localX];
   }
 
