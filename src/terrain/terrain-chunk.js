@@ -50,7 +50,9 @@ export class TerrainChunk {
     }
     // Safety check: ensure row exists
     if (!this.blocks[localY]) {
-      console.error(`TerrainChunk.getBlock: Row ${localY} is undefined in chunk ${this.chunkX},${this.chunkY}`);
+      console.error(
+        `TerrainChunk.getBlock: Row ${localY} is undefined in chunk ${this.chunkX},${this.chunkY}`,
+      );
       return BlockFactory.createEmpty();
     }
     return this.blocks[localY][localX];

@@ -54,7 +54,9 @@ export class GravitySystem extends System {
     chunks.forEach((chunk) => {
       // Safety check: ensure chunk has blocks array
       if (!chunk.blocks || !Array.isArray(chunk.blocks)) {
-        console.error(`GravitySystem: Chunk ${chunk.chunkX},${chunk.chunkY} has invalid blocks array`);
+        console.error(
+          `GravitySystem: Chunk ${chunk.chunkX},${chunk.chunkY} has invalid blocks array`,
+        );
         return;
       }
 
@@ -62,7 +64,9 @@ export class GravitySystem extends System {
       for (let y = 0; y < chunk.blocks.length; y += 1) {
         // Safety check: ensure row exists
         if (!chunk.blocks[y] || !Array.isArray(chunk.blocks[y])) {
-          console.error(`GravitySystem: Chunk ${chunk.chunkX},${chunk.chunkY} row ${y} is invalid`);
+          console.error(
+            `GravitySystem: Chunk ${chunk.chunkX},${chunk.chunkY} row ${y} is invalid`,
+          );
           continue;
         }
 
