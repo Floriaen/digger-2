@@ -6,7 +6,7 @@
 import { Component } from '../../core/component.js';
 import { TILE_WIDTH, TILE_HEIGHT } from '../../utils/config.js';
 
-export class NpcPositionComponent extends Component {
+export class PositionComponent extends Component {
   constructor({ gridX, gridY, spawn }) {
     super({
       gridX,

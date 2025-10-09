@@ -3,7 +3,7 @@
  * @description Terrain component - manages chunks, generation, and block data
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from "../core/system.js';
 import {
   CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, SPRITE_HEIGHT, TILE_CAP_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
 } from '../utils/config.js';
@@ -28,10 +28,10 @@ const STATIC_DARKEN_FACTORS = {
 };
 
 /**
- * TerrainComponent
+ * TerrainSystem
  * Manages terrain chunks, procedural generation, and block queries
  */
-export class TerrainComponent extends LifecycleComponent {
+export class TerrainSystem extends System {
   async init() {
     this.seed = 12345; // Default seed, controllable via dat.GUI
     this.generator = new TerrainGenerator(this.seed);
@@ -51,14 +51,14 @@ export class TerrainComponent extends LifecycleComponent {
 
   update(_deltaTime) {
     // Stream chunks based on camera/player position
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (player) {
       this._ensureChunksLoaded(player.gridX, player.gridY);
     }
   }
 
   render(ctx) {
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
     const transform = camera.getTransform();
@@ -68,7 +68,7 @@ export class TerrainComponent extends LifecycleComponent {
       return;
     }
 
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     const digTarget = player ? player.currentDigTarget : null;
 
     // Calculate visible chunk range
@@ -142,7 +142,7 @@ export class TerrainComponent extends LifecycleComponent {
     }
 
     this.npcList = this.game.components.find(
-      (component) => component.constructor.name === 'NPCListComponent',
+      (component) => component.constructor.name === 'NPCSystem',
     ) || null;
 
     return this.npcList;

@@ -3,27 +3,27 @@
  * @description Unified gravity system - manages falling for all entities with FallableComponent
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
-import { FallableComponent } from '../components/blocks/fallable.component.js';
-import { PhysicsComponent } from '../components/blocks/physics.component.js';
+import { System } from "../core/system.js';
+import { FallableComponent } from '../components/block/fallable.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { eventBus } from '../utils/event-bus.js';
-import { LethalComponent } from '../components/blocks/lethal.component.js';
+import { LethalComponent } from '../components/block/lethal.component.js';
 
 /**
  * GravitySystem
  * Unified ECS system for gravity and falling physics.
  * Manages all entities with FallableComponent (player, rocks, etc.)
  */
-export class GravitySystem extends LifecycleComponent {
+export class GravitySystem extends System {
   init() {
     // Track falling blocks for collision detection
     this.fallingBlocks = new Set();
   }
 
   update(deltaTime) {
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
 
     if (!terrain || !player) return;
 
@@ -36,8 +36,8 @@ export class GravitySystem extends LifecycleComponent {
 
   /**
    * Update all falling blocks in terrain
-   * @param {TerrainComponent} terrain
-   * @param {PlayerComponent} player
+   * @param {TerrainSystem} terrain
+   * @param {PlayerSystem} player
    * @param {number} deltaTime
    * @private
    */
@@ -101,8 +101,8 @@ export class GravitySystem extends LifecycleComponent {
 
   /**
    * Update player falling (if player has FallableComponent)
-   * @param {TerrainComponent} terrain
-   * @param {PlayerComponent} player
+   * @param {TerrainSystem} terrain
+   * @param {PlayerSystem} player
    * @param {number} deltaTime
    * @private
    */
@@ -160,7 +160,7 @@ export class GravitySystem extends LifecycleComponent {
   /**
    * Check if falling block collides with player
    * @param {FallableComponent} fallable
-   * @param {PlayerComponent} player
+   * @param {PlayerSystem} player
    * @returns {boolean}
    * @private
    */

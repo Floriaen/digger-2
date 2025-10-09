@@ -6,8 +6,8 @@
 import { Component } from '../../core/component.js';
 import { loadSpriteSheet } from '../../rendering/sprite-atlas.js';
 import { TILE_HEIGHT } from '../../utils/config.js';
-import { NpcPositionComponent } from './npc-position.component.js';
-import { NpcStateComponent } from './npc-state.component.js';
+import { PositionComponent } from './npc-position.component.js';
+import { StateComponent } from './npc-state.component.js';
 
 const SPRITE = {
   x: 96,
@@ -38,7 +38,7 @@ function getCamera(game) {
   return game.components.find((component) => component.constructor.name === 'CameraComponent') || null;
 }
 
-export class NpcRenderComponent extends Component {
+export class RenderComponent extends Component {
   init(_entity, context) {
     ensureSpriteSheetLoaded();
     this.game = context?.game || null;
@@ -54,8 +54,8 @@ export class NpcRenderComponent extends Component {
       return;
     }
 
-    const position = entity.get(NpcPositionComponent);
-    const state = entity.get(NpcStateComponent);
+    const position = entity.get(PositionComponent);
+    const state = entity.get(StateComponent);
     if (!position || !state) {
       return;
     }

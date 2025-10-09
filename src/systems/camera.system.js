@@ -3,18 +3,18 @@
  * @description Camera component - handles viewport tracking and smooth following
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from "../core/system.js';
 import { CAMERA_LERP_FACTOR, CAMERA_OFFSET_Y, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp, easeInQuad } from '../utils/math.js';
 
 /**
- * CameraComponent
+ * CameraSystem
  * Manages viewport position and smooth player tracking
  */
-export class CameraComponent extends LifecycleComponent {
+export class CameraSystem extends System {
   init() {
     // Initialize camera position centered on player immediately
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (player) {
       // Floor the initial position to ensure pixel-perfect alignment from the start
       this.x = Math.floor(CANVAS_WIDTH / 2 - player.x);
@@ -31,7 +31,7 @@ export class CameraComponent extends LifecycleComponent {
   }
 
   update(_deltaTime) {
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (!player) return;
 
     // Only auto-adjust zoom if not manually controlled

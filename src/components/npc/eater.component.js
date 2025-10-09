@@ -5,12 +5,12 @@
 
 import { Component } from '../../core/component.js';
 import { BlockFactory } from '../../factories/block.factory.js';
-import { PhysicsComponent } from '../../components/blocks/physics.component.js';
-import { DiggableComponent } from '../../components/blocks/diggable.component.js';
+import { PhysicsComponent } from '../../components/block/physics.component.js';
+import { DiggableComponent } from '../../components/block/diggable.component.js';
 
 const INSTANT_DAMAGE = Number.MAX_SAFE_INTEGER;
 
-export class NpcEaterComponent extends Component {
+export class EaterComponent extends Component {
   constructor({ spawn }) {
     super({ spawn });
   }

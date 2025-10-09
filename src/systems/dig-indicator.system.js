@@ -3,7 +3,7 @@
  * @description Renders dig target outline on top of all terrain
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from "../core/system.js';
 import { TILE_WIDTH, SPRITE_HEIGHT, TILE_CAP_HEIGHT } from '../utils/config.js';
 import { PhysicsComponent } from './blocks/physics.component.js';
 
@@ -11,7 +11,7 @@ import { PhysicsComponent } from './blocks/physics.component.js';
  * DigIndicatorComponent
  * Renders white outline around the block being dug (always on top of terrain)
  */
-export class DigIndicatorComponent extends LifecycleComponent {
+export class DigIndicatorSystem extends System {
   init() {
     // No initialization needed
   }
@@ -26,17 +26,17 @@ export class DigIndicatorComponent extends LifecycleComponent {
    */
   render(ctx) {
     // Get camera transform
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraComponent');
+    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
     const transform = camera.getTransform();
 
     // Get player's current dig target
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerComponent');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (!player || !player.currentDigTarget) return;
 
     const digTarget = player.currentDigTarget;
-    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainComponent');
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
     if (!terrain) return;
 
     // Calculate screen position

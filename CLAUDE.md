@@ -10,14 +10,14 @@ This document tracks AI-assisted development sessions for Digger 2, including to
 
 ---
 
-## Current Architecture (Post-ECS Refactor)
+## Current Architecture (Clean ECS)
 
 ### Core Principles
-1. **ECS (Entity-Component-System)**: Blocks are entities composed of components (data + behavior)
-2. **YAGNI / DRY / KISS**: Build only what’s needed now, avoid repetition, keep solutions simple
-3. **Two Component Types**:
-   - **LifecycleComponent** (`src/core/lifecycle-component.js`): Game loop systems (player, camera, terrain, HUD)
-   - **Component** (`src/core/component.js`): ECS component for block entities
+1. **ECS (Entity-Component-System)**: Pure ECS architecture with clear separation
+2. **YAGNI / DRY / KISS**: Build only what's needed now, avoid repetition, keep solutions simple
+3. **Two Base Classes**:
+   - **System** (`src/core/system.js`): Game loop systems (player, camera, terrain, HUD, gravity, etc.)
+   - **Component** (`src/core/component.js`): ECS components (data + behavior for entities)
 4. **Factory Pattern**: BlockFactory is the ONLY way to create block entities
 5. **Event-driven communication**: Event bus for decoupled systems
 6. **NO FALLBACKS**: Errors surface immediately during development
@@ -25,13 +25,15 @@ This document tracks AI-assisted development sessions for Digger 2, including to
 ### Directory Structure
 ```
 /src
-  /components       → Game systems (player, terrain, camera, HUD, etc.)
-    /blocks         → Block ECS components (health, physics, diggable, etc.)
-  /systems          → Cross-entity orchestration (gravity, input, score)
-  /factories        → BlockFactory (entity composition)
+  /core             → Engine primitives (Game, System, Component, Entity)
+  /systems          → Game loop systems (player, terrain, camera, gravity, NPC, etc.)
+  /components       → ECS components
+    /block          → Block entity components (health, physics, diggable, etc.)
+    /npc            → NPC entity components (position, walker, eater, etc.)
+  /entities         → Entity classes (Block, NPC)
+  /factories        → Entity factories (BlockFactory)
   /terrain          → Procedural generation, chunk management
-  /rendering        → Sprite atlas, tile rendering
-  /core             → Base classes (LifecycleComponent, Component, Entity)
+  /rendering        → Sprite atlas, tile rendering, render queue
   /utils            → Event bus, math helpers, config
 ```
 
@@ -40,8 +42,15 @@ This document tracks AI-assisted development sessions for Digger 2, including to
 - **Deleted**: Standalone entity classes (`chest.js`, `protective-block.js`)
 - **Unified**: Player and rocks use same `FallableComponent` via `GravitySystem`
 - **Renamed**: `LavaComponent` → `LethalComponent` (generic reusability)
+- **2025-10-09**: Clean ECS refactor
+  - `LifecycleComponent` → `System` (clear naming: systems vs components)
+  - All game systems moved to `/systems/` directory
+  - `PlayerComponent` → `PlayerSystem`, `TerrainComponent` → `TerrainSystem`, etc.
+  - `/components/blocks/` → `/components/block/` (singular)
+  - `/npc/components/` → `/components/npc/` (unified component location)
+  - NPC component class prefixes removed: `NpcPositionComponent` → `PositionComponent`
 
-See [ECS_CLEANUP.md](Docs/ECS_CLEANUP.md) for full refactor details.
+See [ECS_CLEANUP.md](Docs/ECS_CLEANUP.md) and [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) for details.
 
 ---
 

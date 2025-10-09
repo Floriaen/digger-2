@@ -5,12 +5,12 @@
 
 import { Component } from '../../core/component.js';
 import { TILE_HEIGHT } from '../../utils/config.js';
-import { PhysicsComponent } from '../../components/blocks/physics.component.js';
-import { NpcPositionComponent } from './npc-position.component.js';
+import { PhysicsComponent } from '../../components/block/physics.component.js';
+import { PositionComponent } from './npc-position.component.js';
 
 const FALL_SPEED_PX_PER_MS = 0.3;
 
-export class NpcFallComponent extends Component {
+export class FallComponent extends Component {
   constructor() {
     super();
     this.isFalling = false;
@@ -28,7 +28,7 @@ export class NpcFallComponent extends Component {
       return;
     }
 
-    const position = entity.get(NpcPositionComponent);
+    const position = entity.get(PositionComponent);
     if (!position) {
       return;
     }

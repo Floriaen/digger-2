@@ -6,11 +6,11 @@
 import { CHUNK_SIZE } from '../utils/config.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { TerrainChunk } from './terrain-chunk.js';
-import { PhysicsComponent } from '../components/blocks/physics.component.js';
-import { FallableComponent } from '../components/blocks/fallable.component.js';
-import { RenderComponent } from '../components/blocks/render.component.js';
-import { HealthComponent } from '../components/blocks/health.component.js';
-import { DarknessComponent } from '../components/blocks/darkness.component.js';
+import { PhysicsComponent } from '../components/block/physics.component.js';
+import { FallableComponent } from '../components/block/fallable.component.js';
+import { RenderComponent } from '../components/block/render.component.js';
+import { HealthComponent } from '../components/block/health.component.js';
+import { DarknessComponent } from '../components/block/darkness.component.js';
 import { generateHalo } from '../systems/halo-generator.js';
 
 // Helper constants for block type identification

@@ -3,7 +3,7 @@
  * @description Touch input component - handles mobile swipe gestures for movement
  */
 
-import { LifecycleComponent } from '../core/lifecycle-component.js';
+import { System } from "../core/system.js';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
 
@@ -11,7 +11,7 @@ import { eventBus } from '../utils/event-bus.js';
  * TouchInputComponent
  * Provides swipe gesture controls for mobile (left/right/down with single finger)
  */
-export class TouchInputComponent extends LifecycleComponent {
+export class TouchInputSystem extends System {
   init() {
     this.enabled = true;
 
