@@ -5,7 +5,14 @@
 
 import { System } from '../core/system.js';
 import {
-  CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, SPRITE_HEIGHT, TILE_CAP_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
+  CHUNK_SIZE,
+  TILE_WIDTH,
+  TILE_HEIGHT,
+  SPRITE_HEIGHT,
+  TILE_CAP_HEIGHT,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  TERRAIN_MAX_WIDTH,
 } from '../utils/config.js';
 import { TerrainGenerator } from '../terrain/terrain-generator.js';
 import { ChunkCache } from '../terrain/chunk-cache.js';
@@ -38,6 +45,14 @@ export class TerrainSystem extends System {
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded
     this.npcList = null;
+    this.maxWidth = TERRAIN_MAX_WIDTH;
+    this.horizontalBounds = null;
+    this.horizontalMaskVersion = 0;
+
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    if (player) {
+      this._ensureHorizontalBounds(player);
+    }
 
     // Load sprite sheet
     try {
@@ -53,6 +68,7 @@ export class TerrainSystem extends System {
     // Stream chunks based on camera/player position
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (player) {
+      this._ensureHorizontalBounds(player);
       this._ensureChunksLoaded(player.gridX, player.gridY);
     }
   }
@@ -70,6 +86,9 @@ export class TerrainSystem extends System {
 
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     const digTarget = player ? player.currentDigTarget : null;
+    if (player) {
+      this._ensureHorizontalBounds(player);
+    }
 
     // Calculate visible chunk range
     // World coordinates visible: from -transform to (canvasSize - transform)
@@ -86,6 +105,9 @@ export class TerrainSystem extends System {
     // Queue visible chunks (bottom to top for proper overlap)
     for (let cy = endChunkY; cy >= startChunkY; cy -= 1) {
       for (let cx = startChunkX; cx <= endChunkX; cx += 1) {
+        if (!this._isChunkWithinHorizontalBounds(cx)) {
+          continue;
+        }
         this._renderChunk(renderQueue, cx, cy, transform, digTarget);
       }
     }
@@ -110,8 +132,14 @@ export class TerrainSystem extends System {
     // Load 3x3 chunk area around player
     for (let dy = -1; dy <= 1; dy += 1) {
       for (let dx = -1; dx <= 1; dx += 1) {
-        const chunk = this.cache.getChunk(chunkX + dx, chunkY + dy);
-        this._spawnMaggotsForChunk(chunk);
+        const targetChunkX = chunkX + dx;
+        if (!this._isChunkWithinHorizontalBounds(targetChunkX)) {
+          continue;
+        }
+        const chunk = this._getChunk(targetChunkX, chunkY + dy);
+        if (chunk) {
+          this._spawnMaggotsForChunk(chunk);
+        }
       }
     }
   }
@@ -148,18 +176,104 @@ export class TerrainSystem extends System {
     return this.npcList;
   }
 
+  _ensureHorizontalBounds(player) {
+    if (!this._hasWidthLimit() || this.horizontalBounds) {
+      return;
+    }
+
+    const center = typeof player.spawnGridX === 'number' ? player.spawnGridX : player.gridX;
+    const width = Math.max(1, Math.floor(this.maxWidth));
+    const leftOffset = Math.floor((width - 1) / 2);
+    const rightOffset = width - 1 - leftOffset;
+
+    this.horizontalBounds = {
+      center,
+      minGridX: center - leftOffset,
+      maxGridX: center + rightOffset,
+    };
+    this.horizontalMaskVersion += 1;
+  }
+
+  _hasWidthLimit() {
+    return typeof this.maxWidth === 'number' && Number.isFinite(this.maxWidth) && this.maxWidth > 0;
+  }
+
+  isWithinHorizontalBounds(gridX) {
+    if (!this.horizontalBounds) {
+      return true;
+    }
+    const { minGridX, maxGridX } = this.horizontalBounds;
+    return gridX >= minGridX && gridX <= maxGridX;
+  }
+
+  _isChunkWithinHorizontalBounds(chunkX) {
+    if (!this.horizontalBounds) {
+      return true;
+    }
+
+    const chunkStart = chunkX * CHUNK_SIZE;
+    const chunkEnd = chunkStart + CHUNK_SIZE - 1;
+    const { minGridX, maxGridX } = this.horizontalBounds;
+
+    return chunkEnd >= minGridX && chunkStart <= maxGridX;
+  }
+
+  _applyHorizontalMask(chunk) {
+    if (!this.horizontalBounds) {
+      return;
+    }
+
+    if (chunk.horizontalMaskVersion === this.horizontalMaskVersion) {
+      return;
+    }
+
+    const { minGridX, maxGridX } = this.horizontalBounds;
+    const chunkStart = chunk.chunkX * CHUNK_SIZE;
+    const chunkEnd = chunkStart + CHUNK_SIZE - 1;
+
+    if (chunkStart >= minGridX && chunkEnd <= maxGridX) {
+      chunk.horizontalMaskVersion = this.horizontalMaskVersion;
+      return;
+    }
+
+    for (let localX = 0; localX < CHUNK_SIZE; localX += 1) {
+      const worldX = chunkStart + localX;
+      if (worldX < minGridX || worldX > maxGridX) {
+        for (let localY = 0; localY < CHUNK_SIZE; localY += 1) {
+          chunk.setBlock(localX, localY, BlockFactory.createEmpty());
+        }
+      }
+    }
+
+    chunk.horizontalMaskVersion = this.horizontalMaskVersion;
+  }
+
+  _getChunk(chunkX, chunkY) {
+    if (!this._isChunkWithinHorizontalBounds(chunkX)) {
+      return null;
+    }
+
+    const chunk = this.cache.getChunk(chunkX, chunkY);
+    if (chunk && this.horizontalBounds) {
+      this._applyHorizontalMask(chunk);
+    }
+    return chunk;
+  }
+
   /**
    * Queue draw commands for a single chunk.
    * @param {RenderQueue} renderQueue - Shared render queue instance.
    * @param {number} chunkX - Chunk X coordinate.
    * @param {number} chunkY - Chunk Y coordinate.
-   * @param {{x: number, y: number}} transform - Camera transform (position only).
-   * @param {{x: number, y: number, hp: number, maxHp: number} | null} digTarget - Active dig target (world coords).
-   * @private
-   */
+ * @param {{x: number, y: number}} transform - Camera transform (position only).
+ * @param {{x: number, y: number, hp: number, maxHp: number} | null} digTarget - Active dig target (world coords).
+ * @private
+ */
   _renderChunk(renderQueue, chunkX, chunkY, transform, digTarget) {
-    const chunk = this.cache.getChunk(chunkX, chunkY);
-    if (!chunk || !this.spriteSheet) return;
+    if (!this.spriteSheet) return;
+
+    const chunk = this._getChunk(chunkX, chunkY);
+    if (!chunk) return;
 
     const worldOffsetX = chunkX * CHUNK_SIZE * TILE_WIDTH;
     const worldOffsetY = chunkY * CHUNK_SIZE * TILE_HEIGHT;
@@ -167,6 +281,10 @@ export class TerrainSystem extends System {
     // Render tiles bottom to top for proper overlap
     for (let localY = CHUNK_SIZE - 1; localY >= 0; localY -= 1) {
       for (let localX = 0; localX < CHUNK_SIZE; localX += 1) {
+        const worldGridX = chunk.chunkX * CHUNK_SIZE + localX;
+        if (!this.isWithinHorizontalBounds(worldGridX)) {
+          continue;
+        }
         const block = chunk.getBlock(localX, localY);
 
         const physics = block.get(PhysicsComponent);
@@ -284,14 +402,18 @@ export class TerrainSystem extends System {
    * @param {number} gridX - World grid x coordinate
    * @param {number} gridY - World grid y coordinate
    * @returns {Block} Block entity
-   */
+  */
   getBlock(gridX, gridY) {
+    if (!this.isWithinHorizontalBounds(gridX)) {
+      return BlockFactory.createEmpty();
+    }
+
     const chunkX = Math.floor(gridX / CHUNK_SIZE);
     const chunkY = Math.floor(gridY / CHUNK_SIZE);
     const localX = ((gridX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
     const localY = ((gridY % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
-    const chunk = this.cache.getChunk(chunkX, chunkY);
+    const chunk = this._getChunk(chunkX, chunkY);
     return chunk ? chunk.getBlock(localX, localY) : BlockFactory.createEmpty();
   }
 
@@ -302,12 +424,16 @@ export class TerrainSystem extends System {
    * @param {Block} block - Block entity
    */
   setBlock(gridX, gridY, block) {
+    if (!this.isWithinHorizontalBounds(gridX)) {
+      return;
+    }
+
     const chunkX = Math.floor(gridX / CHUNK_SIZE);
     const chunkY = Math.floor(gridY / CHUNK_SIZE);
     const localX = ((gridX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
     const localY = ((gridY % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
-    const chunk = this.cache.getChunk(chunkX, chunkY);
+    const chunk = this._getChunk(chunkX, chunkY);
     if (chunk) {
       chunk.setBlock(localX, localY, block);
     }

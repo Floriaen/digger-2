@@ -3,7 +3,7 @@
  * @description Procedural terrain generation with stratified noise and features
  */
 
-import { CHUNK_SIZE } from '../utils/config.js';
+import { CHUNK_SIZE, TERRAIN_MAX_HEIGHT } from '../utils/config.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { TerrainChunk } from './terrain-chunk.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
@@ -38,7 +38,7 @@ export class TerrainGenerator {
   constructor(seed = 12345) {
     this.seed = seed;
     this.chunkCache = new Map(); // Cache generated chunks
-    this.lavaDepth = 200; // Configurable lava start depth
+    this.lavaDepth = TERRAIN_MAX_HEIGHT; // Lava start depth configured via constants
   }
 
   /**

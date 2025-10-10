@@ -9,6 +9,7 @@ import { PhysicsComponent } from '../components/block/physics.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { eventBus } from '../utils/event-bus.js';
 import { LethalComponent } from '../components/block/lethal.component.js';
+import { CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
 
 /**
  * GravitySystem
@@ -78,8 +79,12 @@ export class GravitySystem extends System {
           }
 
           const fallable = block.get(FallableComponent);
-          const worldX = chunk.chunkX * 32 + x; // 32 is CHUNK_SIZE
-          const worldY = chunk.chunkY * 32 + y;
+          const worldX = chunk.chunkX * CHUNK_SIZE + x;
+          const worldY = chunk.chunkY * CHUNK_SIZE + y;
+
+          if (!terrain.isWithinHorizontalBounds(worldX)) {
+            continue;
+          }
 
           // Check if block should start falling
           if (!fallable.isFalling && fallable.checkSupport(block, terrain, worldX, worldY)) {
@@ -137,11 +142,11 @@ export class GravitySystem extends System {
 
     // Update player position from fallable
     player.y = player.fallable.pixelY;
-    const newGridY = Math.floor(player.y / 16);
+    const newGridY = Math.floor(player.y / TILE_HEIGHT);
 
     // Check if we've entered a new grid cell
     if (newGridY !== player.gridY) {
-      const newGridX = Math.floor(player.x / 16);
+      const newGridX = Math.floor(player.x / TILE_WIDTH);
 
       // Check what's at the new position BEFORE moving into it
       const blockAtNewPos = terrain.getBlock(newGridX, newGridY);
@@ -158,7 +163,7 @@ export class GravitySystem extends System {
       const physicsAtNewPos = blockAtNewPos.get(PhysicsComponent);
       if (physicsAtNewPos && physicsAtNewPos.isCollidable()) {
         // Stop at the previous grid position (don't enter the solid block)
-        player.y = player.gridY * 16 + 8; // Snap to center of current grid cell
+        player.y = player.gridY * TILE_HEIGHT + TILE_HEIGHT / 2; // Snap to center of current grid cell
         player.fallable.stopFalling();
 
         // Notify player component to handle landing
@@ -182,22 +187,22 @@ export class GravitySystem extends System {
    */
   _checkBlockPlayerCollision(fallable, player) {
     const blockPixelY = fallable.pixelY;
-    const blockPixelX = fallable.gridX * 16;
+    const blockPixelX = fallable.gridX * TILE_WIDTH;
 
     // Check if block overlaps with player position
     const playerCenterX = player.x;
     const playerCenterY = player.y;
 
-    // Simple AABB collision (16x16 block vs player radius)
+    // Simple AABB collision (tile-sized block vs player radius)
     const blockLeft = blockPixelX;
-    const blockRight = blockPixelX + 16;
+    const blockRight = blockPixelX + TILE_WIDTH;
     const blockTop = blockPixelY;
-    const blockBottom = blockPixelY + 16;
+    const blockBottom = blockPixelY + TILE_HEIGHT;
 
-    const playerLeft = playerCenterX - 8;
-    const playerRight = playerCenterX + 8;
-    const playerTop = playerCenterY - 8;
-    const playerBottom = playerCenterY + 8;
+    const playerLeft = playerCenterX - TILE_WIDTH / 2;
+    const playerRight = playerCenterX + TILE_WIDTH / 2;
+    const playerTop = playerCenterY - TILE_HEIGHT / 2;
+    const playerBottom = playerCenterY + TILE_HEIGHT / 2;
 
     return (
       blockLeft < playerRight
