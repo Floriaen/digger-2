@@ -83,12 +83,12 @@ export class GravitySystem extends System {
 
           // Check if block should start falling
           if (!fallable.isFalling && fallable.checkSupport(block, terrain, worldX, worldY)) {
-            fallable.startFalling(worldX, worldY);
+            fallable.startFalling(block, worldX, worldY);
           }
 
           // Update falling blocks
           if (fallable.isFalling) {
-            fallable.updateFalling(deltaTime);
+            fallable.updateFalling(block, deltaTime);
 
             // Check if block landed on solid ground
             const blockBelow = terrain.getBlock(fallable.gridX, fallable.gridY + 1);
@@ -99,7 +99,7 @@ export class GravitySystem extends System {
               // Move block from old position to new position
               terrain.setBlock(worldX, worldY, BlockFactory.createEmpty());
               terrain.setBlock(fallable.gridX, fallable.gridY, block);
-              fallable.stopFalling();
+              fallable.stopFalling(block);
             } else {
               // Still falling - check player collision
               if (this._checkBlockPlayerCollision(fallable, player)) {

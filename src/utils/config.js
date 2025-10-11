@@ -33,6 +33,12 @@ export const PLAYER_RADIUS = 5;
 export const CHUNK_SIZE = 32; // 32x32 blocks per chunk
 export const CHUNK_CACHE_LIMIT = 10; // Max cached chunks
 
+// World bounds (in tiles)
+export const WORLD_WIDTH = 600; // 600 tiles width
+export const WORLD_HEIGHT = 200; // 200 tiles height
+export const TERRAIN_MAX_WIDTH = 40; // Set to Infinity to keep terrain unbounded (tile units)
+export const TERRAIN_MAX_HEIGHT = 30; // Lava starts at this depth (tile units)
+
 // Physics
 export const GRAVITY = 0.5;
 export const FALL_SPEED_MAX = 10;
