@@ -94,11 +94,8 @@ export class CameraSystem extends System {
             -(this.bounds.maxY - viewportHeight), // Bottom edge limit
             -this.bounds.minY, // Top edge limit
           );
-        } else {
-          // Terrain shorter than viewport: center terrain vertically
-          const terrainCenterY = (this.bounds.minY + this.bounds.maxY) / 2;
-          this.targetY = (this.game.canvas.height / 2 / this.zoom) - terrainCenterY;
         }
+        // Note: No else block - when terrain is shorter than viewport, keep follow offset
       }
     }
 
@@ -196,5 +193,13 @@ export class CameraSystem extends System {
     this.followLerp = lerpFactor;
     this.followOffsetX = offsetX !== null ? offsetX : this.game.canvas.width / 2;
     this.followOffsetY = offsetY !== null ? offsetY : CAMERA_OFFSET_Y;
+
+    // Reinitialize camera position with new offset if entity has valid position
+    if (entity && typeof entity.x === 'number' && typeof entity.y === 'number') {
+      this.x = Math.floor((this.followOffsetX / this.zoom) - entity.x);
+      this.y = Math.floor((this.followOffsetY / this.zoom) - entity.y);
+      this.targetX = this.x;
+      this.targetY = this.y;
+    }
   }
 }
