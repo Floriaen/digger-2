@@ -130,15 +130,20 @@ function init() {
   const playerSpawn = terrainSystem.getTerrainCenter();
 
   game.addComponent(new NavigationSystem(game));
-  game.addComponent(new PlayerSystem(game, playerSpawn));
+  const playerSystem = new PlayerSystem(game, playerSpawn);
+  game.addComponent(playerSystem);
   game.addComponent(new CoinEffectSystem(game));
-  game.addComponent(new CameraSystem(game));
+  const cameraSystem = new CameraSystem(game);
+  game.addComponent(cameraSystem);
   game.addComponent(new HUDSystem(game));
   game.addComponent(new TouchInputSystem(game)); // Touch input for mobile
   game.addComponent(new DebugSystem(game));
 
   // Initialize game
   game.init();
+
+  // Setup camera to follow player
+  cameraSystem.follow(playerSystem);
 
   // Subscribe to pause toggle event
   eventBus.on('input:pause-toggle', () => {

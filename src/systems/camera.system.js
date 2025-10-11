@@ -32,20 +32,6 @@ export class CameraSystem extends System {
     this.followLerp = CAMERA_LERP_FACTOR; // Interpolation speed
     this.followOffsetX = CANVAS_WIDTH / 2; // Horizontal offset from world origin
     this.followOffsetY = CAMERA_OFFSET_Y; // Vertical offset from world origin
-
-    // Auto-follow player if exists (backward compatibility)
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
-    if (player) {
-      this.follow(player, CAMERA_LERP_FACTOR, CANVAS_WIDTH / 2, CAMERA_OFFSET_Y);
-      // Initialize position immediately to prevent jump (only if player has been initialized)
-      if (typeof player.x === 'number' && typeof player.y === 'number') {
-        // Convert screen-space offset to world-space by dividing by zoom
-        this.x = Math.floor((this.followOffsetX / this.zoom) - player.x);
-        this.y = Math.floor((this.followOffsetY / this.zoom) - player.y);
-        this.targetX = this.x;
-        this.targetY = this.y;
-      }
-    }
   }
 
   update(_deltaTime) {
