@@ -3,7 +3,7 @@
  * @description Main game class - orchestrates component lifecycle and game loop
  */
 
-import { TARGET_FPS } from '../utils/config.js';
+import { TARGET_FPS, WORLD_HEIGHT, TILE_WIDTH } from '../utils/config.js';
 import { PerformanceMonitor } from '../utils/performance-monitor.js';
 import { RenderQueue } from '../rendering/render-queue.js';
 import { eventBus } from '../utils/event-bus.js';
@@ -68,6 +68,17 @@ export class Game {
     // Components will be added in main.js
     this.running = true;
     this.lastTime = performance.now();
+
+    // Set camera bounds based on terrain bounds (not arbitrary world size)
+    const camera = this.components.find((c) => c.constructor.name === 'CameraSystem');
+    const terrain = this.components.find((c) => c.constructor.name === 'TerrainSystem');
+    if (camera && terrain && terrain.horizontalBounds) {
+      const { minGridX, maxGridX } = terrain.horizontalBounds;
+      // Convert grid coordinates to pixel coordinates
+      const minX = minGridX * TILE_WIDTH;
+      const maxX = (maxGridX + 1) * TILE_WIDTH; // +1 to include the full tile
+      camera.setBounds(minX, 0, maxX, WORLD_HEIGHT);
+    }
   }
 
   /**

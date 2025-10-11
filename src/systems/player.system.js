@@ -32,10 +32,15 @@ const PLAYER_STATE = {
  * Manages player position, state, and digging behavior
  */
 export class PlayerSystem extends System {
+  constructor(game, spawnPosition = { gridX: 0, gridY: 2 }) {
+    super(game);
+    this.spawnPosition = spawnPosition;
+  }
+
   init() {
-    // Grid position (tiles) - start position (in grass layer, first line)
-    this.gridX = 12;
-    this.gridY = 2;
+    // Grid position (tiles) - calculated by main.js for proper centering
+    this.gridX = this.spawnPosition.gridX;
+    this.gridY = this.spawnPosition.gridY;
 
     // World position (pixels) - centered on tile
     this.x = this.gridX * 16 + 8; // Center horizontally (16/2)

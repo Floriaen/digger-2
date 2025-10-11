@@ -75,6 +75,7 @@ function resizeCanvas(canvas, game) {
   }
 }
 
+
 /**
  * Map death cause to dialog text
  */
@@ -117,14 +118,19 @@ function init() {
 
   // Add systems (order matters for rendering and update logic)
   game.addComponent(new BackgroundSystem(game));
-  game.addComponent(new TerrainSystem(game));
+  const terrainSystem = new TerrainSystem(game);
+  game.addComponent(terrainSystem);
   game.addComponent(new NPCSystem(game));
   game.addComponent(new GravitySystem(game)); // Gravity system updates after terrain
   // game.addComponent(new GridOverlaySystem(game)); // Grid overlay on blocks
   game.addComponent(new DigIndicatorSystem(game)); // Dig outline on top of terrain
   game.addComponent(new ShadowSystem(game)); // Shadow renders before player
+
+  // Get player spawn position from terrain system (terrain defines where player spawns)
+  const playerSpawn = terrainSystem.getTerrainCenter();
+
   game.addComponent(new NavigationSystem(game));
-  game.addComponent(new PlayerSystem(game));
+  game.addComponent(new PlayerSystem(game, playerSpawn));
   game.addComponent(new CoinEffectSystem(game));
   game.addComponent(new CameraSystem(game));
   game.addComponent(new HUDSystem(game));
