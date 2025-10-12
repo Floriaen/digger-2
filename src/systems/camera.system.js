@@ -7,7 +7,6 @@ import { System } from '../core/system.js';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp } from '../utils/math.js';
 
-const ZOOM_LERP_FACTOR = 0.1;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3.0;
 const FOLLOW_LERP = 0.1;
@@ -61,7 +60,7 @@ export class CameraSystem extends System {
       this.y = lerp(this.y, targetY, FOLLOW_LERP);
     }
 
-    this.zoom = lerp(this.zoom, this.targetZoom, ZOOM_LERP_FACTOR);
+    this.zoom = this.targetZoom;
 
     this._clampToWorldInternal(this._getCanvas());
   }
@@ -120,15 +119,17 @@ export class CameraSystem extends System {
   }
 
   setZoom(zoom) {
-    this.targetZoom = this._clampZoom(zoom);
+    const clamped = this._clampZoom(zoom);
+    this.targetZoom = clamped;
+    this.zoom = clamped;
   }
 
   zoomIn(factor = 1.1) {
-    this.setZoom(this.zoom * factor);
+    this.setZoom(this.targetZoom * factor);
   }
 
   zoomOut(factor = 1.1) {
-    this.setZoom(this.zoom / factor);
+    this.setZoom(this.targetZoom / factor);
   }
 
   _snapToCanvasCenter() {
