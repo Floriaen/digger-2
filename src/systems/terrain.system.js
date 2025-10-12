@@ -38,6 +38,7 @@ export class TerrainSystem extends System {
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded
     this.npcList = null;
+    this._syncWorldDimensions();
 
     // Load sprite sheet
     try {
@@ -78,14 +79,28 @@ export class TerrainSystem extends System {
     const worldStartY = -transform.y;
     const worldEndY = CANVAS_HEIGHT - transform.y;
 
+    const minChunkX = 0;
+    const maxChunkX = this.worldWidthChunks - 1;
+    const minChunkY = 0;
+    const maxChunkY = this.worldHeightChunks - 1;
+
     const startChunkX = Math.floor(worldStartX / (CHUNK_SIZE * TILE_WIDTH));
     const endChunkX = Math.floor(worldEndX / (CHUNK_SIZE * TILE_WIDTH));
     const startChunkY = Math.floor(worldStartY / (CHUNK_SIZE * TILE_HEIGHT));
     const endChunkY = Math.floor(worldEndY / (CHUNK_SIZE * TILE_HEIGHT));
 
+    const clampedStartX = Math.max(minChunkX, startChunkX);
+    const clampedEndX = Math.min(maxChunkX, endChunkX);
+    const clampedStartY = Math.max(minChunkY, startChunkY);
+    const clampedEndY = Math.min(maxChunkY, endChunkY);
+
+    if (clampedStartX > clampedEndX || clampedStartY > clampedEndY) {
+      return;
+    }
+
     // Queue visible chunks (bottom to top for proper overlap)
-    for (let cy = endChunkY; cy >= startChunkY; cy -= 1) {
-      for (let cx = startChunkX; cx <= endChunkX; cx += 1) {
+    for (let cy = clampedEndY; cy >= clampedStartY; cy -= 1) {
+      for (let cx = clampedStartX; cx <= clampedEndX; cx += 1) {
         this._renderChunk(renderQueue, cx, cy, transform, digTarget);
       }
     }
@@ -106,11 +121,28 @@ export class TerrainSystem extends System {
   _ensureChunksLoaded(gridX, gridY) {
     const chunkX = Math.floor(gridX / CHUNK_SIZE);
     const chunkY = Math.floor(gridY / CHUNK_SIZE);
+    const minChunkX = 0;
+    const maxChunkX = this.worldWidthChunks - 1;
+    const minChunkY = 0;
+    const maxChunkY = this.worldHeightChunks - 1;
 
     // Load 3x3 chunk area around player
     for (let dy = -1; dy <= 1; dy += 1) {
       for (let dx = -1; dx <= 1; dx += 1) {
-        const chunk = this.cache.getChunk(chunkX + dx, chunkY + dy);
+        const targetChunkX = chunkX + dx;
+        const targetChunkY = chunkY + dy;
+
+        if (
+          targetChunkX < minChunkX
+          || targetChunkX > maxChunkX
+          || targetChunkY < minChunkY
+          || targetChunkY > maxChunkY
+        ) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+
+        const chunk = this.cache.getChunk(targetChunkX, targetChunkY);
         this._spawnMaggotsForChunk(chunk);
       }
     }
@@ -168,6 +200,13 @@ export class TerrainSystem extends System {
     for (let localY = CHUNK_SIZE - 1; localY >= 0; localY -= 1) {
       for (let localX = 0; localX < CHUNK_SIZE; localX += 1) {
         const block = chunk.getBlock(localX, localY);
+        const worldGridX = chunkX * CHUNK_SIZE + localX;
+        const worldGridY = chunkY * CHUNK_SIZE + localY;
+
+        if (!this.isWithinWorld(worldGridX, worldGridY)) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
 
         const physics = block.get(PhysicsComponent);
         const render = block.get(RenderComponent);
@@ -253,9 +292,9 @@ export class TerrainSystem extends System {
         }
 
         let digDarkness = 0;
-        const worldX = chunkX * CHUNK_SIZE + localX;
-        const worldY = chunkY * CHUNK_SIZE + localY;
-        const isDigTarget = digTarget && digTarget.x === worldX && digTarget.y === worldY;
+        const isDigTarget = digTarget
+          && digTarget.x === worldGridX
+          && digTarget.y === worldGridY;
 
         if (isDigTarget) {
           const damagePercent = 1 - (digTarget.hp / digTarget.maxHp);
@@ -286,6 +325,14 @@ export class TerrainSystem extends System {
    * @returns {Block} Block entity
    */
   getBlock(gridX, gridY) {
+    if (gridY < 0) {
+      return BlockFactory.createEmpty();
+    }
+
+    if (!this.isWithinWorld(gridX, gridY)) {
+      return BlockFactory.createBoundary();
+    }
+
     const chunkX = Math.floor(gridX / CHUNK_SIZE);
     const chunkY = Math.floor(gridY / CHUNK_SIZE);
     const localX = ((gridX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
@@ -302,6 +349,10 @@ export class TerrainSystem extends System {
    * @param {Block} block - Block entity
    */
   setBlock(gridX, gridY, block) {
+    if (gridY < 0 || !this.isWithinWorld(gridX, gridY)) {
+      return;
+    }
+
     const chunkX = Math.floor(gridX / CHUNK_SIZE);
     const chunkY = Math.floor(gridY / CHUNK_SIZE);
     const localX = ((gridX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
@@ -321,5 +372,20 @@ export class TerrainSystem extends System {
     this.seed = newSeed;
     this.generator = new TerrainGenerator(this.seed);
     this.cache = new ChunkCache(this.generator);
+    this._syncWorldDimensions();
+  }
+
+  _syncWorldDimensions() {
+    this.worldWidthChunks = this.generator?.worldWidthChunks ?? Number.POSITIVE_INFINITY;
+    this.worldHeightChunks = this.generator?.worldHeightChunks ?? Number.POSITIVE_INFINITY;
+    this.worldWidthTiles = this.generator?.worldWidthTiles ?? Number.POSITIVE_INFINITY;
+    this.worldHeightTiles = this.generator?.worldHeightTiles ?? Number.POSITIVE_INFINITY;
+  }
+
+  isWithinWorld(gridX, gridY) {
+    return gridX >= 0
+      && gridX < this.worldWidthTiles
+      && gridY >= 0
+      && gridY < this.worldHeightTiles;
   }
 }

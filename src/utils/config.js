@@ -33,6 +33,13 @@ export const PLAYER_RADIUS = 5;
 export const CHUNK_SIZE = 32; // 32x32 blocks per chunk
 export const CHUNK_CACHE_LIMIT = 10; // Max cached chunks
 
+// World bounds (in chunks)
+export const WORLD_WIDTH_CHUNKS = 1;
+export const WORLD_HEIGHT_CHUNKS = 5;
+
+// Lava configuration (distance from bottom of the world in chunks)
+export const LAVA_SURFACE_OFFSET_CHUNKS = 4;
+
 // Physics
 export const GRAVITY = 0.5;
 export const FALL_SPEED_MAX = 10;

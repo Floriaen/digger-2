@@ -3,7 +3,12 @@
  * @description Procedural terrain generation with stratified noise and features
  */
 
-import { CHUNK_SIZE } from '../utils/config.js';
+import {
+  CHUNK_SIZE,
+  WORLD_WIDTH_CHUNKS,
+  WORLD_HEIGHT_CHUNKS,
+  LAVA_SURFACE_OFFSET_CHUNKS,
+} from '../utils/config.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { TerrainChunk } from './terrain-chunk.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
@@ -38,7 +43,19 @@ export class TerrainGenerator {
   constructor(seed = 12345) {
     this.seed = seed;
     this.chunkCache = new Map(); // Cache generated chunks
-    this.lavaDepth = 200; // Configurable lava start depth
+    this.worldWidthChunks = WORLD_WIDTH_CHUNKS;
+    this.worldHeightChunks = WORLD_HEIGHT_CHUNKS;
+    this.worldWidthTiles = this.worldWidthChunks * CHUNK_SIZE;
+    this.worldHeightTiles = this.worldHeightChunks * CHUNK_SIZE;
+
+    const clampedOffsetChunks = Math.max(
+      0,
+      Math.min(LAVA_SURFACE_OFFSET_CHUNKS, this.worldHeightChunks),
+    );
+    this.lavaDepth = Math.max(
+      0,
+      (this.worldHeightChunks - clampedOffsetChunks) * CHUNK_SIZE,
+    ); // Configurable lava start depth
   }
 
   /**
@@ -48,6 +65,10 @@ export class TerrainGenerator {
    * @returns {TerrainChunk}
    */
   generateChunk(chunkX, chunkY) {
+    if (!this.isChunkWithinBounds(chunkX, chunkY)) {
+      return null;
+    }
+
     const key = `${chunkX},${chunkY}`;
 
     // Return cached chunk if exists
@@ -64,6 +85,12 @@ export class TerrainGenerator {
       for (let x = 0; x < CHUNK_SIZE; x += 1) {
         const worldX = chunkX * CHUNK_SIZE + x;
         const worldY = chunkY * CHUNK_SIZE + y;
+
+        if (worldX < 0 || worldX >= this.worldWidthTiles || worldY < 0 || worldY >= this.worldHeightTiles) {
+          chunk.setBlock(x, y, BlockFactory.createEmpty());
+          // eslint-disable-next-line no-continue
+          continue;
+        }
 
         let blockType = BLOCK_TYPE.EMPTY;
 
@@ -119,6 +146,19 @@ export class TerrainGenerator {
     this.chunkCache.set(key, chunk);
 
     return chunk;
+  }
+
+  /**
+   * Check if a chunk coordinate is within configured world bounds
+   * @param {number} chunkX
+   * @param {number} chunkY
+   * @returns {boolean}
+   */
+  isChunkWithinBounds(chunkX, chunkY) {
+    return chunkX >= 0
+      && chunkX < this.worldWidthChunks
+      && chunkY >= 0
+      && chunkY < this.worldHeightChunks;
   }
 
   /**
