@@ -4,6 +4,11 @@
  */
 
 import { System } from '../core/system.js';
+import {
+  WORLD_WIDTH_PX,
+  BACKGROUND_MOUNTAIN_Y,
+  SUN_VERTICAL_OFFSET,
+} from '../utils/config.js';
 
 /**
  * BackgroundComponent
@@ -11,9 +16,10 @@ import { System } from '../core/system.js';
  */
 export class BackgroundSystem extends System {
   init() {
-    this.sunX = null; // Sun X position (set from player's initial position)
-    this.sunY = null; // Sun Y position (set from player's initial position)
-    this.mountainWorldY = null; // Mountain Y position in world space (set once, like sun)
+    this.x = WORLD_WIDTH_PX / 2;
+    this.y = BACKGROUND_MOUNTAIN_Y;
+    this.sunRadius = 80;
+    this.sunOffsetY = SUN_VERTICAL_OFFSET;
   }
 
   update() {
@@ -24,7 +30,6 @@ export class BackgroundSystem extends System {
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
-    // REFACTOR TO DO : Camera is used to setup the position of the background at start, it should not
     const viewBounds = camera.getViewBounds(ctx.canvas);
     const viewWidth = viewBounds.right - viewBounds.left;
     const viewHeight = viewBounds.bottom - viewBounds.top;
@@ -33,30 +38,20 @@ export class BackgroundSystem extends System {
     ctx.fillStyle = '#FF8601';
     ctx.fillRect(viewBounds.left, viewBounds.top, viewWidth, viewHeight);
 
-    // Sun and mountains: both fixed at initial world position (like sun)
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
-    if (player) {
-      // Set sun and mountain positions once from player's initial position
-      if (this.sunX === null || this.sunY === null) {
-        this.sunX = player.x;
-        this.sunY = player.y;
-        this.mountainWorldY = 120; // Mountain horizon at fixed world Y
-      }
+    // Sun circle, fixed position in world
+    const sunX = this.x;
+    const sunY = this.y + this.sunOffsetY;
 
-      // Sun circle, fixed position in world
-      const sunScreenX = this.sunX;
-      const sunScreenY = this.sunY;
-      ctx.fillStyle = '#FFE7CA';
-      ctx.beginPath();
-      ctx.arc(sunScreenX, sunScreenY, 80, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.fillStyle = '#FFE7CA';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, this.sunRadius, 0, Math.PI * 2);
+    ctx.fill();
 
     // Mountains: fixed world Y (like sun), rendered same way
     this._drawMountains(ctx, viewBounds);
 
     // Dark underground below mountains
-    const mountainScreenY = this.mountainWorldY;
+    const mountainScreenY = this.y;
     if (mountainScreenY < viewBounds.bottom) {
       ctx.fillStyle = '#202020';
       ctx.fillRect(
@@ -77,10 +72,8 @@ export class BackgroundSystem extends System {
    * @private
    */
   _drawMountains(ctx, viewBounds) {
-    if (this.mountainWorldY === null) return;
-
     // Mountain horizon in world space (fixed relative to terrain)
-    const horizonWorldY = this.mountainWorldY;
+    const horizonWorldY = this.y;
     const viewWidth = viewBounds.right - viewBounds.left;
 
     ctx.save();
