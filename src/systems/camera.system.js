@@ -4,7 +4,6 @@
  */
 
 import { System } from '../core/system.js';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp } from '../utils/math.js';
 
 const DEFAULT_WORLD_SIZE = 2000;
@@ -30,16 +29,12 @@ export class CameraSystem extends System {
     this.worldHeight = worldHeight;
   }
 
-  init() {
-  }
-
   update(_deltaTime) {
     if (this.followTarget) {
       const { x: targetX, y: targetY } = this._computeTargetPosition(this.followTarget);
       this.x = lerp(this.x, targetX, FOLLOW_LERP);
       this.y = lerp(this.y, targetY, FOLLOW_LERP);
     }
-
   }
 
   render() {
@@ -55,8 +50,6 @@ export class CameraSystem extends System {
   }
 
   applyTransform(ctx, canvas) {
-    if (!ctx || !canvas) return;
-
     this.clampToWorld(canvas);
     ctx.setTransform(
       this.zoom,
@@ -69,27 +62,25 @@ export class CameraSystem extends System {
   }
 
   resetTransform(ctx) {
-    if (!ctx) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   clampToWorld(canvas) {
-    if (!canvas) return;
-    this._clampToWorldInternal(canvas);
+    const halfWidth = canvas.width / (2 * this.zoom);
+    const halfHeight = canvas.height / (2 * this.zoom);
+
+    const minX = halfWidth;
+    const maxX = Math.max(minX, this.worldWidth - halfWidth);
+    const minY = halfHeight;
+    const maxY = Math.max(minY, this.worldHeight - halfHeight);
+
+    this.x = Math.min(Math.max(this.x, minX), maxX);
+    this.y = Math.min(Math.max(this.y, minY), maxY);
   }
 
   getViewBounds(canvas) {
-    if (!canvas) {
-      return {
-        left: this.x,
-        right: this.x,
-        top: this.y,
-        bottom: this.y,
-      };
-    }
-
-    const canvasWidth = canvas.width ?? CANVAS_WIDTH;
-    const canvasHeight = canvas.height ?? CANVAS_HEIGHT;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
 
     const halfWidth = canvasWidth / (2 * this.zoom);
     const halfHeight = canvasHeight / (2 * this.zoom);
@@ -122,24 +113,9 @@ export class CameraSystem extends System {
   }
 
   _clampZoom(zoom) {
-    if (!Number.isFinite(zoom)) return this.zoom;
-    return Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM);
-  }
-
-  _clampToWorldInternal(canvas) {
-    if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) {
-      return;
+    if (!Number.isFinite(zoom)) {
+      return this.zoom;
     }
-
-    const halfWidth = canvas.width / (2 * this.zoom);
-    const halfHeight = canvas.height / (2 * this.zoom);
-
-    const minX = halfWidth;
-    const maxX = Math.max(minX, this.worldWidth - halfWidth);
-    const minY = halfHeight;
-    const maxY = Math.max(minY, this.worldHeight - halfHeight);
-
-    this.x = Math.min(Math.max(this.x, minX), maxX);
-    this.y = Math.min(Math.max(this.y, minY), maxY);
+    return Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM);
   }
 }
