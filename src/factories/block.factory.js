@@ -10,19 +10,6 @@ import { LootableComponent } from '../components/block/lootable.component.js';
 import { LethalComponent } from '../components/block/lethal.component.js';
 import { PauseOnDestroyComponent } from '../components/block/pause-on-destroy.component.js';
 
-const MUD_VARIANT_SPRITES = [
-  SPRITE_ATLAS.mud_light,
-  SPRITE_ATLAS.mud_medium,
-  SPRITE_ATLAS.mud_dark,
-  SPRITE_ATLAS.mud_dense,
-  SPRITE_ATLAS.mud_core,
-];
-
-function resolveMudSprite(variant = 1) {
-  const index = Math.min(MUD_VARIANT_SPRITES.length - 1, Math.max(0, variant - 1));
-  return MUD_VARIANT_SPRITES[index];
-}
-
 function spriteToComponentProps(sprite) {
   if (!sprite) {
     return {};
@@ -134,7 +121,9 @@ export class BlockFactory {
     // Map variant (1-5) to darkness alpha (0-0.4)
     const darknessAlpha = (variant - 1) * 0.1; // 1→0, 2→0.1, 3→0.2, 4→0.3, 5→0.4
 
-    const mudSprite = resolveMudSprite(variant);
+    const mudVariants = SPRITE_ATLAS.mud_variants || [];
+    const variantIndex = Math.min(mudVariants.length - 1, Math.max(0, variant - 1));
+    const mudSprite = mudVariants[variantIndex] || mudVariants[0] || SPRITE_ATLAS.mud_light;
 
     const components = [
       new RenderComponent(spriteToComponentProps(mudSprite)),
@@ -307,7 +296,9 @@ export class BlockFactory {
    */
   static createProtectiveMud(darknessAlpha = 0.5) {
     const normalizedVariant = Math.min(5, Math.max(1, Math.round(darknessAlpha / 0.1) + 1));
-    const mudSprite = resolveMudSprite(normalizedVariant);
+    const mudVariants = SPRITE_ATLAS.mud_variants || [];
+    const variantIndex = Math.min(mudVariants.length - 1, Math.max(0, normalizedVariant - 1));
+    const mudSprite = mudVariants[variantIndex] || mudVariants[0] || SPRITE_ATLAS.mud_light;
 
     const block = new Block([
       new RenderComponent(spriteToComponentProps(mudSprite)),

@@ -3,6 +3,39 @@
  * @description Sprite sheet coordinate mapping for sprite.png
  */
 
+const MUD_VARIANTS = [
+  {
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+  {
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+  {
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+  {
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+  {
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+];
+
 /**
  * Sprite atlas coordinates
  * Maps sprite names to {x, y, width, height} in sprite.png
@@ -11,9 +44,18 @@ export const SPRITE_ATLAS = {
   // TODO: Map actual sprite coordinates in Milestone 0 after analyzing sprite.png
   // This will be filled when we integrate the sprite sheet
 
-  // Player
+  // Player / UI
   player_ball: {
-    x: 0, y: 0, width: 16, height: 16,
+    x: 0,
+    y: 0,
+    width: 16,
+    height: 16,
+  },
+  coin_icon: {
+    x: 0,
+    y: 0,
+    width: 16,
+    height: 16,
   },
 
   // Blocks (fake-3D tiles: 16x25px with 16x9px cap)
@@ -23,36 +65,12 @@ export const SPRITE_ATLAS = {
     width: 16,
     height: 25,
   },
-  mud_light: {
-    x: 16,
-    y: 0,
-    width: 16,
-    height: 25,
-  },
-  mud_medium: {
-    x: 16,
-    y: 0,
-    width: 16,
-    height: 25,
-  },
-  mud_dark: {
-    x: 16,
-    y: 0,
-    width: 16,
-    height: 25,
-  },
-  mud_dense: {
-    x: 16,
-    y: 0,
-    width: 16,
-    height: 25,
-  },
-  mud_core: {
-    x: 16,
-    y: 0,
-    width: 16,
-    height: 25,
-  },
+  mud_variants: MUD_VARIANTS,
+  mud_light: MUD_VARIANTS[0],
+  mud_medium: MUD_VARIANTS[1],
+  mud_dark: MUD_VARIANTS[2],
+  mud_dense: MUD_VARIANTS[3],
+  mud_core: MUD_VARIANTS[4],
   rock: {
     x: 48,
     y: 0,
@@ -98,20 +116,24 @@ export const SPRITE_ATLAS = {
     height: 25,
   },
 
-  // UI
-  coin_icon: {
-    x: 0, y: 0, width: 16, height: 16,
-  },
-
   // Navigation markers (white arrows in row 3)
   triangle_left: {
-    x: 0, y: 48, width: 16, height: 16,
+    x: 0,
+    y: 48,
+    width: 16,
+    height: 16,
   },
   triangle_down: {
-    x: 16, y: 48, width: 16, height: 16,
+    x: 16,
+    y: 48,
+    width: 16,
+    height: 16,
   },
   triangle_right: {
-    x: 32, y: 48, width: 16, height: 16,
+    x: 32,
+    y: 48,
+    width: 16,
+    height: 16,
   },
 };
 
