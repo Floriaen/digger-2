@@ -23,7 +23,6 @@ export class CameraSystem extends System {
     this.x = x; // Camera center X in world space
     this.y = y; // Camera center Y in world space
     this.zoom = zoom;
-    this.targetZoom = zoom;
 
     this.followTarget = null;
 
@@ -41,7 +40,6 @@ export class CameraSystem extends System {
       this.y = lerp(this.y, targetY, FOLLOW_LERP);
     }
 
-    this.zoom = this.targetZoom;
   }
 
   render() {
@@ -105,17 +103,15 @@ export class CameraSystem extends System {
   }
 
   setZoom(zoom) {
-    const clamped = this._clampZoom(zoom);
-    this.targetZoom = clamped;
-    this.zoom = clamped;
+    this.zoom = this._clampZoom(zoom);
   }
 
   zoomIn(factor = 1.1) {
-    this.setZoom(this.targetZoom * factor);
+    this.setZoom(this.zoom * factor);
   }
 
   zoomOut(factor = 1.1) {
-    this.setZoom(this.targetZoom / factor);
+    this.setZoom(this.zoom / factor);
   }
 
   _computeTargetPosition(target) {
