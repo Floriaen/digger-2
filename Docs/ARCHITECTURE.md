@@ -283,10 +283,12 @@ const rock = BlockFactory.createRock(x, y);
 ```javascript
 // FallableComponent has methods
 class FallableComponent extends Component {
-  checkSupport(block, terrain, x, y) { /* ... */ }
-  startFalling(x, y) { /* ... */ }
-  updateFalling(deltaTime) { /* ... */ }
-  stopFalling() { /* ... */ }
+  attachOwner(entity) { /* ... */ }
+  hasSupport(terrain, x, y) { /* ... */ }
+  start(gridX, gridY) { /* ... */ }
+  tick(deltaTime) { /* ... */ }
+  land() { /* ... */ }
+  reset() { /* ... */ }
 }
 ```
 
@@ -312,12 +314,11 @@ class GravitySystem extends System {
     chunks.forEach(chunk => {
       chunk.blocks.forEach(block => {
         const fallable = block.get(FallableComponent);
-        if (fallable && !fallable.isFalling) {
-          fallable.checkSupport(block, terrain, x, y);
-          fallable.startFalling(x, y);
+        if (fallable && !fallable.isFalling && !fallable.hasSupport(terrain, x, y)) {
+          fallable.start(x, y);
         }
         if (fallable && fallable.isFalling) {
-          fallable.updateFalling(deltaTime);
+          fallable.tick(deltaTime);
         }
       });
     });
@@ -382,11 +383,11 @@ class NPCSystem extends System {
 // FallableComponent owns ALL logic
 class FallableComponent extends Component {
   update(block, terrain, x, y, deltaTime) {
-    if (!this.isFalling && this.checkSupport(block, terrain, x, y)) {
-      this.startFalling(x, y);
+    if (!this.isFalling && !this.hasSupport(terrain, x, y)) {
+      this.start(x, y);
     }
     if (this.isFalling) {
-      this.updateFalling(deltaTime);
+      this.tick(deltaTime);
       this.checkLanding(block, terrain);
     }
   }
@@ -505,7 +506,7 @@ eventBus.on('player:dig', ({ x, y, block }) => {
 // GravitySystem accessing block components
 const fallable = block.get(FallableComponent);
 if (fallable.isFalling) {
-  fallable.updateFalling(deltaTime);
+  fallable.tick(deltaTime);
 }
 ```
 
