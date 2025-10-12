@@ -4,11 +4,14 @@
  */
 
 import { System } from '../core/system.js';
-import {
-  WORLD_WIDTH_PX,
-  BACKGROUND_MOUNTAIN_Y,
-  SUN_VERTICAL_OFFSET,
-} from '../utils/config.js';
+import { WORLD_WIDTH_PX } from '../utils/config.js';
+
+const SKY_HEIGHT = 300;
+const SUN_RADIUS = 80;
+const SUN_VERTICAL_OFFSET = -70;
+const MOUNTAIN_BASE_Y = 180;
+const MOUNTAIN_HEIGHT = 40;
+const MOUNTAIN_PEAK_OFFSET = 78;
 
 /**
  * BackgroundComponent
@@ -17,8 +20,8 @@ import {
 export class BackgroundSystem extends System {
   init() {
     this.x = WORLD_WIDTH_PX / 2;
-    this.y = BACKGROUND_MOUNTAIN_Y;
-    this.sunRadius = 80;
+    this.y = MOUNTAIN_BASE_Y;
+    this.sunRadius = SUN_RADIUS;
     this.sunOffsetY = SUN_VERTICAL_OFFSET;
   }
 
@@ -32,11 +35,11 @@ export class BackgroundSystem extends System {
 
     const viewBounds = camera.getViewBounds(ctx.canvas);
     const viewWidth = viewBounds.right - viewBounds.left;
-    const viewHeight = viewBounds.bottom - viewBounds.top;
+    const skyTop = this.y - SKY_HEIGHT;
 
     // Sky - solid orange (Chess Pursuit palette)
     ctx.fillStyle = '#FF8601';
-    ctx.fillRect(viewBounds.left, viewBounds.top, viewWidth, viewHeight);
+    ctx.fillRect(viewBounds.left, skyTop, viewWidth, SKY_HEIGHT);
 
     // Sun circle, fixed position in world
     const sunX = this.x;
@@ -80,7 +83,7 @@ export class BackgroundSystem extends System {
     ctx.beginPath();
     ctx.fillStyle = '#202020';
 
-    const mountainMaxHeight = 40;
+    const mountainMaxHeight = MOUNTAIN_HEIGHT;
     const points = [
       0, 0.7,
       0.1, 0.3,
@@ -98,7 +101,7 @@ export class BackgroundSystem extends System {
     // Draw mountain silhouette spanning screen width
     for (let i = 0; i < points.length; i += 2) {
       const x = viewBounds.left + points[i] * viewWidth;
-      const y = horizonWorldY - (mountainMaxHeight * points[i + 1]) - 78;
+      const y = horizonWorldY - (mountainMaxHeight * points[i + 1]) - MOUNTAIN_PEAK_OFFSET;
       if (i === 0) {
         ctx.moveTo(x, y);
       } else {
