@@ -118,31 +118,31 @@ export class DebugSystem extends System {
       (c) => c.constructor.name === 'CameraSystem',
     );
     if (camera) {
-      let zoomController;
       const zoomControl = {
-        zoom: camera.targetZoom,
-        resetZoom: () => {
+        zoom: camera.zoom,
+        set: (value) => {
+          camera.setZoom(value);
+          zoomControl.zoom = camera.zoom;
+          zoomController.updateDisplay();
+        },
+        reset: () => {
           camera.setZoom(DEFAULT_CAMERA_ZOOM);
-          zoomControl.zoom = camera.targetZoom;
-          if (zoomController) {
-            zoomController.updateDisplay();
-          }
+          zoomControl.zoom = camera.zoom;
+          zoomController.updateDisplay();
         },
       };
 
-      zoomController = debugFolder.add(zoomControl, 'zoom', 0.2, 3.0)
+      const zoomController = debugFolder.add(zoomControl, 'zoom', 0.2, 3.0)
         .step(0.1)
         .name('Zoom')
         .onChange((value) => {
           camera.setZoom(value);
-          zoomControl.zoom = camera.targetZoom;
-          if (zoomController) {
-            zoomController.updateDisplay();
-          }
+          zoomControl.zoom = camera.zoom;
+          zoomController.updateDisplay();
         });
 
       zoomController.listen();
-      debugFolder.add(zoomControl, 'resetZoom').name('Reset Zoom');
+      debugFolder.add(zoomControl, 'reset').name('Reset Zoom');
     }
 
     debugFolder.open();
