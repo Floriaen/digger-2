@@ -24,6 +24,7 @@ export class BackgroundSystem extends System {
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
+    // REFACTOR TO DO : Camera is used to setup the position of the background at start, it should not
     const viewBounds = camera.getViewBounds(ctx.canvas);
     const viewWidth = viewBounds.right - viewBounds.left;
     const viewHeight = viewBounds.bottom - viewBounds.top;

@@ -6,8 +6,7 @@
 import { System } from '../core/system.js';
 import { lerp } from '../utils/math.js';
 
-const DEFAULT_WORLD_SIZE = 2000;
-const MIN_ZOOM = 0.2;
+const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3.0;
 const FOLLOW_LERP = 0.1;
 
@@ -16,7 +15,7 @@ const FOLLOW_LERP = 0.1;
  * Smoothly follows a target and applies canvas transforms.
  */
 export class CameraSystem extends System {
-  constructor(game, x = 0, y = 0, zoom = 3.0, worldWidth = DEFAULT_WORLD_SIZE, worldHeight = DEFAULT_WORLD_SIZE) {
+  constructor(game, x = 0, y = 0, zoom = 3.0, worldWidth, worldHeight) {
     super(game);
 
     this.x = x; // Camera center X in world space
@@ -31,9 +30,8 @@ export class CameraSystem extends System {
 
   update(_deltaTime) {
     if (this.followTarget) {
-      const { x: targetX, y: targetY } = this._computeTargetPosition(this.followTarget);
-      this.x = lerp(this.x, targetX, FOLLOW_LERP);
-      this.y = lerp(this.y, targetY, FOLLOW_LERP);
+      this.x = lerp(this.x, this.followTarget.x, FOLLOW_LERP);
+      this.y = lerp(this.y, this.followTarget.y, FOLLOW_LERP);
     }
   }
 
@@ -46,7 +44,7 @@ export class CameraSystem extends System {
   }
 
   follow(target) {
-    this.followTarget = target ?? null;
+    this.followTarget = target;
   }
 
   applyTransform(ctx, canvas) {
@@ -69,15 +67,11 @@ export class CameraSystem extends System {
     const halfWidth = canvas.width / (2 * this.zoom);
     const halfHeight = canvas.height / (2 * this.zoom);
 
-    const minX = halfWidth;
-    const maxX = Math.max(minX, this.worldWidth - halfWidth);
-    const minY = halfHeight;
-    const maxY = Math.max(minY, this.worldHeight - halfHeight);
-
-    this.x = Math.min(Math.max(this.x, minX), maxX);
-    this.y = Math.min(Math.max(this.y, minY), maxY);
+    this.x = Math.max(halfWidth, Math.min(this.x, this.worldWidth - halfWidth));
+    this.y = Math.max(halfHeight, Math.min(this.y, this.worldHeight - halfHeight));
   }
 
+  // external method
   getViewBounds(canvas) {
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
@@ -95,13 +89,6 @@ export class CameraSystem extends System {
 
   setZoom(zoom) {
     this.zoom = this._clampZoom(zoom);
-  }
-
-  _computeTargetPosition(target) {
-    const targetX = Number.isFinite(target?.x) ? target.x : this.x;
-    const targetY = Number.isFinite(target?.y) ? target.y : this.y;
-
-    return { x: targetX, y: targetY };
   }
 
   _clampZoom(zoom) {
