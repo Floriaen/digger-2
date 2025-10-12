@@ -31,31 +31,12 @@ export class CameraSystem extends System {
   }
 
   init() {
-    const player = this._findPlayer();
-    if (player) {
-      this.follow(player);
-      const { x: targetX, y: targetY } = this._computeTargetPosition(player);
-      this.x = targetX;
-      this.y = targetY;
-      this.zoom = this._clampZoom(this.targetZoom);
-    } else {
-      // Default to canvas center until a target becomes available
-      this._snapToCanvasCenter();
-    }
+    this._snapToCanvasCenter();
   }
 
   update(_deltaTime) {
-    const target = this.followTarget ?? this._findPlayer();
-    if (target && !this.followTarget) {
-      this.follow(target);
-      const { x: targetX, y: targetY } = this._computeTargetPosition(target);
-      this.x = targetX;
-      this.y = targetY;
-      this.zoom = this._clampZoom(this.targetZoom);
-    }
-
-    if (target) {
-      const { x: targetX, y: targetY } = this._computeTargetPosition(target);
+    if (this.followTarget) {
+      const { x: targetX, y: targetY } = this._computeTargetPosition(this.followTarget);
       this.x = lerp(this.x, targetX, FOLLOW_LERP);
       this.y = lerp(this.y, targetY, FOLLOW_LERP);
     }
@@ -141,12 +122,8 @@ export class CameraSystem extends System {
   }
 
   _computeTargetPosition(target) {
-    const canvas = this._getCanvas();
-    const fallbackX = canvas?.width ? canvas.width / 2 : CANVAS_WIDTH / 2;
-    const fallbackY = canvas?.height ? canvas.height / 2 : CANVAS_HEIGHT / 2;
-
-    const targetX = Number.isFinite(target?.x) ? target.x : fallbackX;
-    const targetY = Number.isFinite(target?.y) ? target.y : fallbackY;
+    const targetX = Number.isFinite(target?.x) ? target.x : this.x;
+    const targetY = Number.isFinite(target?.y) ? target.y : this.y;
 
     return { x: targetX, y: targetY };
   }
@@ -176,9 +153,5 @@ export class CameraSystem extends System {
 
   _getCanvas() {
     return this.game?.canvas ?? null;
-  }
-
-  _findPlayer() {
-    return this.game.components.find((c) => c.constructor.name === 'PlayerSystem') ?? null;
   }
 }
