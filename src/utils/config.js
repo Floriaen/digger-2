@@ -44,8 +44,6 @@ export const LAVA_SURFACE_OFFSET_CHUNKS = 4;
 export const GRAVITY = 0.5;
 export const FALL_SPEED_MAX = 10;
 
-// Camera
-export const CAMERA_LERP_FACTOR = 0.1;
 export const CAMERA_OFFSET_Y = 200; // Player offset from top
 
 // Debug

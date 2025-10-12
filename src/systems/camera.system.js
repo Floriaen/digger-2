@@ -4,17 +4,13 @@
  */
 
 import { System } from '../core/system.js';
-import {
-  CAMERA_LERP_FACTOR,
-  CAMERA_OFFSET_Y,
-  CANVAS_HEIGHT,
-  CANVAS_WIDTH,
-} from '../utils/config.js';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp } from '../utils/math.js';
 
 const ZOOM_LERP_FACTOR = 0.1;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3.0;
+const FOLLOW_LERP = 0.1;
 
 /**
  * CameraSystem
@@ -30,7 +26,6 @@ export class CameraSystem extends System {
     this.targetZoom = 3.0;
 
     this.followTarget = null;
-    this.smoothing = CAMERA_LERP_FACTOR;
 
     this.worldWidth = Number.POSITIVE_INFINITY;
     this.worldHeight = Number.POSITIVE_INFINITY;
@@ -39,8 +34,11 @@ export class CameraSystem extends System {
   init() {
     const player = this._findPlayer();
     if (player) {
-      this.follow(player, this.smoothing);
-      this._snapToTarget(player);
+      this.follow(player);
+      const { x: targetX, y: targetY } = this._computeTargetPosition(player);
+      this.x = targetX;
+      this.y = targetY;
+      this.zoom = this._clampZoom(this.targetZoom);
     } else {
       // Default to canvas center until a target becomes available
       this._snapToCanvasCenter();
@@ -50,14 +48,17 @@ export class CameraSystem extends System {
   update(_deltaTime) {
     const target = this.followTarget ?? this._findPlayer();
     if (target && !this.followTarget) {
-      this.follow(target, this.smoothing);
-      this._snapToTarget(target);
+      this.follow(target);
+      const { x: targetX, y: targetY } = this._computeTargetPosition(target);
+      this.x = targetX;
+      this.y = targetY;
+      this.zoom = this._clampZoom(this.targetZoom);
     }
 
     if (target) {
       const { x: targetX, y: targetY } = this._computeTargetPosition(target);
-      this.x = lerp(this.x, targetX, this._resolvedSmoothing());
-      this.y = lerp(this.y, targetY, this._resolvedSmoothing());
+      this.x = lerp(this.x, targetX, FOLLOW_LERP);
+      this.y = lerp(this.y, targetY, FOLLOW_LERP);
     }
 
     this.zoom = lerp(this.zoom, this.targetZoom, ZOOM_LERP_FACTOR);
@@ -73,11 +74,8 @@ export class CameraSystem extends System {
     this.followTarget = null;
   }
 
-  follow(target, smoothing = CAMERA_LERP_FACTOR) {
+  follow(target) {
     this.followTarget = target ?? null;
-    if (Number.isFinite(smoothing)) {
-      this.smoothing = Math.min(Math.max(smoothing, 0), 1);
-    }
   }
 
   applyTransform(ctx, canvas) {
@@ -133,17 +131,6 @@ export class CameraSystem extends System {
     this.setZoom(this.zoom / factor);
   }
 
-  _resolvedSmoothing() {
-    return Math.min(Math.max(this.smoothing, 0), 1);
-  }
-
-  _snapToTarget(target) {
-    const { x: targetX, y: targetY } = this._computeTargetPosition(target);
-    this.x = targetX;
-    this.y = targetY;
-    this.zoom = this._clampZoom(this.targetZoom);
-  }
-
   _snapToCanvasCenter() {
     const canvas = this._getCanvas();
     const width = canvas?.width ?? CANVAS_WIDTH;
@@ -154,14 +141,11 @@ export class CameraSystem extends System {
 
   _computeTargetPosition(target) {
     const canvas = this._getCanvas();
-    const canvasWidth = canvas?.width ?? CANVAS_WIDTH;
-    const canvasHeight = canvas?.height ?? CANVAS_HEIGHT;
-    const verticalOffsetFromCenter = canvasHeight / 2 - CAMERA_OFFSET_Y;
+    const fallbackX = canvas?.width ? canvas.width / 2 : CANVAS_WIDTH / 2;
+    const fallbackY = canvas?.height ? canvas.height / 2 : CANVAS_HEIGHT / 2;
 
-    const targetX = Number.isFinite(target?.x) ? target.x : canvasWidth / 2;
-    const targetY = Number.isFinite(target?.y)
-      ? target.y + verticalOffsetFromCenter
-      : canvasHeight / 2;
+    const targetX = Number.isFinite(target?.x) ? target.x : fallbackX;
+    const targetY = Number.isFinite(target?.y) ? target.y : fallbackY;
 
     return { x: targetX, y: targetY };
   }

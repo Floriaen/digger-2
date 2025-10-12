@@ -3,7 +3,7 @@
  * @description Main game class - orchestrates component lifecycle and game loop
  */
 
-import { CAMERA_LERP_FACTOR, TARGET_FPS } from '../utils/config.js';
+import { TARGET_FPS } from '../utils/config.js';
 import { PerformanceMonitor } from '../utils/performance-monitor.js';
 import { RenderQueue } from '../rendering/render-queue.js';
 import { eventBus } from '../utils/event-bus.js';
@@ -118,7 +118,7 @@ export class Game {
     const camera = this.components.find((c) => c.constructor.name === 'CameraSystem');
     const player = this.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (camera && player) {
-      camera.follow(player, CAMERA_LERP_FACTOR);
+      camera.follow(player);
     }
 
     this.ctx.save();
