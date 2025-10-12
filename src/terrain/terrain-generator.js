@@ -86,7 +86,9 @@ export class TerrainGenerator {
         const worldX = chunkX * CHUNK_SIZE + x;
         const worldY = chunkY * CHUNK_SIZE + y;
 
-        if (worldX < 0 || worldX >= this.worldWidthTiles || worldY < 0 || worldY >= this.worldHeightTiles) {
+        const outOfBoundsX = worldX < 0 || worldX >= this.worldWidthTiles;
+        const outOfBoundsY = worldY < 0 || worldY >= this.worldHeightTiles;
+        if (outOfBoundsX || outOfBoundsY) {
           chunk.setBlock(x, y, BlockFactory.createEmpty());
           // eslint-disable-next-line no-continue
           continue;
