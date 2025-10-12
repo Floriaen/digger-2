@@ -97,14 +97,6 @@ export class CameraSystem extends System {
     this.zoom = this._clampZoom(zoom);
   }
 
-  zoomIn(factor = 1.1) {
-    this.setZoom(this.zoom * factor);
-  }
-
-  zoomOut(factor = 1.1) {
-    this.setZoom(this.zoom / factor);
-  }
-
   _computeTargetPosition(target) {
     const targetX = Number.isFinite(target?.x) ? target.x : this.x;
     const targetY = Number.isFinite(target?.y) ? target.y : this.y;
