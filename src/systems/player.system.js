@@ -5,7 +5,10 @@
 
 import { System } from '../core/system.js';
 import {
-  DIG_INTERVAL_MS, PLAYER_RADIUS,
+  DIG_INTERVAL_MS,
+  PLAYER_RADIUS,
+  CHUNK_SIZE,
+  WORLD_WIDTH_CHUNKS,
 } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
@@ -33,8 +36,17 @@ const PLAYER_STATE = {
  */
 export class PlayerSystem extends System {
   init() {
-    // Grid position (tiles) - start position (in grass layer, first line)
-    this.gridX = 12;
+    // Determine world width (tiles) to center player horizontally
+    const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
+    const fallbackWidthTiles = WORLD_WIDTH_CHUNKS * CHUNK_SIZE;
+    let worldWidthTiles = terrain?.worldWidthTiles ?? fallbackWidthTiles;
+    if (!Number.isFinite(worldWidthTiles) || worldWidthTiles <= 0) {
+      worldWidthTiles = fallbackWidthTiles;
+    }
+
+    // Grid position (tiles) - start position (centered in grass layer)
+    const centeredGridX = Math.floor(worldWidthTiles / 2);
+    this.gridX = Math.max(0, Math.min(worldWidthTiles - 1, centeredGridX));
     this.gridY = 2;
 
     // World position (pixels) - centered on tile

@@ -4,6 +4,7 @@
  */
 
 import { System } from '../core/system.js';
+import { CHUNK_SIZE } from '../utils/config.js';
 
 /**
  * DebugComponent
@@ -76,14 +77,30 @@ export class DebugSystem extends System {
         lavaDepth: terrainComponent.generator.lavaDepth,
         regenerate: () => {
           terrainComponent.setSeed(seedControl.seed);
-          terrainComponent.generator.lavaDepth = seedControl.lavaDepth;
+          const clampedLava = Math.max(
+            0,
+            Math.min(seedControl.lavaDepth, terrainComponent.generator.worldHeightTiles),
+          );
+          terrainComponent.generator.lavaDepth = clampedLava;
+          terrainComponent.generator.clearCache();
+          seedControl.lavaDepth = clampedLava;
         },
       };
       terrainFolder.add(seedControl, 'seed').name('Seed');
-      terrainFolder.add(seedControl, 'lavaDepth', 100, 2000).step(50).name('Lava Depth')
+      terrainFolder.add(
+        seedControl,
+        'lavaDepth',
+        0,
+        terrainComponent.generator.worldHeightTiles,
+      ).step(CHUNK_SIZE).name('Lava Depth')
         .onChange((val) => {
-          terrainComponent.generator.lavaDepth = val;
+          const clamped = Math.max(
+            0,
+            Math.min(val, terrainComponent.generator.worldHeightTiles),
+          );
+          terrainComponent.generator.lavaDepth = clamped;
           terrainComponent.generator.clearCache();
+          seedControl.lavaDepth = clamped;
         });
       terrainFolder.add(seedControl, 'regenerate').name('Regenerate');
     }
@@ -116,9 +133,6 @@ export class DebugSystem extends System {
         })
         .listen(); // Update GUI when zoom changes programmatically
     }
-
-    // Zoom strategy toggle
-    debugFolder.add(this.game, 'zoomAfterRendering').name('Zoom After Rendering');
 
     debugFolder.open();
 

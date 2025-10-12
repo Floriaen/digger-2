@@ -36,5 +36,18 @@
         "varsIgnorePattern": "^_"
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/test/**/*.js"
+      ],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "no-plusplus": "off"
+      }
+    }
+  ]
 }

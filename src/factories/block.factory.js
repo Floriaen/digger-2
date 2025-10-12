@@ -42,6 +42,17 @@ export class BlockFactory {
   }
 
   /**
+   * Create an immovable boundary block (solid, non-diggable, invisible)
+   * @returns {Block}
+   */
+  static createBoundary() {
+    const block = new Block([
+      new PhysicsComponent({ collidable: true }),
+    ]);
+    return BlockFactory.finalizeBlock(block, 'boundary');
+  }
+
+  /**
    * Create a mud block with variable HP and visual variant
    * @param {number} hp - Hit points (all mud has 5)
    * @param {number} variant - Visual variant (1-5 for depth-based diversity)
