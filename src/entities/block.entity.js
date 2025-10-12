@@ -9,6 +9,9 @@ export class Block {
     this.components = new Map();
     components.forEach((comp) => {
       this.components.set(comp.constructor.name, comp);
+      if (typeof comp.attachOwner === 'function') {
+        comp.attachOwner(this);
+      }
     });
   }
 
@@ -36,6 +39,9 @@ export class Block {
    */
   add(component) {
     this.components.set(component.constructor.name, component);
+    if (typeof component.attachOwner === 'function') {
+      component.attachOwner(this);
+    }
   }
 
   /**

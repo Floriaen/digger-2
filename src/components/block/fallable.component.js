@@ -1,164 +1,210 @@
 import { Component } from '../../core/component.js';
 import { PhysicsComponent } from './physics.component.js';
-import { GRAVITY, FALL_SPEED_MAX, TILE_HEIGHT } from '../../utils/config.js';
+import {
+  GRAVITY,
+  FALL_SPEED_MAX,
+  TILE_HEIGHT,
+} from '../../utils/config.js';
+
+const DEFAULT_KIND = 'block';
+const ACTOR_KIND = 'actor';
 
 /**
  * FallableComponent
  *
- * Handles gravity and falling physics for all entities (blocks, NPCs, player).
- * Uses realistic acceleration (GRAVITY constant).
- *
- * Hybrid position model:
- * - For entities WITH PositionComponent (NPCs): reads/writes PositionComponent
- * - For entities WITHOUT PositionComponent (blocks): uses own position fields
+ * Handles gravity and falling physics for blocks and actors that share the same
+ * gravity pipeline. Each instance must be bound to its owning entity via
+ * `attachOwner` before use.
  */
 export class FallableComponent extends Component {
-  constructor() {
+  constructor({ kind = DEFAULT_KIND } = {}) {
     super();
-    this.velocityY = 0;
+    this.kind = kind;
+    this.owner = null;
+
     this.isFalling = false;
-    // Position data for falling blocks without PositionComponent (pixel position, not grid)
+    this.velocityY = 0;
+
+    // Stored world-space information for blocks (and for exposing state to systems).
     this.pixelY = null;
     this.gridX = null;
     this.gridY = null;
   }
 
   /**
-   * Check if this entity should fall (has no support below)
-   * @param {Entity} entity - The entity (block or NPC)
-   * @param {TerrainSystem} terrain - Terrain to check
-   * @param {number} gridX - Entity X position
-   * @param {number} gridY - Entity Y position
-   * @returns {boolean} True if should fall
+   * Bind the component to its owning entity.
+   * @param {Object} owner
    */
-  checkSupport(entity, terrain, gridX, gridY) {
-    const blockBelow = terrain.getBlock(gridX, gridY + 1);
-    const physicsBelow = blockBelow.get(PhysicsComponent);
-
-    // Fall if no support below (block below is not collidable)
-    return physicsBelow && !physicsBelow.isCollidable();
+  attachOwner(owner) {
+    this.owner = owner;
   }
 
   /**
-   * Update falling physics with realistic acceleration
-   * Works with both PositionComponent (NPCs) and own fields (blocks)
-   * @param {Entity} entity - The entity
-   * @param {number} _deltaTime - Time since last frame
+   * Ensure the component has been bound before use.
+   * @private
    */
-  updateFalling(entity, _deltaTime) {
-    // Apply gravity acceleration
+  _assertOwner() {
+    console.assert(this.owner, 'FallableComponent requires an owner before use.');
+  }
+
+  /**
+   * Determine whether a tile is supported by a solid block beneath it.
+   * @param {Object} terrain
+   * @param {number} gridX
+   * @param {number} gridY
+   * @returns {boolean}
+   */
+  hasSupport(terrain, gridX, gridY) {
+    const blockBelow = terrain.getBlock(gridX, gridY + 1);
+    const physicsBelow = blockBelow.get(PhysicsComponent);
+
+    return Boolean(physicsBelow && physicsBelow.isCollidable());
+  }
+
+  /**
+   * Begin falling from the provided grid coordinates.
+   * @param {number} gridX
+   * @param {number} gridY
+   */
+  start(gridX, gridY) {
+    this._assertOwner();
+    this.isFalling = true;
+    this.velocityY = 0;
+
+    this.gridX = gridX;
+    this.gridY = gridY;
+    this.pixelY = gridY * TILE_HEIGHT;
+
+    if (this.kind === ACTOR_KIND) {
+      this._syncActorPositionToComponent();
+    }
+  }
+
+  /**
+   * Advance the falling simulation.
+   * @param {number} deltaMs
+   */
+  tick(_deltaMs = 0) {
+    this._assertOwner();
+    if (!this.isFalling) return;
+
+    // Apply acceleration (frame-based; deltaMs kept for future tuning).
     this.velocityY += GRAVITY;
     if (this.velocityY > FALL_SPEED_MAX) {
       this.velocityY = FALL_SPEED_MAX;
     }
 
-    // Try to get PositionComponent (NPCs)
-    let PositionComponent;
-    try {
-      // eslint-disable-next-line global-require
-      PositionComponent = require('../npc/position.component.js').PositionComponent;
-    } catch {
-      PositionComponent = null;
-    }
-
-    const positionComp = PositionComponent ? entity.get(PositionComponent) : null;
-
-    if (positionComp) {
-      // NPC with PositionComponent: update via translate
-      positionComp.translate(0, this.velocityY);
-    } else if (this.pixelY !== null) {
-      // Block without PositionComponent: update own fields
+    if (this.kind === ACTOR_KIND) {
+      this._translateActor();
+    } else {
+      // Blocks (and any callers relying on pixel/grid state).
       this.pixelY += this.velocityY;
       this.gridY = Math.floor(this.pixelY / TILE_HEIGHT);
     }
   }
 
   /**
-   * Start falling from a grid position
-   * @param {Entity} entity - The entity
-   * @param {number} gridX - Starting grid X
-   * @param {number} gridY - Starting grid Y
+   * Stop falling and snap to the current grid cell.
    */
-  startFalling(entity, gridX, gridY) {
-    this.isFalling = true;
-    this.velocityY = 0;
-
-    // Try to get PositionComponent (NPCs)
-    let PositionComponent;
-    try {
-      // eslint-disable-next-line global-require
-      PositionComponent = require('../npc/position.component.js').PositionComponent;
-    } catch {
-      PositionComponent = null;
-    }
-
-    const positionComp = PositionComponent ? entity.get(PositionComponent) : null;
-
-    if (!positionComp) {
-      // Block without PositionComponent: use own fields
-      this.gridX = gridX;
-      this.gridY = gridY;
-      this.pixelY = gridY * TILE_HEIGHT;
-    }
-    // For NPCs with PositionComponent, position is already in the component
-  }
-
-  /**
-   * Stop falling (hit ground)
-   * @param {Entity} entity - The entity
-   */
-  stopFalling(entity) {
+  land() {
+    this._assertOwner();
     this.isFalling = false;
     this.velocityY = 0;
 
-    // Try to get PositionComponent (NPCs)
-    let PositionComponent;
-    try {
-      // eslint-disable-next-line global-require
-      PositionComponent = require('../npc/position.component.js').PositionComponent;
-    } catch {
-      PositionComponent = null;
-    }
-
-    const positionComp = PositionComponent ? entity.get(PositionComponent) : null;
-
-    if (positionComp) {
-      // NPC: snap to grid
-      positionComp.y = positionComp.gridY * TILE_HEIGHT;
-      positionComp.syncSpawn();
-    } else {
-      // Block: clear own fields
-      this.pixelY = null;
-      this.gridX = null;
-      this.gridY = null;
+    if (this.kind === ACTOR_KIND) {
+      this._snapActorToGrid();
+    } else if (this.gridY !== null) {
+      this.pixelY = this.gridY * TILE_HEIGHT;
     }
   }
 
   /**
-   * Get current grid position (adapts to both models)
-   * @param {Entity} entity - The entity
+   * Reset stored state (used when block is removed from the world).
+   */
+  reset() {
+    this.isFalling = false;
+    this.velocityY = 0;
+    this.pixelY = null;
+    this.gridX = null;
+    this.gridY = null;
+  }
+
+  /**
+   * Expose the current grid location where available.
    * @returns {{gridX: number, gridY: number}|null}
    */
-  getGridPosition(entity) {
-    // Try to get PositionComponent (NPCs)
-    let PositionComponent;
+  getGridPosition() {
+    if (this.gridX === null || this.gridY === null) {
+      return null;
+    }
+    return { gridX: this.gridX, gridY: this.gridY };
+  }
+
+  /**
+   * Translate actor owners using their position component.
+   * @private
+   */
+  _translateActor() {
+    const position = this._getActorPositionComponent();
+    if (!position) {
+      return;
+    }
+
+    position.translate(0, this.velocityY);
+    this.gridX = position.gridX;
+    this.gridY = position.gridY;
+    this.pixelY = position.y;
+  }
+
+  /**
+   * Snap actor owners back to their grid cell.
+   * @private
+   */
+  _snapActorToGrid() {
+    const position = this._getActorPositionComponent();
+    if (!position) {
+      return;
+    }
+
+    position.y = position.gridY * TILE_HEIGHT;
+    position.syncSpawn();
+    this.gridX = position.gridX;
+    this.gridY = position.gridY;
+    this.pixelY = position.y;
+  }
+
+  /**
+   * Mirror stored state into the actor's PositionComponent.
+   * @private
+   */
+  _syncActorPositionToComponent() {
+    const position = this._getActorPositionComponent();
+    if (!position || this.gridY === null) {
+      return;
+    }
+
+    position.gridX = this.gridX;
+    position.gridY = this.gridY;
+    position.y = this.pixelY;
+    position.syncSpawn();
+  }
+
+  /**
+   * Lazy-load and fetch the actor PositionComponent.
+   * @private
+   * @returns {PositionComponent|null}
+   */
+  _getActorPositionComponent() {
+    if (!this.owner || typeof this.owner.get !== 'function') {
+      return null;
+    }
+
     try {
       // eslint-disable-next-line global-require
-      PositionComponent = require('../npc/position.component.js').PositionComponent;
-    } catch {
-      PositionComponent = null;
+      const { PositionComponent } = require('../npc/position.component.js');
+      return this.owner.get(PositionComponent) || null;
+    } catch (error) {
+      return null;
     }
-
-    const positionComp = PositionComponent ? entity.get(PositionComponent) : null;
-
-    if (positionComp) {
-      return { gridX: positionComp.gridX, gridY: positionComp.gridY };
-    }
-
-    if (this.gridX !== null && this.gridY !== null) {
-      return { gridX: this.gridX, gridY: this.gridY };
-    }
-
-    return null;
   }
 }

@@ -61,6 +61,7 @@ export class PlayerSystem extends System {
 
     // Gravity/falling via FallableComponent (ECS pattern)
     this.fallable = new FallableComponent();
+    this.fallable.attachOwner(this);
 
     // Movement
     this.state = PLAYER_STATE.IDLE;
@@ -299,7 +300,7 @@ export class PlayerSystem extends System {
 
         // Transition to falling state immediately
         this.state = PLAYER_STATE.FALLING;
-        this.fallable.stopFalling(); // Reset fallable component for new fall
+        this.fallable.reset(); // Reset fallable component for new fall
         this.currentDigTarget = null;
       } else {
         // Lateral: Stop at empty space
@@ -314,7 +315,7 @@ export class PlayerSystem extends System {
     if (!targetBlock.has(DiggableComponent)) {
       // Hit rock or boundary - stop and reset to down
       this.state = PLAYER_STATE.IDLE;
-      this.fallable.stopFalling();
+      this.fallable.reset();
       this.currentDigTarget = null;
       this.digDirection = { dx: 0, dy: 1 }; // Reset to down
       return;
@@ -322,7 +323,7 @@ export class PlayerSystem extends System {
 
     // Target is diggable - dig it
     this.state = dy === 0 ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;
-    this.fallable.stopFalling();
+    this.fallable.reset();
     this._digInDirection(terrain, dx, dy);
   }
 
@@ -410,7 +411,7 @@ export class PlayerSystem extends System {
         if (dy > 0) {
           // Digging down - transition to falling state, let gravity move us
           this.state = PLAYER_STATE.FALLING;
-          this.fallable.stopFalling(); // Reset for new fall
+          this.fallable.reset(); // Reset for new fall
         } else if (dx !== 0) {
           // Lateral digging - move horizontally only
           this.gridX = targetX;
@@ -441,7 +442,7 @@ export class PlayerSystem extends System {
     this.requestedDirection = null;
     this.hasStarted = false;
     this.dead = false;
-    this.fallable.stopFalling();
+    this.fallable.reset();
   }
 
   /**

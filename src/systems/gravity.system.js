@@ -82,13 +82,13 @@ export class GravitySystem extends System {
           const worldY = chunk.chunkY * 32 + y;
 
           // Check if block should start falling
-          if (!fallable.isFalling && fallable.checkSupport(block, terrain, worldX, worldY)) {
-            fallable.startFalling(worldX, worldY);
+          if (!fallable.isFalling && !fallable.hasSupport(terrain, worldX, worldY)) {
+            fallable.start(worldX, worldY);
           }
 
           // Update falling blocks
           if (fallable.isFalling) {
-            fallable.updateFalling(deltaTime);
+            fallable.tick(deltaTime);
 
             // Check if block landed on solid ground
             const blockBelow = terrain.getBlock(fallable.gridX, fallable.gridY + 1);
@@ -99,7 +99,8 @@ export class GravitySystem extends System {
               // Move block from old position to new position
               terrain.setBlock(worldX, worldY, BlockFactory.createEmpty());
               terrain.setBlock(fallable.gridX, fallable.gridY, block);
-              fallable.stopFalling();
+              fallable.land();
+              fallable.reset();
             } else {
               // Still falling - check player collision
               if (this._checkBlockPlayerCollision(fallable, player)) {
@@ -128,12 +129,12 @@ export class GravitySystem extends System {
 
     // Start falling if not already
     if (!player.fallable.isFalling) {
-      player.fallable.startFalling(player.gridX, player.gridY);
+      player.fallable.start(player.gridX, player.gridY);
       player.fallable.pixelY = player.y; // Use current pixel position
     }
 
     // Apply gravity via FallableComponent
-    player.fallable.updateFalling(deltaTime);
+    player.fallable.tick(deltaTime);
 
     // Update player position from fallable
     player.y = player.fallable.pixelY;
@@ -150,7 +151,8 @@ export class GravitySystem extends System {
       if (blockAtNewPos.has(LethalComponent)) {
         eventBus.emit('player:death', { cause: 'lava' });
         player.state = 'idle';
-        player.fallable.stopFalling();
+        player.fallable.land();
+        player.fallable.reset();
         return;
       }
 
@@ -159,7 +161,8 @@ export class GravitySystem extends System {
       if (physicsAtNewPos && physicsAtNewPos.isCollidable()) {
         // Stop at the previous grid position (don't enter the solid block)
         player.y = player.gridY * 16 + 8; // Snap to center of current grid cell
-        player.fallable.stopFalling();
+        player.fallable.land();
+        player.fallable.reset();
 
         // Notify player component to handle landing
         player.handleLanding(blockAtNewPos, newGridX, newGridY);
