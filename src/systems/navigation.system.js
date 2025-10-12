@@ -64,11 +64,7 @@ export class NavigationSystem extends System {
     if (!this.showGuidance || !this.spriteSheet) return;
 
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
-
-    if (!player || !camera) return;
-
-    const transform = camera.getTransform();
+    if (!player) return;
 
     // Save context state
     ctx.save();
@@ -79,22 +75,22 @@ export class NavigationSystem extends System {
 
     // Left arrow - align with front face of block (9px down for cap)
     if (this.validDirections.left) {
-      const x = (player.gridX - 1) * 16 + transform.x;
-      const y = player.gridY * 16 - 7 + transform.y; // +9 for cap offset
+      const x = (player.gridX - 1) * 16;
+      const y = player.gridY * 16 - 7; // +9 for cap offset
       this._drawArrow(ctx, x, y, 'left');
     }
 
     // Right arrow - align with front face of block (9px down for cap)
     if (this.validDirections.right) {
-      const x = (player.gridX + 1) * 16 + transform.x;
-      const y = player.gridY * 16 - 7 + transform.y; // +9 for cap offset
+      const x = (player.gridX + 1) * 16;
+      const y = player.gridY * 16 - 7; // +9 for cap offset
       this._drawArrow(ctx, x, y, 'right');
     }
 
     // Down arrow - align with front face of block (9px down for cap)
     if (this.validDirections.down) {
-      const x = player.gridX * 16 + transform.x;
-      const y = (player.gridY + 1) * 16 + transform.y; // +9 for cap offset
+      const x = player.gridX * 16;
+      const y = (player.gridY + 1) * 16; // +9 for cap offset
       this._drawArrow(ctx, x, y, 'down');
     }
 

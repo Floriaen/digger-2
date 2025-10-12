@@ -94,19 +94,13 @@ export class NPCSystem extends System {
       return null;
     }
 
-    const transform = camera.getTransform();
-    const { width, height } = this.game.canvas;
-
-    const minX = -transform.x;
-    const maxX = -transform.x + width;
-    const minY = -transform.y;
-    const maxY = -transform.y + height;
+    const bounds = camera.getViewBounds(this.game.canvas);
 
     return {
-      minX,
-      maxX,
-      minY,
-      maxY,
+      minX: bounds.left,
+      maxX: bounds.right,
+      minY: bounds.top,
+      maxY: bounds.bottom,
     };
   }
 

@@ -4,7 +4,6 @@
  */
 
 import { System } from '../core/system.js';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
 
 /**
  * BackgroundComponent
@@ -25,11 +24,13 @@ export class BackgroundSystem extends System {
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
-    const transform = camera.getTransform();
+    const viewBounds = camera.getViewBounds(ctx.canvas);
+    const viewWidth = viewBounds.right - viewBounds.left;
+    const viewHeight = viewBounds.bottom - viewBounds.top;
 
     // Sky - solid orange (Chess Pursuit palette)
     ctx.fillStyle = '#FF8601';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.fillRect(viewBounds.left, viewBounds.top, viewWidth, viewHeight);
 
     // Sun and mountains: both fixed at initial world position (like sun)
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
@@ -42,8 +43,8 @@ export class BackgroundSystem extends System {
       }
 
       // Sun circle, fixed position in world
-      const sunScreenX = this.sunX + transform.x;
-      const sunScreenY = this.sunY + transform.y;
+      const sunScreenX = this.sunX;
+      const sunScreenY = this.sunY;
       ctx.fillStyle = '#FFE7CA';
       ctx.beginPath();
       ctx.arc(sunScreenX, sunScreenY, 80, 0, Math.PI * 2);
@@ -51,13 +52,18 @@ export class BackgroundSystem extends System {
     }
 
     // Mountains: fixed world Y (like sun), rendered same way
-    this._drawMountains(ctx, transform);
+    this._drawMountains(ctx, viewBounds);
 
     // Dark underground below mountains
-    const mountainScreenY = this.mountainWorldY + transform.y;
-    if (mountainScreenY < CANVAS_HEIGHT) {
+    const mountainScreenY = this.mountainWorldY;
+    if (mountainScreenY < viewBounds.bottom) {
       ctx.fillStyle = '#202020';
-      ctx.fillRect(0, mountainScreenY - 1, CANVAS_WIDTH, CANVAS_HEIGHT - mountainScreenY); // -1 to avoid any light gap
+      ctx.fillRect(
+        viewBounds.left,
+        mountainScreenY - 1,
+        viewWidth,
+        viewBounds.bottom - mountainScreenY,
+      ); // -1 to avoid any light gap
     }
   }
 
@@ -66,14 +72,15 @@ export class BackgroundSystem extends System {
    * Code adapted from @saturnyn's Chess Pursuit (js13kGames 2015)
    * https://js13kgames.com/2015/games/chesspursuit
    * @param {CanvasRenderingContext2D} ctx
-   * @param {{x: number, y: number}} transform - Camera transform
+   * @param {{left: number, right: number, top: number, bottom: number}} viewBounds - Visible region
    * @private
    */
-  _drawMountains(ctx, transform) {
+  _drawMountains(ctx, viewBounds) {
     if (this.mountainWorldY === null) return;
 
-    // Mountain horizon in screen space (world Y + camera transform, just like sun)
-    const horizonScreenY = this.mountainWorldY + transform.y;
+    // Mountain horizon in world space (fixed relative to terrain)
+    const horizonWorldY = this.mountainWorldY;
+    const viewWidth = viewBounds.right - viewBounds.left;
 
     ctx.save();
     ctx.beginPath();
@@ -96,16 +103,16 @@ export class BackgroundSystem extends System {
 
     // Draw mountain silhouette spanning screen width
     for (let i = 0; i < points.length; i += 2) {
-      const x = points[i] * CANVAS_WIDTH + transform.x; // Full screen width (0 to CANVAS_WIDTH)
-      const y = horizonScreenY - (mountainMaxHeight * points[i + 1]) - 78;
+      const x = viewBounds.left + points[i] * viewWidth;
+      const y = horizonWorldY - (mountainMaxHeight * points[i + 1]) - 78;
       if (i === 0) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
       }
     }
-    ctx.lineTo(CANVAS_WIDTH, horizonScreenY);
-    ctx.lineTo(0, horizonScreenY);
+    ctx.lineTo(viewBounds.right, horizonWorldY);
+    ctx.lineTo(viewBounds.left, horizonWorldY);
     ctx.fill();
     ctx.restore();
   }
@@ -113,23 +120,24 @@ export class BackgroundSystem extends System {
   /**
    * Draw green surface strip
    * @param {CanvasRenderingContext2D} ctx
-   * @param {{x: number, y: number}} transform - Camera transform
+   * @param {{left: number, right: number, top: number, bottom: number}} viewBounds - Visible region
    * @private
    */
-  _drawSurface(ctx, transform) {
-    const screenY = this.surfaceY + transform.y;
+  _drawSurface(ctx, viewBounds) {
+    const screenY = this.surfaceY;
+    const width = viewBounds.right - viewBounds.left;
 
     // Light green top
     ctx.fillStyle = '#7CB342';
-    ctx.fillRect(0, screenY, CANVAS_WIDTH, 8);
+    ctx.fillRect(viewBounds.left, screenY, width, 8);
 
     // Darker mid
     ctx.fillStyle = '#558B2F';
-    ctx.fillRect(0, screenY + 8, CANVAS_WIDTH, 6);
+    ctx.fillRect(viewBounds.left, screenY + 8, width, 6);
 
     // Shadow line
     ctx.fillStyle = '#33691E';
-    ctx.fillRect(0, screenY + 14, CANVAS_WIDTH, 2);
+    ctx.fillRect(viewBounds.left, screenY + 14, width, 2);
   }
 
   destroy() {

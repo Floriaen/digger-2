@@ -25,12 +25,6 @@ export class DigIndicatorSystem extends System {
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    */
   render(ctx) {
-    // Get camera transform
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
-    if (!camera) return;
-
-    const transform = camera.getTransform();
-
     // Get player's current dig target
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (!player || !player.currentDigTarget) return;
@@ -40,8 +34,8 @@ export class DigIndicatorSystem extends System {
     if (!terrain) return;
 
     // Calculate screen position
-    const screenX = digTarget.x * TILE_WIDTH + transform.x;
-    const screenY = digTarget.y * TILE_WIDTH + transform.y;
+    const worldX = digTarget.x * TILE_WIDTH;
+    const worldY = digTarget.y * TILE_WIDTH;
 
     // Check if there's a block above
     const blockAbove = terrain.getBlock(digTarget.x, digTarget.y - 1);
@@ -50,12 +44,12 @@ export class DigIndicatorSystem extends System {
 
     // Full height (16x25) if no block above, partial (16x16) if block above
     const outlineHeight = hasBlockAbove ? TILE_WIDTH : SPRITE_HEIGHT;
-    const outlineY = hasBlockAbove ? screenY : screenY - TILE_CAP_HEIGHT;
+    const outlineY = hasBlockAbove ? worldY : worldY - TILE_CAP_HEIGHT;
 
     // Draw outline
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(screenX, outlineY, TILE_WIDTH, outlineHeight);
+    ctx.strokeRect(worldX, outlineY, TILE_WIDTH, outlineHeight);
   }
 
   destroy() {

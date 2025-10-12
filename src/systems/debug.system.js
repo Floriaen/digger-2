@@ -6,6 +6,8 @@
 import { System } from '../core/system.js';
 import { CHUNK_SIZE } from '../utils/config.js';
 
+const DEFAULT_CAMERA_ZOOM = 3.0;
+
 /**
  * DebugComponent
  * Provides dat.GUI interface and debug visualizations
@@ -116,22 +118,31 @@ export class DebugSystem extends System {
       (c) => c.constructor.name === 'CameraSystem',
     );
     if (camera) {
-      // Manual zoom toggle
-      debugFolder.add(camera, 'manualZoom').name('Manual Zoom')
-        .onChange((val) => {
-          if (!val) {
-            // Reset to auto when disabled
-            camera.manualZoom = false;
+      let zoomController;
+      const zoomControl = {
+        zoom: camera.targetZoom,
+        resetZoom: () => {
+          camera.setZoom(DEFAULT_CAMERA_ZOOM);
+          zoomControl.zoom = camera.targetZoom;
+          if (zoomController) {
+            zoomController.updateDisplay();
+          }
+        },
+      };
+
+      zoomController = debugFolder.add(zoomControl, 'zoom', 0.2, 3.0)
+        .step(0.1)
+        .name('Zoom')
+        .onChange((value) => {
+          camera.setZoom(value);
+          zoomControl.zoom = camera.targetZoom;
+          if (zoomController) {
+            zoomController.updateDisplay();
           }
         });
 
-      // Control targetZoom (not zoom) to work with lerp system
-      debugFolder.add(camera, 'targetZoom', 0.1, 10.0).step(0.1).name('Zoom')
-        .onChange(() => {
-          // Enable manual zoom when slider is moved
-          camera.manualZoom = true;
-        })
-        .listen(); // Update GUI when zoom changes programmatically
+      zoomController.listen();
+      debugFolder.add(zoomControl, 'resetZoom').name('Reset Zoom');
     }
 
     debugFolder.open();

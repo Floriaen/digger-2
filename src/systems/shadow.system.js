@@ -23,12 +23,9 @@ export class ShadowSystem extends System {
 
   render(ctx) {
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
-    const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
-    if (!player || !camera || !terrain) return;
-
-    const transform = camera.getTransform();
+    if (!player || !terrain) return;
 
     // Always find the first solid block below the player
     let shadowY = player.y; // Default: shadow at player position
@@ -51,8 +48,8 @@ export class ShadowSystem extends System {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
     ctx.ellipse(
-      player.x + transform.x,
-      shadowY + PLAYER_RADIUS + transform.y - 10, // -4 for 3D fake offset
+      player.x,
+      shadowY + PLAYER_RADIUS - 10, // -4 for 3D fake offset
       PLAYER_RADIUS * 0.8,
       PLAYER_RADIUS * 0.3,
       0,

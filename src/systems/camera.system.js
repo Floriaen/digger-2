@@ -19,8 +19,6 @@ const MAX_ZOOM = 3.0;
 /**
  * CameraSystem
  * Smoothly follows a target and applies canvas transforms.
- *
- * NOTE: `getTransform()` remains temporarily for legacy callers.
  */
 export class CameraSystem extends System {
   constructor(game) {
@@ -30,19 +28,12 @@ export class CameraSystem extends System {
     this.y = 0; // Camera center Y in world space
     this.zoom = 3.0;
     this.targetZoom = 3.0;
-    this.manualZoom = false;
 
     this.followTarget = null;
     this.smoothing = CAMERA_LERP_FACTOR;
 
     this.worldWidth = Number.POSITIVE_INFINITY;
     this.worldHeight = Number.POSITIVE_INFINITY;
-
-    this.legacyTransform = {
-      x: 0,
-      y: 0,
-      zoom: this.zoom,
-    };
   }
 
   init() {
@@ -72,7 +63,6 @@ export class CameraSystem extends System {
     this.zoom = lerp(this.zoom, this.targetZoom, ZOOM_LERP_FACTOR);
 
     this._clampToWorldInternal(this._getCanvas());
-    this._updateLegacyTransform();
   }
 
   render() {
@@ -131,16 +121,7 @@ export class CameraSystem extends System {
     };
   }
 
-  /**
-   * Temporary legacy accessor for systems still using manual transforms.
-   * @returns {{x: number, y: number, zoom: number}}
-   */
-  getTransform() {
-    return { ...this.legacyTransform };
-  }
-
   setZoom(zoom) {
-    this.manualZoom = true;
     this.targetZoom = this._clampZoom(zoom);
   }
 
@@ -161,7 +142,6 @@ export class CameraSystem extends System {
     this.x = targetX;
     this.y = targetY;
     this.zoom = this._clampZoom(this.targetZoom);
-    this._updateLegacyTransform();
   }
 
   _snapToCanvasCenter() {
@@ -170,7 +150,6 @@ export class CameraSystem extends System {
     const height = canvas?.height ?? CANVAS_HEIGHT;
     this.x = width / 2;
     this.y = height / 2;
-    this._updateLegacyTransform();
   }
 
   _computeTargetPosition(target) {
@@ -187,45 +166,9 @@ export class CameraSystem extends System {
     return { x: targetX, y: targetY };
   }
 
-  _updateLegacyTransform() {
-    const canvas = this._getCanvas();
-    const canvasWidth = canvas?.width ?? CANVAS_WIDTH;
-    const canvasHeight = canvas?.height ?? CANVAS_HEIGHT;
-
-    this.legacyTransform = {
-      x: Math.floor(-this.x + canvasWidth / 2),
-      y: Math.floor(-this.y + canvasHeight / 2),
-      zoom: this._quantizeZoom(this.zoom),
-    };
-  }
-
   _clampZoom(zoom) {
     if (!Number.isFinite(zoom)) return this.zoom;
     return Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM);
-  }
-
-  _quantizeZoom(value) {
-    const zoomLevels = [
-      1.0,
-      1.5,
-      2.0,
-      2.5,
-      3.0,
-      3.5,
-      4.0,
-      4.5,
-      5.0,
-      6.0,
-      7.0,
-      8.0,
-      9.0,
-      10.0,
-    ];
-    return zoomLevels.reduce((prev, curr) => {
-      const currentDiff = Math.abs(curr - value);
-      const previousDiff = Math.abs(prev - value);
-      return currentDiff < previousDiff ? curr : prev;
-    }, zoomLevels[0]);
   }
 
   _clampToWorldInternal(canvas) {

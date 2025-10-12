@@ -5,7 +5,7 @@
 
 import { System } from '../core/system.js';
 import {
-  CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, SPRITE_HEIGHT, TILE_CAP_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
+  CHUNK_SIZE, TILE_WIDTH, TILE_HEIGHT, SPRITE_HEIGHT, TILE_CAP_HEIGHT,
 } from '../utils/config.js';
 import { TerrainGenerator } from '../terrain/terrain-generator.js';
 import { ChunkCache } from '../terrain/chunk-cache.js';
@@ -38,6 +38,7 @@ export class TerrainSystem extends System {
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded
     this.npcList = null;
+    this._cameraBoundsSynced = false;
     this._syncWorldDimensions();
 
     // Load sprite sheet
@@ -51,6 +52,10 @@ export class TerrainSystem extends System {
   }
 
   update(_deltaTime) {
+    if (!this._cameraBoundsSynced) {
+      this._syncCameraBounds();
+    }
+
     // Stream chunks based on camera/player position
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (player) {
@@ -62,7 +67,7 @@ export class TerrainSystem extends System {
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
-    const transform = camera.getTransform();
+    const viewBounds = camera.getViewBounds(ctx.canvas);
     const { renderQueue } = this.game;
 
     if (!renderQueue || !this.spriteSheet) {
@@ -73,11 +78,11 @@ export class TerrainSystem extends System {
     const digTarget = player ? player.currentDigTarget : null;
 
     // Calculate visible chunk range
-    // World coordinates visible: from -transform to (canvasSize - transform)
-    const worldStartX = -transform.x;
-    const worldEndX = CANVAS_WIDTH - transform.x;
-    const worldStartY = -transform.y;
-    const worldEndY = CANVAS_HEIGHT - transform.y;
+    // World coordinates visible: use camera view bounds.
+    const worldStartX = viewBounds.left;
+    const worldEndX = viewBounds.right;
+    const worldStartY = viewBounds.top;
+    const worldEndY = viewBounds.bottom;
 
     const minChunkX = 0;
     const maxChunkX = this.worldWidthChunks - 1;
@@ -101,7 +106,7 @@ export class TerrainSystem extends System {
     // Queue visible chunks (bottom to top for proper overlap)
     for (let cy = clampedEndY; cy >= clampedStartY; cy -= 1) {
       for (let cx = clampedStartX; cx <= clampedEndX; cx += 1) {
-        this._renderChunk(renderQueue, cx, cy, transform, digTarget);
+        this._renderChunk(renderQueue, cx, cy, digTarget);
       }
     }
 
@@ -185,11 +190,11 @@ export class TerrainSystem extends System {
    * @param {RenderQueue} renderQueue - Shared render queue instance.
    * @param {number} chunkX - Chunk X coordinate.
    * @param {number} chunkY - Chunk Y coordinate.
-   * @param {{x: number, y: number}} transform - Camera transform (position only).
+   * @param {object|null} digTarget - Active dig target (world coords).
    * @param {{x: number, y: number, hp: number, maxHp: number} | null} digTarget - Active dig target (world coords).
    * @private
    */
-  _renderChunk(renderQueue, chunkX, chunkY, transform, digTarget) {
+  _renderChunk(renderQueue, chunkX, chunkY, digTarget) {
     const chunk = this.cache.getChunk(chunkX, chunkY);
     if (!chunk || !this.spriteSheet) return;
 
@@ -220,12 +225,9 @@ export class TerrainSystem extends System {
 
         const worldTileX = worldOffsetX + localX * TILE_WIDTH;
         const worldTileY = worldOffsetY + localY * TILE_HEIGHT;
-        const screenBaseX = worldTileX + transform.x;
-        const screenBaseY = worldTileY + transform.y;
-
-        const baseDestX = screenBaseX + baseLayer.offsetX;
-        const baseDestY = screenBaseY + TILE_HEIGHT - baseLayer.height + baseLayer.offsetY;
-        const baseDepth = -(screenBaseY + TILE_HEIGHT) + (render.depthOffset ?? 0);
+        const baseDestX = worldTileX + baseLayer.offsetX;
+        const baseDestY = worldTileY + TILE_HEIGHT - baseLayer.height + baseLayer.offsetY;
+        const baseDepth = -(worldTileY + TILE_HEIGHT) + (render.depthOffset ?? 0);
 
         renderQueue.queueDraw({
           layer: render.layer ?? RenderLayer.TERRAIN_BASE,
@@ -242,8 +244,8 @@ export class TerrainSystem extends System {
         const overlayLayers = render.getOverlayLayers();
         for (let i = 0; i < overlayLayers.length; i += 1) {
           const overlay = overlayLayers[i];
-          const overlayDestX = screenBaseX + overlay.offsetX;
-          const overlayDestY = screenBaseY + TILE_HEIGHT - overlay.height + overlay.offsetY;
+          const overlayDestX = worldTileX + overlay.offsetX;
+          const overlayDestY = worldTileY + TILE_HEIGHT - overlay.height + overlay.offsetY;
           const overlayDepth = baseDepth
             + (overlay.depthOffset ?? 0)
             + (i + 1) * OVERLAY_DEPTH_STEP;
@@ -281,8 +283,8 @@ export class TerrainSystem extends System {
           renderQueue.queueDraw({
             layer: RenderLayer.TERRAIN_BASE,
             depth: baseDepth + DARKNESS_EPSILON,
-            destX: screenBaseX,
-            destY: screenBaseY - TILE_CAP_HEIGHT,
+            destX: worldTileX,
+            destY: worldTileY - TILE_CAP_HEIGHT,
             width: TILE_WIDTH,
             height: SPRITE_HEIGHT,
             alpha: 1.0,
@@ -305,8 +307,8 @@ export class TerrainSystem extends System {
           renderQueue.queueDraw({
             layer: RenderLayer.TERRAIN_BASE,
             depth: baseDepth + DIG_EPSILON,
-            destX: screenBaseX,
-            destY: screenBaseY - TILE_CAP_HEIGHT,
+            destX: worldTileX,
+            destY: worldTileY - TILE_CAP_HEIGHT,
             width: TILE_WIDTH,
             height: SPRITE_HEIGHT,
             alpha: 1.0,
@@ -372,6 +374,7 @@ export class TerrainSystem extends System {
     this.seed = newSeed;
     this.generator = new TerrainGenerator(this.seed);
     this.cache = new ChunkCache(this.generator);
+    this._cameraBoundsSynced = false;
     this._syncWorldDimensions();
   }
 
@@ -380,6 +383,7 @@ export class TerrainSystem extends System {
     this.worldHeightChunks = this.generator?.worldHeightChunks ?? Number.POSITIVE_INFINITY;
     this.worldWidthTiles = this.generator?.worldWidthTiles ?? Number.POSITIVE_INFINITY;
     this.worldHeightTiles = this.generator?.worldHeightTiles ?? Number.POSITIVE_INFINITY;
+    this._syncCameraBounds();
   }
 
   isWithinWorld(gridX, gridY) {
@@ -387,5 +391,30 @@ export class TerrainSystem extends System {
       && gridX < this.worldWidthTiles
       && gridY >= 0
       && gridY < this.worldHeightTiles;
+  }
+
+  _syncCameraBounds() {
+    if (!this.game || !this.game.components) return;
+
+    const camera = this.game.components.find(
+      (component) => component.constructor.name === 'CameraSystem',
+    );
+
+    if (!camera) return;
+
+    const worldWidthPixels = this.worldWidthTiles * TILE_WIDTH;
+    const worldHeightPixels = this.worldHeightTiles * TILE_HEIGHT;
+
+    if (Number.isFinite(worldWidthPixels)) {
+      camera.worldWidth = worldWidthPixels;
+    }
+
+    if (Number.isFinite(worldHeightPixels)) {
+      camera.worldHeight = worldHeightPixels;
+    }
+
+    if (Number.isFinite(worldWidthPixels) || Number.isFinite(worldHeightPixels)) {
+      this._cameraBoundsSynced = true;
+    }
   }
 }

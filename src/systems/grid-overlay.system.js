@@ -4,9 +4,7 @@
  */
 
 import { System } from '../core/system.js';
-import {
-  TILE_WIDTH, TILE_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT,
-} from '../utils/config.js';
+import { TILE_WIDTH, TILE_HEIGHT } from '../utils/config.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
 
 /**
@@ -28,13 +26,13 @@ export class GridOverlaySystem extends System {
 
     if (!camera || !terrain) return;
 
-    const transform = camera.getTransform();
+    const viewBounds = camera.getViewBounds(ctx.canvas);
 
     // Calculate visible tile range
-    const startX = Math.floor(-transform.x / TILE_WIDTH) - 1;
-    const endX = Math.ceil((CANVAS_WIDTH - transform.x) / TILE_WIDTH) + 1;
-    const startY = Math.floor(-transform.y / TILE_HEIGHT) - 1;
-    const endY = Math.ceil((CANVAS_HEIGHT - transform.y) / TILE_HEIGHT) + 1;
+    const startX = Math.floor(viewBounds.left / TILE_WIDTH) - 1;
+    const endX = Math.ceil(viewBounds.right / TILE_WIDTH) + 1;
+    const startY = Math.floor(viewBounds.top / TILE_HEIGHT) - 1;
+    const endY = Math.ceil(viewBounds.bottom / TILE_HEIGHT) + 1;
 
     // Save context state
     ctx.save();
@@ -54,11 +52,11 @@ export class GridOverlaySystem extends System {
         }
 
         // Draw grid rectangle for this solid block
-        const screenX = x * TILE_WIDTH + transform.x;
-        const screenY = y * TILE_HEIGHT + transform.y;
+        const worldX = x * TILE_WIDTH;
+        const worldY = y * TILE_HEIGHT;
 
         ctx.beginPath();
-        ctx.rect(screenX, screenY, TILE_WIDTH, TILE_HEIGHT);
+        ctx.rect(worldX, worldY, TILE_WIDTH, TILE_HEIGHT);
         ctx.stroke();
       }
     }
