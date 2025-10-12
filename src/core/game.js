@@ -117,12 +117,8 @@ export class Game {
     // Performance: Start render timing
     this.performanceMonitor.startMark('render');
 
-    // Get camera and player for transform
+    // Get camera for transform
     const camera = this.components.find((c) => c.constructor.name === 'CameraSystem');
-    const player = this.components.find((c) => c.constructor.name === 'PlayerSystem');
-    if (camera && player) {
-      camera.follow(player);
-    }
 
     this.ctx.save();
     if (camera && this.viewport) {

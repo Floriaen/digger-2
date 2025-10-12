@@ -41,9 +41,6 @@ export const WORLD_HEIGHT_CHUNKS = 5;
 export const WORLD_WIDTH_PX = WORLD_WIDTH_CHUNKS * CHUNK_SIZE * TILE_WIDTH;
 export const WORLD_HEIGHT_PX = WORLD_HEIGHT_CHUNKS * CHUNK_SIZE * TILE_HEIGHT;
 
-// World surface alignment
-export const WORLD_SURFACE_Y = 0;
-
 // Lava configuration (distance from bottom of the world in chunks)
 export const LAVA_SURFACE_OFFSET_CHUNKS = 4;
 

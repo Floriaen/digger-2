@@ -113,6 +113,7 @@ function init() {
 
   // Create viewport for coordinate transformation
   const viewport = new Viewport(width, height, WORLD_WIDTH_PX, WORLD_HEIGHT_PX);
+  //viewport.setTerrainY(200);  // 100px from top, or use a constant
   game.viewport = viewport;
 
   // Initialize input system
@@ -130,13 +131,21 @@ function init() {
   game.addComponent(new NavigationSystem(game));
   game.addComponent(new PlayerSystem(game));
   game.addComponent(new CoinEffectSystem(game));
-  game.addComponent(new CameraSystem(game, 0, 0, 3.0));
+  // Start camera positioned to show mountains and sun (Y=110 is sun center)
+  game.addComponent(new CameraSystem(game, 256, 110, 3.0));
   game.addComponent(new HUDSystem(game));
   game.addComponent(new TouchInputSystem(game)); // Touch input for mobile
   game.addComponent(new DebugSystem(game));
 
   // Initialize game
   game.init();
+
+  // Set up camera to follow player after initialization
+  const camera = game.components.find((c) => c.constructor.name === 'CameraSystem');
+  const player = game.components.find((c) => c.constructor.name === 'PlayerSystem');
+  if (camera && player) {
+    camera.follow(player);
+  }
 
   // Subscribe to pause toggle event
   eventBus.on('input:pause-toggle', () => {
