@@ -42,19 +42,20 @@ export class Viewport {
    * Transforms world coordinates to screen coordinates with camera offset
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {CameraSystem} camera - Camera with position and zoom
-   */
+  */
   applyTransform(ctx, camera) {
     // Transform matrix:
     // 1. Scale by zoom
     // 2. Translate to center camera in viewport
     // 3. Apply viewport offset for terrain positioning (in screen space, not scaled by zoom)
+    const transform = this._getTransform(camera);
     ctx.setTransform(
-      camera.zoom,
+      transform.scaleX,
       0,
       0,
-      camera.zoom,
-      this.canvasWidth / 2 - camera.x * camera.zoom + this.offsetX,
-      this.canvasHeight / 2 - camera.y * camera.zoom + this.offsetY,
+      transform.scaleY,
+      transform.translateX,
+      transform.translateY,
     );
   }
 
@@ -67,10 +68,9 @@ export class Viewport {
    * @returns {{x: number, y: number}} World coordinates
    */
   screenToWorld(screenX, screenY, camera) {
-    const worldX = (screenX - this.canvasWidth / 2 - this.offsetX) / camera.zoom
-      + camera.x;
-    const worldY = (screenY - this.canvasHeight / 2 - this.offsetY) / camera.zoom
-      + camera.y;
+    const transform = this._getTransform(camera);
+    const worldX = (screenX - transform.translateX) / transform.scaleX;
+    const worldY = (screenY - transform.translateY) / transform.scaleY;
 
     return { x: worldX, y: worldY };
   }
@@ -84,12 +84,9 @@ export class Viewport {
    * @returns {{x: number, y: number}} Screen coordinates
    */
   worldToScreen(worldX, worldY, camera) {
-    const screenX = (worldX - camera.x) * camera.zoom
-      + this.canvasWidth / 2
-      + this.offsetX;
-    const screenY = (worldY - camera.y) * camera.zoom
-      + this.canvasHeight / 2
-      + this.offsetY;
+    const transform = this._getTransform(camera);
+    const screenX = worldX * transform.scaleX + transform.translateX;
+    const screenY = worldY * transform.scaleY + transform.translateY;
 
     return { x: screenX, y: screenY };
   }
@@ -120,5 +117,30 @@ export class Viewport {
    */
   setTerrainY(y) {
     this.offsetY = y;
+  }
+
+  /**
+   * Compute the current viewport transform, snapping translation to whole pixels
+   * to avoid sub-pixel seams between tiles.
+   * @param {CameraSystem} camera
+   * @returns {{scaleX: number, scaleY: number, translateX: number, translateY: number}}
+   * @private
+   */
+  _getTransform(camera) {
+    const scaleX = camera.zoom;
+    const scaleY = camera.zoom;
+    const translateX = Math.round(
+      (this.canvasWidth / 2 + this.offsetX) - camera.x * scaleX,
+    );
+    const translateY = Math.round(
+      (this.canvasHeight / 2 + this.offsetY) - camera.y * scaleY,
+    );
+
+    return {
+      scaleX,
+      scaleY,
+      translateX,
+      translateY,
+    };
   }
 }

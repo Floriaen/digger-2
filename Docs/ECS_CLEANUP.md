@@ -258,7 +258,7 @@ class GravitySystem {
       .filter(e => e.has(FallableComponent))
       .forEach(entity => {
         const fallable = entity.get(FallableComponent);
-        fallable.updateFalling(deltaTime);
+        fallable.tick(deltaTime);
       });
   }
 }
@@ -269,15 +269,15 @@ class GravitySystem {
 #### 6.1: Create GravitySystem ✅
 1. ✅ Created `src/systems/gravity.system.js`
 2. ✅ System manages all falling blocks with `FallableComponent`
-3. ✅ Calls `fallable.updateFalling(deltaTime)` for each falling entity
-4. ✅ Handles ground collision and `stopFalling()`
+3. ✅ Calls `fallable.tick(deltaTime)` for each falling entity
+4. ✅ Handles ground collision and `land()` / `reset()`
 5. ✅ Detects falling block → player collision (death)
 
 #### 6.2: Refactor PlayerComponent ✅
 1. ✅ Added `FallableComponent` instance to player (`this.fallable = new FallableComponent()`)
 2. ✅ Removed custom property: `this.velocityY`
-3. ✅ Updated `_updateFalling()` to use `FallableComponent`
-4. ✅ Uses `fallable.startFalling()` / `fallable.stopFalling()` / `fallable.velocityY`
+3. ✅ Updated player falling logic to delegate to `FallableComponent`
+4. ✅ Uses `fallable.start()` / `fallable.tick()` / `fallable.velocityY`
 
 #### 6.3: Update FallableComponent ✅
 1. ✅ Component already handles player-specific cases (lava collision, landing)

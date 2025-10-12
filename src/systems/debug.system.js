@@ -4,7 +4,6 @@
  */
 
 import { System } from '../core/system.js';
-import { CHUNK_SIZE } from '../utils/config.js';
 
 const DEFAULT_CAMERA_ZOOM = 3.0;
 
@@ -76,34 +75,11 @@ export class DebugSystem extends System {
     if (terrainComponent) {
       const seedControl = {
         seed: terrainComponent.seed,
-        lavaDepth: terrainComponent.generator.lavaDepth,
         regenerate: () => {
           terrainComponent.setSeed(seedControl.seed);
-          const clampedLava = Math.max(
-            0,
-            Math.min(seedControl.lavaDepth, terrainComponent.generator.worldHeightTiles),
-          );
-          terrainComponent.generator.lavaDepth = clampedLava;
-          terrainComponent.generator.clearCache();
-          seedControl.lavaDepth = clampedLava;
         },
       };
       terrainFolder.add(seedControl, 'seed').name('Seed');
-      terrainFolder.add(
-        seedControl,
-        'lavaDepth',
-        0,
-        terrainComponent.generator.worldHeightTiles,
-      ).step(CHUNK_SIZE).name('Lava Depth')
-        .onChange((val) => {
-          const clamped = Math.max(
-            0,
-            Math.min(val, terrainComponent.generator.worldHeightTiles),
-          );
-          terrainComponent.generator.lavaDepth = clamped;
-          terrainComponent.generator.clearCache();
-          seedControl.lavaDepth = clamped;
-        });
       terrainFolder.add(seedControl, 'regenerate').name('Regenerate');
     }
     terrainFolder.open();
