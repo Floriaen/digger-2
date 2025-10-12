@@ -17,26 +17,85 @@ export const SPRITE_ATLAS = {
   },
 
   // Blocks (fake-3D tiles: 16x25px with 16x9px cap)
+  grass: {
+    x: 0,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
   mud_light: {
-    x: 0, y: 0, width: 16, height: 25,
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
   },
   mud_medium: {
-    x: 16, y: 0, width: 16, height: 25,
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
   },
   mud_dark: {
-    x: 32, y: 0, width: 16, height: 25,
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
   },
   mud_dense: {
-    x: 48, y: 0, width: 16, height: 25,
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
   },
   mud_core: {
-    x: 64, y: 0, width: 16, height: 25,
+    x: 16,
+    y: 0,
+    width: 16,
+    height: 25,
   },
   rock: {
-    x: 80, y: 0, width: 16, height: 25,
+    x: 48,
+    y: 0,
+    width: 16,
+    height: 25,
   },
   red_frame: {
-    x: 96, y: 0, width: 16, height: 25,
+    x: 32,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+  lava: {
+    x: 32,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+  chest_base: {
+    x: 64,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
+  chest_cover: {
+    x: 9,
+    y: 25,
+    width: 23,
+    height: 25,
+    offsetX: -4,
+    offsetY: 0,
+  },
+  pause_crystal: {
+    x: 64,
+    y: 24,
+    width: 16,
+    height: 25,
+  },
+  protective_block: {
+    x: 80,
+    y: 0,
+    width: 16,
+    height: 25,
   },
 
   // UI

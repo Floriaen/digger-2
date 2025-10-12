@@ -347,8 +347,8 @@ export class TerrainGenerator {
         const block = chunk.getBlock(x, y);
         const render = block.get(RenderComponent);
 
-        // Check if it's a red frame block (spriteX: 32)
-        if (render && render.spriteX === 32) {
+        // Check if it's a red frame block
+        if (render && block.type === BLOCK_TYPE.RED_FRAME) {
           // Found torus block - ensure surrounding blocks are solid
           const worldX = chunkX * CHUNK_SIZE + x;
           const worldY = chunkY * CHUNK_SIZE + y;
@@ -472,8 +472,8 @@ export class TerrainGenerator {
         const health = block.get(HealthComponent);
         const render = block.get(RenderComponent);
 
-        // Only process mud blocks (sprite X position 16)
-        if (!health || !render || render.spriteX !== 16) {
+        // Only process mud blocks
+        if (!health || !render || block.type !== 'mud') {
           // eslint-disable-next-line no-continue
           continue;
         }

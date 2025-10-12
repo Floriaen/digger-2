@@ -1,5 +1,6 @@
 import { Block } from '../entities/block.entity.js';
 import { RenderComponent } from '../components/block/render.component.js';
+import { SPRITE_ATLAS } from '../rendering/sprite-atlas.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
 import { HealthComponent } from '../components/block/health.component.js';
 import { DiggableComponent } from '../components/block/diggable.component.js';
@@ -8,6 +9,77 @@ import { DarknessComponent } from '../components/block/darkness.component.js';
 import { LootableComponent } from '../components/block/lootable.component.js';
 import { LethalComponent } from '../components/block/lethal.component.js';
 import { PauseOnDestroyComponent } from '../components/block/pause-on-destroy.component.js';
+
+const MUD_VARIANT_SPRITES = [
+  SPRITE_ATLAS.mud_light,
+  SPRITE_ATLAS.mud_medium,
+  SPRITE_ATLAS.mud_dark,
+  SPRITE_ATLAS.mud_dense,
+  SPRITE_ATLAS.mud_core,
+];
+
+function resolveMudSprite(variant = 1) {
+  const index = Math.min(MUD_VARIANT_SPRITES.length - 1, Math.max(0, variant - 1));
+  return MUD_VARIANT_SPRITES[index];
+}
+
+function spriteToComponentProps(sprite) {
+  if (!sprite) {
+    return {};
+  }
+
+  const props = {
+    spriteX: sprite.x,
+    spriteY: sprite.y,
+  };
+
+  if (sprite.width !== undefined) {
+    props.spriteWidth = sprite.width;
+  }
+
+  if (sprite.height !== undefined) {
+    props.spriteHeight = sprite.height;
+  }
+
+  if (sprite.offsetX !== undefined) {
+    props.offsetX = sprite.offsetX;
+  }
+
+  if (sprite.offsetY !== undefined) {
+    props.offsetY = sprite.offsetY;
+  }
+
+  return props;
+}
+
+function spriteToLayerProps(sprite) {
+  if (!sprite) {
+    return {};
+  }
+
+  const layer = {
+    spriteX: sprite.x,
+    spriteY: sprite.y,
+  };
+
+  if (sprite.width !== undefined) {
+    layer.width = sprite.width;
+  }
+
+  if (sprite.height !== undefined) {
+    layer.height = sprite.height;
+  }
+
+  if (sprite.offsetX !== undefined) {
+    layer.offsetX = sprite.offsetX;
+  }
+
+  if (sprite.offsetY !== undefined) {
+    layer.offsetY = sprite.offsetY;
+  }
+
+  return layer;
+}
 
 /**
  * BlockFactory
@@ -62,8 +134,10 @@ export class BlockFactory {
     // Map variant (1-5) to darkness alpha (0-0.4)
     const darknessAlpha = (variant - 1) * 0.1; // 1→0, 2→0.1, 3→0.2, 4→0.3, 5→0.4
 
+    const mudSprite = resolveMudSprite(variant);
+
     const components = [
-      new RenderComponent({ spriteX: 16, spriteY: 0 }),
+      new RenderComponent(spriteToComponentProps(mudSprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp }),
       new DiggableComponent(),
@@ -83,14 +157,9 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createRock() {
+    const sprite = SPRITE_ATLAS.rock;
     const block = new Block([
-      new RenderComponent({
-        spriteX: 48,
-        spriteY: 0,
-        width: 16,
-        height: 25,
-        // offsetY : -9
-      }),
+      new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new FallableComponent(),
     ]);
@@ -102,13 +171,9 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createPauseCrystal() {
+    const sprite = SPRITE_ATLAS.pause_crystal;
     const block = new Block([
-      new RenderComponent({
-        spriteX: 64,
-        spriteY: 24,
-        spriteWidth: 16,
-        spriteHeight: 25,
-      }),
+      new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
@@ -122,8 +187,9 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createRedFrame() {
+    const sprite = SPRITE_ATLAS.red_frame;
     const block = new Block([
-      new RenderComponent({ spriteX: 32, spriteY: 0 }),
+      new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
@@ -136,8 +202,19 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createLava() {
+    const {
+      x,
+      y,
+      width,
+      height,
+    } = SPRITE_ATLAS.lava;
     const block = new Block([
-      new RenderComponent({ spriteX: 64, spriteY: 0 }),
+      new RenderComponent({
+        spriteX: x,
+        spriteY: y,
+        spriteWidth: width,
+        spriteHeight: height,
+      }),
       new PhysicsComponent({ collidable: false }),
       new LethalComponent(),
     ]);
@@ -149,8 +226,9 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createGrass() {
+    const sprite = SPRITE_ATLAS.grass;
     const block = new Block([
-      new RenderComponent({ spriteX: 0, spriteY: 0 }),
+      new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
@@ -164,8 +242,9 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createChest(loot = [{ type: 'coin', value: 10 }]) {
+    const sprite = SPRITE_ATLAS.chest_base;
     const block = new Block([
-      new RenderComponent({ spriteX: 64, spriteY: 0 }),
+      new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 15 }),
       new DiggableComponent(),
@@ -182,17 +261,13 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createCoveredChest(loot = [{ type: 'coin', value: 10 }]) {
+    const baseSprite = SPRITE_ATLAS.chest_base;
+    const coverSprite = SPRITE_ATLAS.chest_cover;
     const block = new Block([
       new RenderComponent({
         layers: [
-          { spriteX: 64, spriteY: 0 }, // Chest (bottom)
-          {
-            spriteX: 9,
-            spriteY: 25,
-            width: 23,
-            height: 25,
-            offsetX: -4,
-          }, // Cover (top) - sprite position 9
+          spriteToLayerProps(baseSprite),
+          spriteToLayerProps(coverSprite),
         ],
       }),
       new PhysicsComponent({ collidable: true }),
@@ -214,8 +289,9 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createProtectiveBlock(darknessAlpha = 0.5) {
+    const sprite = SPRITE_ATLAS.protective_block;
     const block = new Block([
-      new RenderComponent({ spriteX: 80, spriteY: 0 }),
+      new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 10 }),
       new DiggableComponent(),
@@ -230,14 +306,16 @@ export class BlockFactory {
    * @returns {Block}
    */
   static createProtectiveMud(darknessAlpha = 0.5) {
+    const normalizedVariant = Math.min(5, Math.max(1, Math.round(darknessAlpha / 0.1) + 1));
+    const mudSprite = resolveMudSprite(normalizedVariant);
+
     const block = new Block([
-      new RenderComponent({ spriteX: 16, spriteY: 0 }),
+      new RenderComponent(spriteToComponentProps(mudSprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
       new DarknessComponent({ alpha: darknessAlpha }),
     ]);
-    const normalizedVariant = Math.min(5, Math.max(1, Math.round(darknessAlpha / 0.1) + 1));
     return BlockFactory.finalizeBlock(block, 'mud', { variant: normalizedVariant });
   }
 
@@ -248,64 +326,5 @@ export class BlockFactory {
    */
   static isMud(block) {
     return Boolean(block && block.type === 'mud');
-  }
-
-  /**
-   * Create a block from legacy numeric type ID
-   * @param {number} typeId - Legacy BLOCK_TYPES enum value
-   * @param {Object} options - Additional options (hp, darkness, etc.)
-   * @returns {Block}
-   */
-  static fromLegacyType(typeId, options = {}) {
-    switch (typeId) {
-      case 0: // EMPTY
-        return BlockFactory.createEmpty();
-      case 1: // MUD_LIGHT
-        return BlockFactory.createMud(options.hp || 5);
-      case 2: // MUD_MEDIUM
-        return BlockFactory.createMud(options.hp || 5);
-      case 3: // MUD_DARK
-        return BlockFactory.createMud(options.hp || 5);
-      case 4: // MUD_DENSE
-        return BlockFactory.createMud(options.hp || 5);
-      case 5: // MUD_CORE
-        return BlockFactory.createMud(options.hp || 5);
-      case 6: // ROCK
-        return BlockFactory.createRock();
-      case 7: // RED_FRAME
-        return BlockFactory.createRedFrame();
-      case 8: // LAVA
-        return BlockFactory.createLava();
-      case 9: // GRASS
-        return BlockFactory.createGrass();
-      case 100: // PROTECTIVE_BLOCK
-        return BlockFactory.createProtectiveBlock(options.darkness || 0.5);
-      default:
-        return BlockFactory.createEmpty();
-    }
-  }
-
-  /**
-   * Create a block from legacy object format
-   * @param {Object} blockData - Legacy block data object
-   * @returns {Block}
-   */
-  static fromLegacyObject(blockData) {
-    if (typeof blockData === 'number') {
-      return BlockFactory.fromLegacyType(blockData);
-    }
-
-    // Handle chest
-    if (blockData.isChest) {
-      return BlockFactory.createChest();
-    }
-
-    // Handle protective block
-    if (blockData.darkness !== undefined) {
-      return BlockFactory.createProtectiveBlock(blockData.darkness);
-    }
-
-    // Handle regular block with HP
-    return BlockFactory.fromLegacyType(blockData.type, { hp: blockData.hp });
   }
 }

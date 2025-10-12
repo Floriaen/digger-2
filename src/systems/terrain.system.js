@@ -24,7 +24,7 @@ const DIG_EPSILON = 0.0003;
 const OVERLAY_DEPTH_STEP = 0.001;
 
 const STATIC_DARKEN_FACTORS = {
-  32: 0.4, // RED_FRAME (torus): 40% dark
+  red_frame: 0.4, // RED_FRAME (torus): 40% dark
 };
 
 /**
@@ -259,7 +259,7 @@ export class TerrainSystem extends System {
           });
         }
 
-        const blockDarken = STATIC_DARKEN_FACTORS[baseLayer.spriteX] ?? 0;
+        const blockDarken = STATIC_DARKEN_FACTORS[block.type] ?? 0;
         if (blockDarken > 0) {
           renderQueue.queueDraw({
             layer: RenderLayer.TERRAIN_BASE,
