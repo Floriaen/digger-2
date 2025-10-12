@@ -144,7 +144,9 @@ export class PlayerSystem extends System {
 
     // Unified directional digging (unless stuck and digging in place)
     if (!stuckInBlock) {
-      this._updateDirectionalDig(terrain);
+      if (!this._beginFallIfUnsupported(terrain)) {
+        this._updateDirectionalDig(terrain);
+      }
     }
   }
 
@@ -429,6 +431,9 @@ export class PlayerSystem extends System {
           this.state = PLAYER_STATE.IDLE;
           this.digDirection = { dx: 0, dy: 1 }; // Reset to down
         }
+
+        // After removing a block, ensure we fall if the support is gone
+        this._beginFallIfUnsupported(terrain);
       }
     }
   }
@@ -470,5 +475,31 @@ export class PlayerSystem extends System {
       this.state = PLAYER_STATE.IDLE;
       this.digDirection = { dx: 0, dy: 1 };
     }
+  }
+
+  /**
+   * Force the player into falling state if there is no support below.
+   * @param {TerrainSystem} terrain
+   * @returns {boolean} True if falling was triggered
+   * @private
+   */
+  _beginFallIfUnsupported(terrain) {
+    if (this.state === PLAYER_STATE.FALLING) {
+      return true;
+    }
+
+    const belowBlock = terrain.getBlock(this.gridX, this.gridY + 1);
+    const belowPhysics = belowBlock.get(PhysicsComponent);
+    const hasSupport = belowPhysics && belowPhysics.isCollidable();
+
+    if (hasSupport) {
+      return false;
+    }
+
+    this.state = PLAYER_STATE.FALLING;
+    this.fallable.reset();
+    this.currentDigTarget = null;
+    this.digTimer = 0;
+    return true;
   }
 }
