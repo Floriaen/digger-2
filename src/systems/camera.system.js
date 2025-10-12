@@ -7,6 +7,7 @@ import { System } from '../core/system.js';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp } from '../utils/math.js';
 
+const DEFAULT_WORLD_SIZE = 2000;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3.0;
 const FOLLOW_LERP = 0.1;
@@ -16,22 +17,21 @@ const FOLLOW_LERP = 0.1;
  * Smoothly follows a target and applies canvas transforms.
  */
 export class CameraSystem extends System {
-  constructor(game) {
+  constructor(game, x = 0, y = 0, zoom = 3.0, worldWidth = DEFAULT_WORLD_SIZE, worldHeight = DEFAULT_WORLD_SIZE) {
     super(game);
 
-    this.x = 0; // Camera center X in world space
-    this.y = 0; // Camera center Y in world space
-    this.zoom = 3.0;
-    this.targetZoom = 3.0;
+    this.x = x; // Camera center X in world space
+    this.y = y; // Camera center Y in world space
+    this.zoom = zoom;
+    this.targetZoom = zoom;
 
     this.followTarget = null;
 
-    this.worldWidth = Number.POSITIVE_INFINITY;
-    this.worldHeight = Number.POSITIVE_INFINITY;
+    this.worldWidth = worldWidth;
+    this.worldHeight = worldHeight;
   }
 
   init() {
-    this._snapToCanvasCenter();
   }
 
   update(_deltaTime) {
@@ -111,14 +111,6 @@ export class CameraSystem extends System {
 
   zoomOut(factor = 1.1) {
     this.setZoom(this.targetZoom / factor);
-  }
-
-  _snapToCanvasCenter() {
-    const canvas = this._getCanvas();
-    const width = canvas?.width ?? CANVAS_WIDTH;
-    const height = canvas?.height ?? CANVAS_HEIGHT;
-    this.x = width / 2;
-    this.y = height / 2;
   }
 
   _computeTargetPosition(target) {

@@ -4,12 +4,18 @@
  */
 
 import { Game } from './core/game.js';
-import { updateCanvasDimensions } from './utils/config.js';
+import {
+  updateCanvasDimensions,
+  WORLD_WIDTH_CHUNKS,
+  WORLD_HEIGHT_CHUNKS,
+  CHUNK_SIZE,
+  TILE_WIDTH,
+  TILE_HEIGHT,
+} from './utils/config.js';
 import { BackgroundSystem } from './systems/background.system.js';
 import { TerrainSystem } from './systems/terrain.system.js';
 import { PlayerSystem } from './systems/player.system.js';
 import { ShadowSystem } from './systems/shadow.system.js';
-// import { GridOverlaySystem } from './systems/grid-overlay.system.js';
 import { NavigationSystem } from './systems/navigation.system.js';
 import { DigIndicatorSystem } from './systems/dig-indicator.system.js';
 import { CameraSystem } from './systems/camera.system.js';
@@ -120,13 +126,14 @@ function init() {
   game.addComponent(new TerrainSystem(game));
   game.addComponent(new NPCSystem(game));
   game.addComponent(new GravitySystem(game)); // Gravity system updates after terrain
-  // game.addComponent(new GridOverlaySystem(game)); // Grid overlay on blocks
   game.addComponent(new DigIndicatorSystem(game)); // Dig outline on top of terrain
   game.addComponent(new ShadowSystem(game)); // Shadow renders before player
   game.addComponent(new NavigationSystem(game));
   game.addComponent(new PlayerSystem(game));
   game.addComponent(new CoinEffectSystem(game));
-  game.addComponent(new CameraSystem(game));
+  const worldWidthPixels = WORLD_WIDTH_CHUNKS * CHUNK_SIZE * TILE_WIDTH;
+  const worldHeightPixels = WORLD_HEIGHT_CHUNKS * CHUNK_SIZE * TILE_HEIGHT;
+  game.addComponent(new CameraSystem(game, 0, 0, 3.0, worldWidthPixels, worldHeightPixels));
   game.addComponent(new HUDSystem(game));
   game.addComponent(new TouchInputSystem(game)); // Touch input for mobile
   game.addComponent(new DebugSystem(game));

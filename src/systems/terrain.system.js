@@ -38,7 +38,6 @@ export class TerrainSystem extends System {
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded
     this.npcList = null;
-    this._cameraBoundsSynced = false;
     this._syncWorldDimensions();
 
     // Load sprite sheet
@@ -52,10 +51,6 @@ export class TerrainSystem extends System {
   }
 
   update(_deltaTime) {
-    if (!this._cameraBoundsSynced) {
-      this._syncCameraBounds();
-    }
-
     // Stream chunks based on camera/player position
     const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
     if (player) {
@@ -374,7 +369,6 @@ export class TerrainSystem extends System {
     this.seed = newSeed;
     this.generator = new TerrainGenerator(this.seed);
     this.cache = new ChunkCache(this.generator);
-    this._cameraBoundsSynced = false;
     this._syncWorldDimensions();
   }
 
@@ -383,7 +377,6 @@ export class TerrainSystem extends System {
     this.worldHeightChunks = this.generator?.worldHeightChunks ?? Number.POSITIVE_INFINITY;
     this.worldWidthTiles = this.generator?.worldWidthTiles ?? Number.POSITIVE_INFINITY;
     this.worldHeightTiles = this.generator?.worldHeightTiles ?? Number.POSITIVE_INFINITY;
-    this._syncCameraBounds();
   }
 
   isWithinWorld(gridX, gridY) {
@@ -393,28 +386,4 @@ export class TerrainSystem extends System {
       && gridY < this.worldHeightTiles;
   }
 
-  _syncCameraBounds() {
-    if (!this.game || !this.game.components) return;
-
-    const camera = this.game.components.find(
-      (component) => component.constructor.name === 'CameraSystem',
-    );
-
-    if (!camera) return;
-
-    const worldWidthPixels = this.worldWidthTiles * TILE_WIDTH;
-    const worldHeightPixels = this.worldHeightTiles * TILE_HEIGHT;
-
-    if (Number.isFinite(worldWidthPixels)) {
-      camera.worldWidth = worldWidthPixels;
-    }
-
-    if (Number.isFinite(worldHeightPixels)) {
-      camera.worldHeight = worldHeightPixels;
-    }
-
-    if (Number.isFinite(worldWidthPixels) || Number.isFinite(worldHeightPixels)) {
-      this._cameraBoundsSynced = true;
-    }
-  }
 }
