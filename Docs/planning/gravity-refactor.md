@@ -22,7 +22,7 @@ Establish a consistent falling pipeline so blocks, NPCs, and the player share on
 - Iterate all fallable entities and drive only the shared methods from Phase 1.
   - Replace direct `terrain.setBlock`/`getBlock` manipulations in the hot loop with action objects.
 - Detect collisions and landings, but queue the outcomes (`move block`, `remove block`, `kill player`) instead of mutating terrain during the loop.
-  - Use a simple array of `{ type: 'move' | 'destroy' | 'kill-player', payload }`.
+  - Use a simple array of `{ type: 'move-block' | 'destroy-block' | 'kill-player', payload }`.
   - Apply queued actions after the iteration ends (still within the same frame).
 - Emit focused events such as `block:landed`, `block:crushed-player`, freeing other systems to respond.
   - Prefer `eventBus.emit` to keep wiring consistent with the rest of the codebase.

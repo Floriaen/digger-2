@@ -49,6 +49,7 @@ export class GravitySystem extends System {
 
     const { chunks } = terrain.cache;
     const newFallingBlocks = new Set();
+    const actions = [];
 
     // Iterate through all chunks (chunks is a Map, not an object)
     chunks.forEach((chunk) => {
@@ -96,15 +97,22 @@ export class GravitySystem extends System {
 
             if (physicsBelow && physicsBelow.isCollidable()) {
               // Landed - stop falling and update grid position
-              // Move block from old position to new position
-              terrain.setBlock(worldX, worldY, BlockFactory.createEmpty());
-              terrain.setBlock(fallable.gridX, fallable.gridY, block);
+              // Queue block movement to apply after the iteration completes.
+              actions.push({
+                type: 'move-block',
+                block,
+                from: { gridX: worldX, gridY: worldY },
+                to: { gridX: fallable.gridX, gridY: fallable.gridY },
+              });
               fallable.land();
               fallable.reset();
             } else {
               // Still falling - check player collision
               if (this._checkBlockPlayerCollision(fallable, player)) {
-                eventBus.emit('player:death', { cause: 'crushed' });
+                actions.push({
+                  type: 'kill-player',
+                  cause: 'crushed',
+                });
               }
               newFallingBlocks.add(block);
             }
@@ -114,6 +122,40 @@ export class GravitySystem extends System {
     });
 
     this.fallingBlocks = newFallingBlocks;
+    this._applyActions(actions, terrain);
+  }
+
+  /**
+   * Apply queued gravity actions after iteration completes.
+   * @param {Array<object>} actions
+   * @param {TerrainSystem} terrain
+   * @private
+   */
+  _applyActions(actions, terrain) {
+    if (!actions || actions.length === 0) {
+      return;
+    }
+
+    actions.forEach((action) => {
+      switch (action.type) {
+        case 'move-block': {
+          const { block, from, to } = action;
+          terrain.setBlock(from.gridX, from.gridY, BlockFactory.createEmpty());
+          terrain.setBlock(to.gridX, to.gridY, block);
+          eventBus.emit('block:landed', {
+            block,
+            position: { gridX: to.gridX, gridY: to.gridY },
+          });
+          break;
+        }
+        case 'kill-player':
+          eventBus.emit('block:crushed-player', { cause: action.cause });
+          eventBus.emit('player:death', { cause: action.cause });
+          break;
+        default:
+          break;
+      }
+    });
   }
 
   /**
