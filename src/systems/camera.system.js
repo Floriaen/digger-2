@@ -42,8 +42,6 @@ export class CameraSystem extends System {
     }
 
     this.zoom = this.targetZoom;
-
-    this._clampToWorldInternal(this._getCanvas());
   }
 
   render() {
@@ -59,18 +57,16 @@ export class CameraSystem extends System {
   }
 
   applyTransform(ctx, canvas) {
-    if (!ctx) return;
-    const targetCanvas = canvas ?? ctx.canvas ?? this._getCanvas();
-    if (!targetCanvas) return;
+    if (!ctx || !canvas) return;
 
-    this.clampToWorld(targetCanvas);
+    this.clampToWorld(canvas);
     ctx.setTransform(
       this.zoom,
       0,
       0,
       this.zoom,
-      targetCanvas.width / 2 - this.x * this.zoom,
-      targetCanvas.height / 2 - this.y * this.zoom,
+      canvas.width / 2 - this.x * this.zoom,
+      canvas.height / 2 - this.y * this.zoom,
     );
   }
 
@@ -80,13 +76,22 @@ export class CameraSystem extends System {
   }
 
   clampToWorld(canvas) {
+    if (!canvas) return;
     this._clampToWorldInternal(canvas);
   }
 
   getViewBounds(canvas) {
-    const targetCanvas = canvas ?? this._getCanvas();
-    const canvasWidth = targetCanvas?.width ?? CANVAS_WIDTH;
-    const canvasHeight = targetCanvas?.height ?? CANVAS_HEIGHT;
+    if (!canvas) {
+      return {
+        left: this.x,
+        right: this.x,
+        top: this.y,
+        bottom: this.y,
+      };
+    }
+
+    const canvasWidth = canvas.width ?? CANVAS_WIDTH;
+    const canvasHeight = canvas.height ?? CANVAS_HEIGHT;
 
     const halfWidth = canvasWidth / (2 * this.zoom);
     const halfHeight = canvasHeight / (2 * this.zoom);
@@ -126,7 +131,6 @@ export class CameraSystem extends System {
   }
 
   _clampToWorldInternal(canvas) {
-    if (!canvas) return;
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) {
       return;
     }
@@ -141,9 +145,5 @@ export class CameraSystem extends System {
 
     this.x = Math.min(Math.max(this.x, minX), maxX);
     this.y = Math.min(Math.max(this.y, minY), maxY);
-  }
-
-  _getCanvas() {
-    return this.game?.canvas ?? null;
   }
 }
