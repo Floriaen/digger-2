@@ -37,6 +37,9 @@ export class Game {
 
     // Shared render queue prototype for layer-based rendering.
     this.renderQueue = new RenderQueue();
+
+    // Viewport (set by main.js after initialization)
+    this.viewport = null;
   }
 
   /**
@@ -114,28 +117,12 @@ export class Game {
     // Performance: Start render timing
     this.performanceMonitor.startMark('render');
 
-    // Get camera and player for zoom
+    // Get camera for transform
     const camera = this.components.find((c) => c.constructor.name === 'CameraSystem');
-    const player = this.components.find((c) => c.constructor.name === 'PlayerSystem');
-    const zoom = camera ? camera.getTransform().zoom : 1.0;
 
-    // STRATEGY 1: Apply zoom BEFORE rendering (current approach)
     this.ctx.save();
-    if (camera && player) {
-      const transform = camera.getTransform();
-      // Player's screen position (rounded to prevent sub-pixel gaps)
-      const playerScreenX = Math.round(player.x + transform.x);
-      const playerScreenY = Math.round(player.y + transform.y);
-      // Zoom around player position
-      this.ctx.translate(playerScreenX, playerScreenY);
-      this.ctx.scale(zoom, zoom);
-      this.ctx.translate(-playerScreenX, -playerScreenY);
-    } else {
-      // Fallback to center zoom
-      const { width, height } = this.canvas;
-      this.ctx.translate(width / 2, height / 2);
-      this.ctx.scale(zoom, zoom);
-      this.ctx.translate(-width / 2, -height / 2);
+    if (camera && this.viewport) {
+      this.viewport.applyTransform(this.ctx, camera);
     }
 
     // Render all components (always render, even when paused)
@@ -145,7 +132,6 @@ export class Game {
       }
     });
 
-    // Restore context
     this.ctx.restore();
 
     // Render overlay last so it is not affected by zoom transforms

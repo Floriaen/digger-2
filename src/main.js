@@ -4,12 +4,16 @@
  */
 
 import { Game } from './core/game.js';
-import { updateCanvasDimensions } from './utils/config.js';
+import { Viewport } from './core/viewport.js';
+import {
+  updateCanvasDimensions,
+  WORLD_WIDTH_PX,
+  WORLD_HEIGHT_PX,
+} from './utils/config.js';
 import { BackgroundSystem } from './systems/background.system.js';
 import { TerrainSystem } from './systems/terrain.system.js';
 import { PlayerSystem } from './systems/player.system.js';
 import { ShadowSystem } from './systems/shadow.system.js';
-// import { GridOverlaySystem } from './systems/grid-overlay.system.js';
 import { NavigationSystem } from './systems/navigation.system.js';
 import { DigIndicatorSystem } from './systems/dig-indicator.system.js';
 import { CameraSystem } from './systems/camera.system.js';
@@ -66,12 +70,9 @@ function resizeCanvas(canvas, game) {
   canvas.height = height;
   updateCanvasDimensions(width, height);
 
-  // Update camera if it exists
-  if (game) {
-    const camera = game.components.find((c) => c.constructor.name === 'CameraSystem');
-    if (camera && camera.updateViewport) {
-      camera.updateViewport();
-    }
+  // Update viewport dimensions if it exists
+  if (game && game.viewport) {
+    game.viewport.updateDimensions(width, height);
   }
 }
 
@@ -110,6 +111,11 @@ function init() {
   // Create game instance
   const game = new Game(canvas);
 
+  // Create viewport for coordinate transformation
+  const viewport = new Viewport(width, height, WORLD_WIDTH_PX, WORLD_HEIGHT_PX);
+  // viewport.setTerrainY(200);  // 100px from top, or use a constant
+  game.viewport = viewport;
+
   // Initialize input system
   const inputSystem = new InputSystem();
   inputSystem.init();
@@ -120,19 +126,26 @@ function init() {
   game.addComponent(new TerrainSystem(game));
   game.addComponent(new NPCSystem(game));
   game.addComponent(new GravitySystem(game)); // Gravity system updates after terrain
-  // game.addComponent(new GridOverlaySystem(game)); // Grid overlay on blocks
   game.addComponent(new DigIndicatorSystem(game)); // Dig outline on top of terrain
   game.addComponent(new ShadowSystem(game)); // Shadow renders before player
   game.addComponent(new NavigationSystem(game));
   game.addComponent(new PlayerSystem(game));
   game.addComponent(new CoinEffectSystem(game));
-  game.addComponent(new CameraSystem(game));
+  // Start camera positioned to show mountains and sun (Y=110 is sun center)
+  game.addComponent(new CameraSystem(game, 256, 110, 3.0));
   game.addComponent(new HUDSystem(game));
   game.addComponent(new TouchInputSystem(game)); // Touch input for mobile
   game.addComponent(new DebugSystem(game));
 
   // Initialize game
   game.init();
+
+  // Set up camera to follow player after initialization
+  const camera = game.components.find((c) => c.constructor.name === 'CameraSystem');
+  const player = game.components.find((c) => c.constructor.name === 'PlayerSystem');
+  if (camera && player) {
+    camera.follow(player);
+  }
 
   // Subscribe to pause toggle event
   eventBus.on('input:pause-toggle', () => {

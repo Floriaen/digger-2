@@ -1,117 +1,107 @@
 /**
- * @file camera.component.js
- * @description Camera component - handles viewport tracking and smooth following
+ * @file camera.system.js
+ * @description Camera system - manages viewport transforms and smooth following
  */
 
 import { System } from '../core/system.js';
-import { CAMERA_LERP_FACTOR, CAMERA_OFFSET_Y, CANVAS_WIDTH } from '../utils/config.js';
 import { lerp } from '../utils/math.js';
+
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 3.0;
+const FOLLOW_LERP = 0.1;
 
 /**
  * CameraSystem
- * Manages viewport position and smooth player tracking
+ * Smoothly follows a target in world space.
+ * Viewport handles the actual canvas transform.
  */
 export class CameraSystem extends System {
-  init() {
-    // Initialize camera position centered on player immediately
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
-    if (player) {
-      // Floor the initial position to ensure pixel-perfect alignment from the start
-      this.x = Math.floor(CANVAS_WIDTH / 2 - player.x);
-      this.y = Math.floor(CAMERA_OFFSET_Y - player.y);
-    } else {
-      this.x = 0;
-      this.y = 0;
-    }
-    this.targetX = this.x;
-    this.targetY = this.y;
-    this.zoom = 3.0;
-    this.targetZoom = 3.0;
-    this.manualZoom = false; // Flag to disable auto-zoom when manually controlled
+  constructor(game, x = 0, y = 0, zoom = 3.0) {
+    super(game);
+
+    this.x = x; // Camera center X in world space
+    this.y = y; // Camera center Y in world space
+    this.zoom = zoom;
+
+    this.followTarget = null;
   }
 
   update(_deltaTime) {
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
-    if (!player) return;
+    if (this.followTarget) {
+      this.x = lerp(this.x, this.followTarget.x, FOLLOW_LERP);
+      this.y = lerp(this.y, this.followTarget.y, FOLLOW_LERP);
+    }
 
-    // Progressive zoom disabled - maintaining constant zoom of 3.0
-    // Only auto-adjust zoom if not manually controlled
-    // if (!this.manualZoom) {
-    //   // Smoothly increase zoom based on pixel depth (zoom IN as you dig deeper)
-    //   const playerDepthPixels = player.y;
-    //   const playerDepthTiles = playerDepthPixels / 16; // Convert pixels to tiles (smooth)
-    //   // Gradually zoom from 2.0 at depth 0 to 3.0 at depth 12+
-    //   const t = Math.min(playerDepthTiles / 12, 1.0); // Normalized depth (0 to 1)
-    //   // Ease-in curve: less zoom at beginning, more zoom at end
-    //   const eased = easeInQuad(t);
-    //   const rawZoom = 2.0 + eased * 1.0;
-    //   this.targetZoom = rawZoom;
-    // }
-
-    // Smooth zoom lerp (not needed when zoom is constant, but keeping for manual zoom)
-    this.zoom = lerp(this.zoom, this.targetZoom, 0.1);
-
-    // Target: center player horizontally, offset vertically
-    this.targetX = CANVAS_WIDTH / 2 - player.x;
-    this.targetY = CAMERA_OFFSET_Y - player.y;
-
-    // Dynamic lerp factor based on zoom (smoother at high zoom)
-    const zoomAdjustedLerp = CAMERA_LERP_FACTOR * Math.max(0.2, 1 / this.zoom);
-
-    // Smooth lerp
-    this.x = lerp(this.x, this.targetX, zoomAdjustedLerp);
-    this.y = lerp(this.y, this.targetY, zoomAdjustedLerp);
+    // Clamp camera to world bounds
+    if (this.game.viewport) {
+      this.clampToWorld(
+        this.game.viewport.worldWidth,
+        this.game.viewport.worldHeight,
+        this.game.viewport.canvasWidth,
+        this.game.viewport.canvasHeight,
+      );
+    }
   }
 
   render() {
-    // Camera doesn't render, it transforms context
+    // Camera does not render directly; it manipulates the context transform.
   }
 
   destroy() {
-    // Cleanup if needed
+    this.followTarget = null;
   }
 
-  /**
-   * Get camera transform for rendering
-   * @returns {{x: number, y: number, zoom: number}} Camera offset and zoom
-   */
-  getTransform() {
-    // Floor camera position for pixel alignment
-    // Snap zoom to nearest defined level to prevent flickering
-    const zoomLevels = [
-      1.0,
-      1.5,
-      2.0,
-      2.5,
-      3.0,
-      3.5,
-      4.0,
-      4.5,
-      5.0,
-      6.0,
-      7.0,
-      8.0,
-      9.0,
-      10.0,
-    ];
-    const finalZoom = zoomLevels.reduce((prev, curr) => {
-      const currentDiff = Math.abs(curr - this.zoom);
-      const previousDiff = Math.abs(prev - this.zoom);
-      return currentDiff < previousDiff ? curr : prev;
-    });
+  follow(target) {
+    this.followTarget = target;
+  }
+
+  clampToWorld(worldWidth, worldHeight, viewportWidth, viewportHeight) {
+    const halfWidth = viewportWidth / (2 * this.zoom);
+    const halfHeight = viewportHeight / (2 * this.zoom);
+
+    // When world is smaller than viewport, center the world
+    // When world is larger than viewport, clamp to edges
+    if (worldWidth <= viewportWidth / this.zoom) {
+      // World fits entirely in viewport - center it
+      this.x = worldWidth / 2;
+    } else {
+      // World larger than viewport - clamp to edges
+      this.x = Math.max(halfWidth, Math.min(this.x, worldWidth - halfWidth));
+    }
+
+    if (worldHeight <= viewportHeight / this.zoom) {
+      // World fits entirely in viewport - center it
+      this.y = worldHeight / 2;
+    } else {
+      // World larger than viewport - clamp to edges
+      this.y = Math.max(halfHeight, Math.min(this.y, worldHeight - halfHeight));
+    }
+  }
+
+  // external method
+  getViewBounds(canvas) {
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    const halfWidth = canvasWidth / (2 * this.zoom);
+    const halfHeight = canvasHeight / (2 * this.zoom);
 
     return {
-      x: Math.floor(this.x),
-      y: Math.floor(this.y),
-      zoom: finalZoom,
+      left: this.x - halfWidth,
+      right: this.x + halfWidth,
+      top: this.y - halfHeight,
+      bottom: this.y + halfHeight,
     };
   }
 
-  /**
-   * Set zoom level
-   * @param {number} zoom - Target zoom level
-   */
   setZoom(zoom) {
-    this.targetZoom = zoom;
+    this.zoom = this._clampZoom(zoom);
+  }
+
+  _clampZoom(zoom) {
+    if (!Number.isFinite(zoom)) {
+      return this.zoom;
+    }
+    return Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM);
   }
 }

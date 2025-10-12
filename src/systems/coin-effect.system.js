@@ -55,11 +55,9 @@ export class CoinEffectSystem extends System {
     if (!this.effects.length) return;
 
     const terrain = this._getTerrain();
-    const camera = this._getCamera();
 
     if (!terrain || !terrain.spriteSheet) return;
 
-    const transform = camera ? camera.getTransform() : { x: 0, y: 0 };
     const texture = terrain.spriteSheet;
 
     for (let i = 0; i < this.effects.length; i += 1) {
@@ -79,8 +77,8 @@ export class CoinEffectSystem extends System {
         render.spriteY,
         render.spriteWidth,
         render.spriteHeight,
-        state.worldX + transform.x,
-        state.worldY + transform.y,
+        state.worldX,
+        state.worldY,
         render.spriteWidth,
         render.spriteHeight,
       );
@@ -165,14 +163,5 @@ export class CoinEffectSystem extends System {
       );
     }
     return this.cachedTerrain;
-  }
-
-  _getCamera() {
-    if (!this.cachedCamera || !this.game.components.includes(this.cachedCamera)) {
-      this.cachedCamera = this.game.components.find(
-        (c) => c.constructor.name === 'CameraSystem',
-      );
-    }
-    return this.cachedCamera;
   }
 }

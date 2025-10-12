@@ -37,6 +37,10 @@ export const CHUNK_CACHE_LIMIT = 10; // Max cached chunks
 export const WORLD_WIDTH_CHUNKS = 1;
 export const WORLD_HEIGHT_CHUNKS = 5;
 
+// World dimensions (pixels)
+export const WORLD_WIDTH_PX = WORLD_WIDTH_CHUNKS * CHUNK_SIZE * TILE_WIDTH;
+export const WORLD_HEIGHT_PX = WORLD_HEIGHT_CHUNKS * CHUNK_SIZE * TILE_HEIGHT;
+
 // Lava configuration (distance from bottom of the world in chunks)
 export const LAVA_SURFACE_OFFSET_CHUNKS = 4;
 
@@ -44,8 +48,6 @@ export const LAVA_SURFACE_OFFSET_CHUNKS = 4;
 export const GRAVITY = 0.5;
 export const FALL_SPEED_MAX = 10;
 
-// Camera
-export const CAMERA_LERP_FACTOR = 0.1;
 export const CAMERA_OFFSET_Y = 200; // Player offset from top
 
 // Debug

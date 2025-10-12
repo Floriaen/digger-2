@@ -147,7 +147,7 @@ export class PlayerSystem extends System {
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
     if (!camera) return;
 
-    const transform = camera.getTransform();
+    const viewBounds = camera.getViewBounds(ctx.canvas);
 
     // Check if there's a block above that should occlude the player
     const blockAbove = terrain ? terrain.getBlock(this.gridX, this.gridY - 1) : null;
@@ -159,15 +159,20 @@ export class PlayerSystem extends System {
     if (shouldClip) {
       // Clip the player to only render below the block above
       // Block above starts at (gridY - 1) * 16, cap extends 9px up, so block bottom is at gridY * 16
-      const clipTop = this.gridY * 16 + transform.y;
+      const clipTop = this.gridY * 16;
       ctx.beginPath();
-      ctx.rect(0, clipTop, ctx.canvas.width, ctx.canvas.height - clipTop);
+      ctx.rect(
+        viewBounds.left,
+        clipTop,
+        viewBounds.right - viewBounds.left,
+        viewBounds.bottom - clipTop,
+      );
       ctx.clip();
     }
 
     // Draw Pac-Man style ball
-    const centerX = this.x + transform.x;
-    const centerY = this.y - 5 + transform.y; // -5 for 3D Fake
+    const centerX = this.x;
+    const centerY = this.y - 5; // -5 for 3D Fake
 
     ctx.fillStyle = '#E53935';
 

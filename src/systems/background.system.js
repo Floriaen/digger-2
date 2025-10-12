@@ -4,7 +4,14 @@
  */
 
 import { System } from '../core/system.js';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
+import { WORLD_WIDTH_PX } from '../utils/config.js';
+
+const SKY_HEIGHT = 300;
+const SUN_RADIUS = 80;
+const SUN_VERTICAL_OFFSET = -70;
+const MOUNTAIN_BASE_Y = 180;
+const MOUNTAIN_HEIGHT = 40;
+const MOUNTAIN_PEAK_OFFSET = 78;
 
 /**
  * BackgroundComponent
@@ -12,9 +19,10 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/config.js';
  */
 export class BackgroundSystem extends System {
   init() {
-    this.sunX = null; // Sun X position (set from player's initial position)
-    this.sunY = null; // Sun Y position (set from player's initial position)
-    this.mountainWorldY = null; // Mountain Y position in world space (set once, like sun)
+    this.x = WORLD_WIDTH_PX / 2;
+    this.y = MOUNTAIN_BASE_Y;
+    this.sunRadius = SUN_RADIUS;
+    this.sunOffsetY = SUN_VERTICAL_OFFSET;
   }
 
   update() {
@@ -25,39 +33,36 @@ export class BackgroundSystem extends System {
     const camera = this.game.components.find((c) => c.constructor.name === 'CameraSystem');
     if (!camera) return;
 
-    const transform = camera.getTransform();
+    const viewBounds = camera.getViewBounds(ctx.canvas);
+    const viewWidth = viewBounds.right - viewBounds.left;
+    const skyTop = this.y - SKY_HEIGHT;
 
     // Sky - solid orange (Chess Pursuit palette)
     ctx.fillStyle = '#FF8601';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.fillRect(viewBounds.left, skyTop, viewWidth, SKY_HEIGHT);
 
-    // Sun and mountains: both fixed at initial world position (like sun)
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
-    if (player) {
-      // Set sun and mountain positions once from player's initial position
-      if (this.sunX === null || this.sunY === null) {
-        this.sunX = player.x;
-        this.sunY = player.y;
-        this.mountainWorldY = 120; // Mountain horizon at fixed world Y
-      }
+    // Sun circle, fixed position in world
+    const sunX = this.x;
+    const sunY = this.y + this.sunOffsetY;
 
-      // Sun circle, fixed position in world
-      const sunScreenX = this.sunX + transform.x;
-      const sunScreenY = this.sunY + transform.y;
-      ctx.fillStyle = '#FFE7CA';
-      ctx.beginPath();
-      ctx.arc(sunScreenX, sunScreenY, 80, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.fillStyle = '#FFE7CA';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, this.sunRadius, 0, Math.PI * 2);
+    ctx.fill();
 
     // Mountains: fixed world Y (like sun), rendered same way
-    this._drawMountains(ctx, transform);
+    this._drawMountains(ctx, viewBounds);
 
     // Dark underground below mountains
-    const mountainScreenY = this.mountainWorldY + transform.y;
-    if (mountainScreenY < CANVAS_HEIGHT) {
+    const mountainScreenY = this.y;
+    if (mountainScreenY < viewBounds.bottom) {
       ctx.fillStyle = '#202020';
-      ctx.fillRect(0, mountainScreenY - 1, CANVAS_WIDTH, CANVAS_HEIGHT - mountainScreenY); // -1 to avoid any light gap
+      ctx.fillRect(
+        viewBounds.left,
+        mountainScreenY - 1,
+        viewWidth,
+        viewBounds.bottom - mountainScreenY,
+      ); // -1 to avoid any light gap
     }
   }
 
@@ -66,20 +71,19 @@ export class BackgroundSystem extends System {
    * Code adapted from @saturnyn's Chess Pursuit (js13kGames 2015)
    * https://js13kgames.com/2015/games/chesspursuit
    * @param {CanvasRenderingContext2D} ctx
-   * @param {{x: number, y: number}} transform - Camera transform
+   * @param {{left: number, right: number, top: number, bottom: number}} viewBounds - Visible region
    * @private
    */
-  _drawMountains(ctx, transform) {
-    if (this.mountainWorldY === null) return;
-
-    // Mountain horizon in screen space (world Y + camera transform, just like sun)
-    const horizonScreenY = this.mountainWorldY + transform.y;
+  _drawMountains(ctx, viewBounds) {
+    // Mountain horizon in world space (fixed relative to terrain)
+    const horizonWorldY = this.y;
+    const viewWidth = viewBounds.right - viewBounds.left;
 
     ctx.save();
     ctx.beginPath();
     ctx.fillStyle = '#202020';
 
-    const mountainMaxHeight = 40;
+    const mountainMaxHeight = MOUNTAIN_HEIGHT;
     const points = [
       0, 0.7,
       0.1, 0.3,
@@ -96,16 +100,16 @@ export class BackgroundSystem extends System {
 
     // Draw mountain silhouette spanning screen width
     for (let i = 0; i < points.length; i += 2) {
-      const x = points[i] * CANVAS_WIDTH + transform.x; // Full screen width (0 to CANVAS_WIDTH)
-      const y = horizonScreenY - (mountainMaxHeight * points[i + 1]) - 78;
+      const x = viewBounds.left + points[i] * viewWidth;
+      const y = horizonWorldY - (mountainMaxHeight * points[i + 1]) - MOUNTAIN_PEAK_OFFSET;
       if (i === 0) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
       }
     }
-    ctx.lineTo(CANVAS_WIDTH, horizonScreenY);
-    ctx.lineTo(0, horizonScreenY);
+    ctx.lineTo(viewBounds.right, horizonWorldY);
+    ctx.lineTo(viewBounds.left, horizonWorldY);
     ctx.fill();
     ctx.restore();
   }
@@ -113,23 +117,24 @@ export class BackgroundSystem extends System {
   /**
    * Draw green surface strip
    * @param {CanvasRenderingContext2D} ctx
-   * @param {{x: number, y: number}} transform - Camera transform
+   * @param {{left: number, right: number, top: number, bottom: number}} viewBounds - Visible region
    * @private
    */
-  _drawSurface(ctx, transform) {
-    const screenY = this.surfaceY + transform.y;
+  _drawSurface(ctx, viewBounds) {
+    const screenY = this.surfaceY;
+    const width = viewBounds.right - viewBounds.left;
 
     // Light green top
     ctx.fillStyle = '#7CB342';
-    ctx.fillRect(0, screenY, CANVAS_WIDTH, 8);
+    ctx.fillRect(viewBounds.left, screenY, width, 8);
 
     // Darker mid
     ctx.fillStyle = '#558B2F';
-    ctx.fillRect(0, screenY + 8, CANVAS_WIDTH, 6);
+    ctx.fillRect(viewBounds.left, screenY + 8, width, 6);
 
     // Shadow line
     ctx.fillStyle = '#33691E';
-    ctx.fillRect(0, screenY + 14, CANVAS_WIDTH, 2);
+    ctx.fillRect(viewBounds.left, screenY + 14, width, 2);
   }
 
   destroy() {

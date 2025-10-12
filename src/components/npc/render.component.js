@@ -34,12 +34,6 @@ function ensureSpriteSheetLoaded() {
     });
 }
 
-function getCamera(game) {
-  return game.components.find(
-    (component) => component.constructor.name === 'CameraSystem',
-  ) || null;
-}
-
 export class RenderComponent extends Component {
   init(_entity, context) {
     ensureSpriteSheetLoaded();
@@ -51,21 +45,15 @@ export class RenderComponent extends Component {
       return;
     }
 
-    const camera = getCamera(this.game);
-    if (!camera) {
-      return;
-    }
-
     const position = entity.get(PositionComponent);
     const state = entity.get(StateComponent);
     if (!position || !state) {
       return;
     }
 
-    const transform = camera.getTransform();
-    const screenX = Math.floor(position.x + transform.x);
+    const worldX = Math.floor(position.x);
     const baseY = position.y + (TILE_HEIGHT - SPRITE.height);
-    const screenY = Math.floor(baseY + transform.y);
+    const worldY = Math.floor(baseY);
 
     ctx.save();
 
@@ -77,8 +65,8 @@ export class RenderComponent extends Component {
         SPRITE.y,
         SPRITE.width,
         SPRITE.height,
-        -screenX - SPRITE.width,
-        screenY,
+        -worldX - SPRITE.width,
+        worldY,
         SPRITE.width,
         SPRITE.height,
       );
@@ -89,8 +77,8 @@ export class RenderComponent extends Component {
         SPRITE.y,
         SPRITE.width,
         SPRITE.height,
-        screenX,
-        screenY,
+        worldX,
+        worldY,
         SPRITE.width,
         SPRITE.height,
       );
