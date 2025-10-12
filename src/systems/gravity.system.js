@@ -150,7 +150,6 @@ export class GravitySystem extends System {
         }
         case 'kill-player':
           eventBus.emit('block:crushed-player', { cause: action.cause });
-          eventBus.emit('player:death', { cause: action.cause });
           break;
         default:
           break;

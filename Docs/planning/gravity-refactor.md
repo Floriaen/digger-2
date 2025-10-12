@@ -34,7 +34,7 @@ Establish a consistent falling pipeline so blocks, NPCs, and the player share on
 ## Phase 3 – Integrate and Verify
 - Update terrain, player, and NPC systems to consume the queued actions or events.
   - Terrain applies `move`/`destroy` operations after gravity runs.
-  - Player listens for `block:crushed-player` and executes death logic (single handler path).
+  - Player listens for `block:crushed-player` and emits `player:death` through its existing handler.
 - Remove legacy gravity hooks and dead code related to the previous implicit API.
   - Delete fallback code in components that attempted to guess ownership.
   - Remove gravity-specific code paths from player updates now handled centrally.

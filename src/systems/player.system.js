@@ -85,6 +85,11 @@ export class PlayerSystem extends System {
     this.unsubscribeDeath = eventBus.on('player:death', () => {
       this.dead = true;
     });
+    this.unsubscribeCrushed = eventBus.on('block:crushed-player', ({ cause }) => {
+      if (!this.dead) {
+        eventBus.emit('player:death', { cause });
+      }
+    });
     this.unsubscribeRestart = eventBus.on('player:restart', () => {
       this.resetToSpawn();
     });
@@ -238,6 +243,7 @@ export class PlayerSystem extends System {
     this.unsubscribeRight();
     this.unsubscribeDown();
     this.unsubscribeDeath();
+    this.unsubscribeCrushed();
     this.unsubscribeRestart();
   }
 
