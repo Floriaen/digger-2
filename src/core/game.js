@@ -37,6 +37,9 @@ export class Game {
 
     // Shared render queue prototype for layer-based rendering.
     this.renderQueue = new RenderQueue();
+
+    // Viewport (set by main.js after initialization)
+    this.viewport = null;
   }
 
   /**
@@ -122,8 +125,8 @@ export class Game {
     }
 
     this.ctx.save();
-    if (camera) {
-      camera.applyTransform(this.ctx, this.canvas);
+    if (camera && this.viewport) {
+      this.viewport.applyTransform(this.ctx, camera);
     }
 
     // Render all components (always render, even when paused)
@@ -133,9 +136,6 @@ export class Game {
       }
     });
 
-    if (camera) {
-      camera.resetTransform(this.ctx);
-    }
     this.ctx.restore();
 
     // Render overlay last so it is not affected by zoom transforms

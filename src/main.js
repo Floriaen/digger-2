@@ -4,6 +4,7 @@
  */
 
 import { Game } from './core/game.js';
+import { Viewport } from './core/viewport.js';
 import {
   updateCanvasDimensions,
   WORLD_WIDTH_PX,
@@ -69,12 +70,9 @@ function resizeCanvas(canvas, game) {
   canvas.height = height;
   updateCanvasDimensions(width, height);
 
-  // Update camera if it exists
-  if (game) {
-    const camera = game.components.find((c) => c.constructor.name === 'CameraSystem');
-    if (camera && camera.updateViewport) {
-      camera.updateViewport();
-    }
+  // Update viewport dimensions if it exists
+  if (game && game.viewport) {
+    game.viewport.updateDimensions(width, height);
   }
 }
 
@@ -113,6 +111,10 @@ function init() {
   // Create game instance
   const game = new Game(canvas);
 
+  // Create viewport for coordinate transformation
+  const viewport = new Viewport(width, height, WORLD_WIDTH_PX, WORLD_HEIGHT_PX);
+  game.viewport = viewport;
+
   // Initialize input system
   const inputSystem = new InputSystem();
   inputSystem.init();
@@ -128,7 +130,7 @@ function init() {
   game.addComponent(new NavigationSystem(game));
   game.addComponent(new PlayerSystem(game));
   game.addComponent(new CoinEffectSystem(game));
-  game.addComponent(new CameraSystem(game, 0, 0, 3.0, WORLD_WIDTH_PX, WORLD_HEIGHT_PX));
+  game.addComponent(new CameraSystem(game, 0, 0, 3.0));
   game.addComponent(new HUDSystem(game));
   game.addComponent(new TouchInputSystem(game)); // Touch input for mobile
   game.addComponent(new DebugSystem(game));

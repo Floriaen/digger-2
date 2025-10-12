@@ -12,10 +12,11 @@ const FOLLOW_LERP = 0.1;
 
 /**
  * CameraSystem
- * Smoothly follows a target and applies canvas transforms.
+ * Smoothly follows a target in world space.
+ * Viewport handles the actual canvas transform.
  */
 export class CameraSystem extends System {
-  constructor(game, x = 0, y = 0, zoom = 3.0, worldWidth, worldHeight) {
+  constructor(game, x = 0, y = 0, zoom = 3.0) {
     super(game);
 
     this.x = x; // Camera center X in world space
@@ -23,9 +24,6 @@ export class CameraSystem extends System {
     this.zoom = zoom;
 
     this.followTarget = null;
-
-    this.worldWidth = worldWidth;
-    this.worldHeight = worldHeight;
   }
 
   update(_deltaTime) {
@@ -47,28 +45,12 @@ export class CameraSystem extends System {
     this.followTarget = target;
   }
 
-  applyTransform(ctx, canvas) {
-    this.clampToWorld(canvas);
-    ctx.setTransform(
-      this.zoom,
-      0,
-      0,
-      this.zoom,
-      canvas.width / 2 - this.x * this.zoom,
-      canvas.height / 2 - this.y * this.zoom,
-    );
-  }
+  clampToWorld(worldWidth, worldHeight, viewportWidth, viewportHeight) {
+    const halfWidth = viewportWidth / (2 * this.zoom);
+    const halfHeight = viewportHeight / (2 * this.zoom);
 
-  resetTransform(ctx) {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  }
-
-  clampToWorld(canvas) {
-    const halfWidth = canvas.width / (2 * this.zoom);
-    const halfHeight = canvas.height / (2 * this.zoom);
-
-    this.x = Math.max(halfWidth, Math.min(this.x, this.worldWidth - halfWidth));
-    this.y = Math.max(halfHeight, Math.min(this.y, this.worldHeight - halfHeight));
+    this.x = Math.max(halfWidth, Math.min(this.x, worldWidth - halfWidth));
+    this.y = Math.max(halfHeight, Math.min(this.y, worldHeight - halfHeight));
   }
 
   // external method
