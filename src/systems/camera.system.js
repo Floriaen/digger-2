@@ -31,6 +31,16 @@ export class CameraSystem extends System {
       this.x = lerp(this.x, this.followTarget.x, FOLLOW_LERP);
       this.y = lerp(this.y, this.followTarget.y, FOLLOW_LERP);
     }
+
+    // Clamp camera to world bounds
+    if (this.game.viewport) {
+      this.clampToWorld(
+        this.game.viewport.worldWidth,
+        this.game.viewport.worldHeight,
+        this.game.viewport.canvasWidth,
+        this.game.viewport.canvasHeight,
+      );
+    }
   }
 
   render() {
@@ -49,8 +59,23 @@ export class CameraSystem extends System {
     const halfWidth = viewportWidth / (2 * this.zoom);
     const halfHeight = viewportHeight / (2 * this.zoom);
 
-    this.x = Math.max(halfWidth, Math.min(this.x, worldWidth - halfWidth));
-    this.y = Math.max(halfHeight, Math.min(this.y, worldHeight - halfHeight));
+    // When world is smaller than viewport, center the world
+    // When world is larger than viewport, clamp to edges
+    if (worldWidth <= viewportWidth / this.zoom) {
+      // World fits entirely in viewport - center it
+      this.x = worldWidth / 2;
+    } else {
+      // World larger than viewport - clamp to edges
+      this.x = Math.max(halfWidth, Math.min(this.x, worldWidth - halfWidth));
+    }
+
+    if (worldHeight <= viewportHeight / this.zoom) {
+      // World fits entirely in viewport - center it
+      this.y = worldHeight / 2;
+    } else {
+      // World larger than viewport - clamp to edges
+      this.y = Math.max(halfHeight, Math.min(this.y, worldHeight - halfHeight));
+    }
   }
 
   // external method
