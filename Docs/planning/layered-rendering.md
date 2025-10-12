@@ -27,7 +27,7 @@
 4. **System Responsibilities**:
    - `TerrainComponent`: iterates blocks, queues base and overlay commands (no direct drawing). Calculates `depth = worldY * TILE_HEIGHT + layer.offsetDepth` to maintain bottom-to-top order.
    - Camera-aware systems pass camera offsets when computing `destX/destY` so cross-chunk draws remain stable during scrolling.
-   - `BackgroundComponent`, `GridOverlayComponent`, HUD, etc., push their visuals to the queue using appropriate layers.
+   - `BackgroundComponent`, HUD, etc., push their visuals to the queue using appropriate layers.
    - Potential entity systems (player, falling rocks) queue into `ENTITIES`.
 5. **Flush Sequence**:
    - At the end of the frame, a central renderer (e.g., `RenderQueue.flush`) walks layers in enum order, sorts by depth, and draws.
@@ -38,7 +38,7 @@
    - Replace immediate draw calls with queueing base and overlay instructions.
    - Move darkening/dig shading into queue using the `type: "fill-rect"` command path (or similar) for semi-transparent primitives.
 3. **Component Adoption**:
-   - Update systems (`BackgroundComponent`, `GridOverlayComponent`, HUD) to use the queue.
+   - Update systems (`BackgroundComponent`, HUD) to use the queue.
    - Ensure existing offsets and alpha handling carry over without visual regression.
 4. **Testing**:
    - Visual regression pass on chunk boundaries, digging, darkness overlays.

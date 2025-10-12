@@ -6,11 +6,8 @@
 import { Game } from './core/game.js';
 import {
   updateCanvasDimensions,
-  WORLD_WIDTH_CHUNKS,
-  WORLD_HEIGHT_CHUNKS,
-  CHUNK_SIZE,
-  TILE_WIDTH,
-  TILE_HEIGHT,
+  WORLD_WIDTH_PX,
+  WORLD_HEIGHT_PX,
 } from './utils/config.js';
 import { BackgroundSystem } from './systems/background.system.js';
 import { TerrainSystem } from './systems/terrain.system.js';
@@ -131,9 +128,7 @@ function init() {
   game.addComponent(new NavigationSystem(game));
   game.addComponent(new PlayerSystem(game));
   game.addComponent(new CoinEffectSystem(game));
-  const worldWidthPixels = WORLD_WIDTH_CHUNKS * CHUNK_SIZE * TILE_WIDTH;
-  const worldHeightPixels = WORLD_HEIGHT_CHUNKS * CHUNK_SIZE * TILE_HEIGHT;
-  game.addComponent(new CameraSystem(game, 0, 0, 3.0, worldWidthPixels, worldHeightPixels));
+  game.addComponent(new CameraSystem(game, 0, 0, 3.0, WORLD_WIDTH_PX, WORLD_HEIGHT_PX));
   game.addComponent(new HUDSystem(game));
   game.addComponent(new TouchInputSystem(game)); // Touch input for mobile
   game.addComponent(new DebugSystem(game));
