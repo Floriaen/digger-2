@@ -30,7 +30,6 @@ export class Game {
     this.lastTime = 0;
     this.deltaTime = 0;
     this.frameInterval = 1000 / TARGET_FPS;
-    this.zoomAfterRendering = false; // Toggle for testing zoom strategies
 
     // Performance monitoring
     this.performanceMonitor = new PerformanceMonitor();
@@ -120,72 +119,34 @@ export class Game {
     const player = this.components.find((c) => c.constructor.name === 'PlayerSystem');
     const zoom = camera ? camera.getTransform().zoom : 1.0;
 
-    if (this.zoomAfterRendering) {
-      // STRATEGY 2: Render at 1:1 to temp canvas, then zoom
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = this.canvas.width;
-      tempCanvas.height = this.canvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      tempCtx.imageSmoothingEnabled = false;
-      tempCtx.mozImageSmoothingEnabled = false;
-      tempCtx.webkitImageSmoothingEnabled = false;
-      tempCtx.msImageSmoothingEnabled = false;
-
-      // Render all components EXCEPT debug to temp canvas at 1:1 (no zoom)
-      this.components.forEach((component) => {
-        if (component.render && component.constructor.name !== 'DebugComponent') {
-          component.render(tempCtx);
-        }
-      });
-
-      // Now zoom and draw the entire rendered image to main canvas
-      this.ctx.save();
-      if (camera && player) {
-        const transform = camera.getTransform();
-        const playerScreenX = Math.round(player.x + transform.x);
-        const playerScreenY = Math.round(player.y + transform.y);
-        this.ctx.translate(playerScreenX, playerScreenY);
-        this.ctx.scale(zoom, zoom);
-        this.ctx.translate(-playerScreenX, -playerScreenY);
-      }
-      this.ctx.drawImage(tempCanvas, 0, 0);
-      this.ctx.restore();
-
-      // Render debug system separately (not zoomed)
-      const debugSystem = this.components.find((c) => c.constructor.name === 'DebugSystem');
-      if (debugSystem && debugSystem.render) {
-        debugSystem.render(this.ctx);
-      }
+    // STRATEGY 1: Apply zoom BEFORE rendering (current approach)
+    this.ctx.save();
+    if (camera && player) {
+      const transform = camera.getTransform();
+      // Player's screen position (rounded to prevent sub-pixel gaps)
+      const playerScreenX = Math.round(player.x + transform.x);
+      const playerScreenY = Math.round(player.y + transform.y);
+      // Zoom around player position
+      this.ctx.translate(playerScreenX, playerScreenY);
+      this.ctx.scale(zoom, zoom);
+      this.ctx.translate(-playerScreenX, -playerScreenY);
     } else {
-      // STRATEGY 1: Apply zoom BEFORE rendering (current approach)
-      this.ctx.save();
-      if (camera && player) {
-        const transform = camera.getTransform();
-        // Player's screen position (rounded to prevent sub-pixel gaps)
-        const playerScreenX = Math.round(player.x + transform.x);
-        const playerScreenY = Math.round(player.y + transform.y);
-        // Zoom around player position
-        this.ctx.translate(playerScreenX, playerScreenY);
-        this.ctx.scale(zoom, zoom);
-        this.ctx.translate(-playerScreenX, -playerScreenY);
-      } else {
-        // Fallback to center zoom
-        const { width, height } = this.canvas;
-        this.ctx.translate(width / 2, height / 2);
-        this.ctx.scale(zoom, zoom);
-        this.ctx.translate(-width / 2, -height / 2);
-      }
-
-      // Render all components (always render, even when paused)
-      this.components.forEach((component) => {
-        if (component.render) {
-          component.render(this.ctx);
-        }
-      });
-
-      // Restore context
-      this.ctx.restore();
+      // Fallback to center zoom
+      const { width, height } = this.canvas;
+      this.ctx.translate(width / 2, height / 2);
+      this.ctx.scale(zoom, zoom);
+      this.ctx.translate(-width / 2, -height / 2);
     }
+
+    // Render all components (always render, even when paused)
+    this.components.forEach((component) => {
+      if (component.render) {
+        component.render(this.ctx);
+      }
+    });
+
+    // Restore context
+    this.ctx.restore();
 
     // Render overlay last so it is not affected by zoom transforms
     if (this.overlay) {

@@ -77,32 +77,28 @@ export class CameraSystem extends System {
    */
   getTransform() {
     // Floor camera position for pixel alignment
-    // Snap zoom to nearest defined level to prevent flickering (only when using zoom-before strategy)
-    let finalZoom = this.zoom;
-
-    if (!this.game.zoomAfterRendering) {
-      const zoomLevels = [
-        1.0,
-        1.5,
-        2.0,
-        2.5,
-        3.0,
-        3.5,
-        4.0,
-        4.5,
-        5.0,
-        6.0,
-        7.0,
-        8.0,
-        9.0,
-        10.0,
-      ];
-      finalZoom = zoomLevels.reduce((prev, curr) => {
-        const currentDiff = Math.abs(curr - this.zoom);
-        const previousDiff = Math.abs(prev - this.zoom);
-        return currentDiff < previousDiff ? curr : prev;
-      });
-    }
+    // Snap zoom to nearest defined level to prevent flickering
+    const zoomLevels = [
+      1.0,
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      4.0,
+      4.5,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+    ];
+    const finalZoom = zoomLevels.reduce((prev, curr) => {
+      const currentDiff = Math.abs(curr - this.zoom);
+      const previousDiff = Math.abs(prev - this.zoom);
+      return currentDiff < previousDiff ? curr : prev;
+    });
 
     return {
       x: Math.floor(this.x),

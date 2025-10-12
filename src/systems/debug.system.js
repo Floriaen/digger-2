@@ -117,9 +117,6 @@ export class DebugSystem extends System {
         .listen(); // Update GUI when zoom changes programmatically
     }
 
-    // Zoom strategy toggle
-    debugFolder.add(this.game, 'zoomAfterRendering').name('Zoom After Rendering');
-
     debugFolder.open();
 
     // Performance monitoring
