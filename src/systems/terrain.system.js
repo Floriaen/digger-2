@@ -78,6 +78,7 @@ export class TerrainSystem extends System {
     const worldEndX = viewBounds.right;
     const worldStartY = viewBounds.top;
     const worldEndY = viewBounds.bottom;
+    const terrainOffsetY = 0;
 
     const minChunkX = 0;
     const maxChunkX = this.worldWidthChunks - 1;
@@ -86,8 +87,8 @@ export class TerrainSystem extends System {
 
     const startChunkX = Math.floor(worldStartX / (CHUNK_SIZE * TILE_WIDTH));
     const endChunkX = Math.floor(worldEndX / (CHUNK_SIZE * TILE_WIDTH));
-    const startChunkY = Math.floor(worldStartY / (CHUNK_SIZE * TILE_HEIGHT));
-    const endChunkY = Math.floor(worldEndY / (CHUNK_SIZE * TILE_HEIGHT));
+    const startChunkY = Math.floor((worldStartY - terrainOffsetY) / (CHUNK_SIZE * TILE_HEIGHT));
+    const endChunkY = Math.floor((worldEndY - terrainOffsetY) / (CHUNK_SIZE * TILE_HEIGHT));
 
     const clampedStartX = Math.max(minChunkX, startChunkX);
     const clampedEndX = Math.min(maxChunkX, endChunkX);
