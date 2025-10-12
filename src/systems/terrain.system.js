@@ -386,5 +386,4 @@ export class TerrainSystem extends System {
       && gridY >= 0
       && gridY < this.worldHeightTiles;
   }
-
 }

@@ -113,7 +113,7 @@ function init() {
 
   // Create viewport for coordinate transformation
   const viewport = new Viewport(width, height, WORLD_WIDTH_PX, WORLD_HEIGHT_PX);
-  //viewport.setTerrainY(200);  // 100px from top, or use a constant
+  // viewport.setTerrainY(200);  // 100px from top, or use a constant
   game.viewport = viewport;
 
   // Initialize input system
