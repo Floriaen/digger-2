@@ -9,6 +9,7 @@ import {
   updateCanvasDimensions,
   WORLD_WIDTH_PX,
   WORLD_HEIGHT_PX,
+  DEATH_OVERLAY_DELAY_MS,
 } from './utils/config.js';
 import { BackgroundSystem } from './systems/background.system.js';
 import { TerrainSystem } from './systems/terrain.system.js';
@@ -162,7 +163,7 @@ function init() {
 
   eventBus.on('player:death', ({ cause } = {}) => {
     const message = getDeathMessage(cause);
-    game.showOverlay('death', { message });
+    game.showOverlay('death', { message, delay: DEATH_OVERLAY_DELAY_MS });
   });
 
   // Hide loading screen

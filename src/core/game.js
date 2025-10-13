@@ -31,6 +31,10 @@ export class Game {
     this.deltaTime = 0;
     this.frameInterval = 1000 / TARGET_FPS;
 
+    // Death delay timer
+    this.deathTimer = null; // Tracks remaining delay time
+    this.pendingDeathOverlay = null; // Stores death overlay details during delay
+
     // Performance monitoring
     this.performanceMonitor = new PerformanceMonitor();
     this.memoryUpdateCounter = 0; // Update memory every 60 frames
@@ -94,6 +98,20 @@ export class Game {
 
     // Performance: Start update timing
     this.performanceMonitor.startMark('update');
+
+    // Tick death timer if active
+    if (this.deathTimer !== null) {
+      this.deathTimer -= this.deltaTime;
+      if (this.deathTimer <= 0) {
+        // Delay expired - show the overlay now
+        this.deathTimer = null;
+        if (this.pendingDeathOverlay) {
+          const { overrides } = this.pendingDeathOverlay;
+          this.pendingDeathOverlay = null;
+          this.showOverlay('death', overrides);
+        }
+      }
+    }
 
     // Update all components (skip if paused)
     if (!this.paused) {
@@ -215,9 +233,18 @@ export class Game {
   /**
    * Show modal overlay and pause the game
    * @param {'pause'|'death'} type
-   * @param {{title?: string, message?: string, instruction?: string}} overrides
+   * @param {{title?: string, message?: string, instruction?: string, delay?: number}} overrides
    */
   showOverlay(type, overrides = {}) {
+    const { delay, ...overlayOverrides } = overrides;
+
+    // If delay is specified, defer showing the overlay
+    if (delay !== undefined && delay > 0) {
+      this.deathTimer = delay;
+      this.pendingDeathOverlay = { type, overrides: overlayOverrides };
+      return;
+    }
+
     const presets = {
       pause: {
         title: 'PAUSED',
@@ -234,7 +261,7 @@ export class Game {
     this.overlay = {
       type,
       ...presets[type],
-      ...overrides,
+      ...overlayOverrides,
     };
     this.paused = true;
   }
