@@ -9,6 +9,8 @@ import {
   PLAYER_RADIUS,
   CHUNK_SIZE,
   WORLD_WIDTH_CHUNKS,
+  TILE_WIDTH,
+  TILE_HEIGHT,
 } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
@@ -28,13 +30,19 @@ const PLAYER_STATE = {
   DIGGING: 'digging',
   FALLING: 'falling',
   DIGGING_LATERAL: 'digging_lateral',
+  MOVING: 'moving',
 };
+const TIMER_UPDATE_EVENT = 'timer:update';
+const MS_PER_SECOND = 1000;
+const HORIZONTAL_MOVE_DURATION_MS = 120;
 
 /**
  * PlayerSystem
  * Manages player position, state, and digging behavior
  */
 export class PlayerSystem extends System {
+  static INITIAL_TIMER_SECONDS = 60;
+
   init() {
     // Determine world width (tiles) to center player horizontally
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
@@ -71,6 +79,20 @@ export class PlayerSystem extends System {
     this.requestedDirection = null; // Pending direction change request
     this.hasStarted = false; // Requires down arrow to start
     this.dead = false;
+    this.timerMs = 0;
+    this.lastTimerBroadcastSeconds = null;
+    this._resetTimer();
+    this.movement = {
+      active: false,
+      duration: HORIZONTAL_MOVE_DURATION_MS,
+      elapsed: 0,
+      startX: this.x,
+      startY: this.y,
+      targetX: this.x,
+      targetY: this.y,
+      targetGridX: this.gridX,
+      targetGridY: this.gridY,
+    };
 
     // Input subscription
     this.unsubscribeLeft = eventBus.on('input:move-left', () => this._requestDirection(-1, 0));
@@ -84,6 +106,9 @@ export class PlayerSystem extends System {
     });
     this.unsubscribeDeath = eventBus.on('player:death', () => {
       this.dead = true;
+      if (this.movement) {
+        this.movement.active = false;
+      }
     });
     this.unsubscribeCrushed = eventBus.on('block:crushed-player', ({ cause }) => {
       if (!this.dead) {
@@ -105,10 +130,26 @@ export class PlayerSystem extends System {
       return;
     }
 
-    // Wait for down arrow to start
+    // Wait for down arrow to start, but still allow gravity to pull us down
     if (!this.hasStarted) {
+      if (this._beginFallIfUnsupported(terrain)) {
+        return;
+      }
       this.state = PLAYER_STATE.IDLE;
       return;
+    }
+
+    this._tickTimer(deltaTime);
+    if (this.dead) {
+      this.state = PLAYER_STATE.IDLE;
+      return;
+    }
+
+    if (this.state === PLAYER_STATE.MOVING) {
+      const stillMoving = this._updateMovement(deltaTime);
+      if (stillMoving) {
+        return;
+      }
     }
 
     // Auto-dig timer
@@ -392,6 +433,9 @@ export class PlayerSystem extends System {
       this.currentDigTarget.hp = result.hp;
 
       if (result.destroyed) {
+        if (block.type === 'mud' && this.currentDigTarget) {
+          this._addTimerSeconds(this.currentDigTarget.maxHp);
+        }
         if (block.has(PauseOnDestroyComponent)) {
           this.game.pause();
         }
@@ -416,24 +460,45 @@ export class PlayerSystem extends System {
         }
 
         // Don't teleport the player - let gravity handle movement
+        const replacementBlock = terrain.getBlock(targetX, targetY);
+        const replacementPhysics = replacementBlock?.get(PhysicsComponent);
+        const canEnterReplacement = replacementPhysics ? !replacementPhysics.isCollidable() : true;
+
         if (dy > 0) {
           // Digging down - transition to falling state, let gravity move us
-          this.state = PLAYER_STATE.FALLING;
-          this.fallable.reset(); // Reset for new fall
+          if (canEnterReplacement) {
+            this.state = PLAYER_STATE.FALLING;
+            this.fallable.reset(); // Reset for new fall
+          } else if (replacementBlock?.has(DiggableComponent)) {
+            this.state = PLAYER_STATE.DIGGING;
+            this.digDirection = { dx, dy };
+            this.currentDigTarget = null;
+            this._digInDirection(terrain, dx, dy);
+          } else {
+            this.state = PLAYER_STATE.IDLE;
+            this.digDirection = { dx: 0, dy: 1 };
+            this._beginFallIfUnsupported(terrain);
+          }
         } else if (dx !== 0) {
           // Lateral digging - move horizontally only
-          this.gridX = targetX;
-          this.x = this.gridX * 16 + 8;
-          // Keep same Y position, check if we should fall on next update
-          this.state = PLAYER_STATE.IDLE;
+          if (canEnterReplacement) {
+            this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
+          } else if (replacementBlock?.has(DiggableComponent)) {
+            this.state = PLAYER_STATE.DIGGING_LATERAL;
+            this.digDirection = { dx, dy };
+            this.currentDigTarget = null;
+            this._digInDirection(terrain, dx, dy);
+          } else {
+            this.state = PLAYER_STATE.IDLE;
+            this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+            this._beginFallIfUnsupported(terrain);
+          }
         } else if (dx === 0 && dy === 0) {
           // Dug block at our position - just go idle, gravity will take over
           this.state = PLAYER_STATE.IDLE;
           this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+          this._beginFallIfUnsupported(terrain);
         }
-
-        // After removing a block, ensure we fall if the support is gone
-        this._beginFallIfUnsupported(terrain);
       }
     }
   }
@@ -454,6 +519,16 @@ export class PlayerSystem extends System {
     this.hasStarted = false;
     this.dead = false;
     this.fallable.reset();
+    this._resetTimer();
+    this.movement.active = false;
+    this.movement.elapsed = 0;
+    this.movement.targetGridX = this.gridX;
+    this.movement.targetGridY = this.gridY;
+    this.movement.startX = this.x;
+    this.movement.startY = this.y;
+    this.movement.targetX = this.x;
+    this.movement.targetY = this.y;
+    this.movement.duration = HORIZONTAL_MOVE_DURATION_MS;
   }
 
   /**
@@ -500,6 +575,96 @@ export class PlayerSystem extends System {
     this.fallable.reset();
     this.currentDigTarget = null;
     this.digTimer = 0;
+    this.hasStarted = true;
     return true;
+  }
+
+  _resetTimer() {
+    this.timerMs = PlayerSystem.INITIAL_TIMER_SECONDS * MS_PER_SECOND;
+    this._broadcastTimerIfNeeded(true);
+  }
+
+  _tickTimer(deltaTime) {
+    if (this.timerMs <= 0) {
+      return;
+    }
+
+    this.timerMs = Math.max(0, this.timerMs - deltaTime);
+    this._broadcastTimerIfNeeded();
+
+    if (this.timerMs === 0 && !this.dead) {
+      eventBus.emit('player:death', { cause: 'time_expired' });
+    }
+  }
+
+  _addTimerSeconds(seconds) {
+    if (seconds <= 0 || this.dead) {
+      return;
+    }
+
+    const maxTimerMs = PlayerSystem.INITIAL_TIMER_SECONDS * MS_PER_SECOND;
+    this.timerMs = Math.min(maxTimerMs, this.timerMs + seconds * MS_PER_SECOND);
+    this._broadcastTimerIfNeeded();
+  }
+
+  _beginMovement(targetGridX, targetGridY, durationMs) {
+    this.movement = {
+      active: true,
+      duration: Math.max(1, durationMs),
+      elapsed: 0,
+      startX: this.x,
+      startY: this.y,
+      targetX: targetGridX * TILE_WIDTH + TILE_WIDTH / 2,
+      targetY: targetGridY * TILE_HEIGHT + TILE_HEIGHT / 2,
+      targetGridX,
+      targetGridY,
+    };
+    this.state = PLAYER_STATE.MOVING;
+  }
+
+  _updateMovement(deltaTime) {
+    if (!this.movement?.active) {
+      this.state = PLAYER_STATE.IDLE;
+      return false;
+    }
+
+    const { movement } = this;
+    movement.elapsed += deltaTime;
+    const { duration } = movement;
+    const progress = Math.min(1, movement.elapsed / duration);
+
+    this.x = this._lerp(movement.startX, movement.targetX, progress);
+    this.y = this._lerp(movement.startY, movement.targetY, progress);
+
+    if (progress >= 1) {
+      this.gridX = movement.targetGridX;
+      this.gridY = movement.targetGridY;
+      this.x = movement.targetX;
+      this.y = movement.targetY;
+      this.state = PLAYER_STATE.IDLE;
+      movement.active = false;
+
+      const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
+      if (terrain) {
+        this._beginFallIfUnsupported(terrain);
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  _lerp(start, end, t) {
+    return start + (end - start) * t;
+  }
+
+  _broadcastTimerIfNeeded(force = false) {
+    const seconds = Math.max(0, Math.floor(this.timerMs / MS_PER_SECOND));
+    if (!force && seconds === this.lastTimerBroadcastSeconds) {
+      return;
+    }
+
+    this.lastTimerBroadcastSeconds = seconds;
+    eventBus.emit(TIMER_UPDATE_EVENT, { seconds });
   }
 }

@@ -14,6 +14,8 @@ const HUD_COIN_SPRITE = {
   height: 16,
   destX: 12,
   destY: 12,
+  destWidth: 32,
+  destHeight: 32,
 };
 
 /**
@@ -23,8 +25,12 @@ const HUD_COIN_SPRITE = {
 export class HUDSystem extends System {
   init() {
     this.score = 0;
+    this.timerSeconds = 60;
     this.unsubscribeScore = eventBus.on('score:add', ({ amount = 0 } = {}) => {
       this.score += amount;
+    });
+    this.unsubscribeTimer = eventBus.on('timer:update', ({ seconds = 0 } = {}) => {
+      this.timerSeconds = seconds;
     });
   }
 
@@ -44,6 +50,8 @@ export class HUDSystem extends System {
       height: HUD_COIN_SPRITE.height,
       destX: HUD_COIN_SPRITE.destX,
       destY: HUD_COIN_SPRITE.destY,
+      destWidth: HUD_COIN_SPRITE.destWidth,
+      destHeight: HUD_COIN_SPRITE.destHeight,
     });
 
     ctx.save();
@@ -51,8 +59,11 @@ export class HUDSystem extends System {
     renderQueue.flush(ctx);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '16px monospace';
-    ctx.fillText(`${this.score}`, 35, 25);
+    ctx.font = '32px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${this.score}`, 35, 40);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.max(0, this.timerSeconds)}`, ctx.canvas.width - 20, 40);
     ctx.restore();
   }
 
@@ -60,6 +71,10 @@ export class HUDSystem extends System {
     if (this.unsubscribeScore) {
       this.unsubscribeScore();
       this.unsubscribeScore = null;
+    }
+    if (this.unsubscribeTimer) {
+      this.unsubscribeTimer();
+      this.unsubscribeTimer = null;
     }
   }
 }
