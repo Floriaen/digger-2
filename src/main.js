@@ -9,7 +9,6 @@ import {
   updateCanvasDimensions,
   WORLD_WIDTH_PX,
   WORLD_HEIGHT_PX,
-  DEATH_OVERLAY_DELAY_MS,
 } from './utils/config.js';
 import { BackgroundSystem } from './systems/background.system.js';
 import { TerrainSystem } from './systems/terrain.system.js';
@@ -162,25 +161,15 @@ function init() {
   });
 
   eventBus.on('player:death', ({ cause, shouldRegenerate = false } = {}) => {
-    // Regenerate terrain if requested by the death source (lava, NPCs, etc.)
-    if (shouldRegenerate) {
-      const terrainSystem = game.components.find((c) => c.constructor.name === 'TerrainSystem');
-      const npcSystem = game.components.find((c) => c.constructor.name === 'NPCSystem');
+    // Store regeneration flag for restart logic
+    game.pendingTerrainRegeneration = shouldRegenerate;
 
-      if (terrainSystem) {
-        // Generate new random seed and regenerate terrain
-        const newSeed = Math.floor(Math.random() * 1000000);
-        terrainSystem.setSeed(newSeed);
-      }
-
-      // Clear all NPCs (they're tied to old terrain chunks)
-      if (npcSystem) {
-        npcSystem.clear();
-      }
-    }
-
-    const message = getDeathMessage(cause);
-    game.showOverlay('death', { message, delay: DEATH_OVERLAY_DELAY_MS });
+    // Start fade to black (400ms)
+    game.startFade(1.0, 400, () => {
+      // Show death overlay on black screen (no regeneration yet!)
+      const message = getDeathMessage(cause);
+      game.showOverlay('death', { message });
+    });
   });
 
   // Hide loading screen
