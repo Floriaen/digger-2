@@ -74,6 +74,14 @@ function resizeCanvas(canvas, game) {
   if (game && game.viewport) {
     game.viewport.updateDimensions(width, height);
   }
+
+  // Restore context state after resize (canvas resize resets context)
+  if (game && game.ctx) {
+    game.ctx.imageSmoothingEnabled = false;
+    game.ctx.mozImageSmoothingEnabled = false;
+    game.ctx.webkitImageSmoothingEnabled = false;
+    game.ctx.msImageSmoothingEnabled = false;
+  }
 }
 
 /**
@@ -152,9 +160,16 @@ function init() {
     game.handlePauseInput();
   });
 
-  eventBus.on('player:death', ({ cause } = {}) => {
-    const message = getDeathMessage(cause);
-    game.showOverlay('death', { message });
+  eventBus.on('player:death', ({ cause, shouldRegenerate = false } = {}) => {
+    // Store regeneration flag for restart logic
+    game.pendingTerrainRegeneration = shouldRegenerate;
+
+    // Start fade to black (400ms)
+    game.startFade(1.0, 400, () => {
+      // Show death overlay on black screen (no regeneration yet!)
+      const message = getDeathMessage(cause);
+      game.showOverlay('death', { message });
+    });
   });
 
   // Hide loading screen

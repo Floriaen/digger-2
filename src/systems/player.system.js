@@ -330,7 +330,11 @@ export class PlayerSystem extends System {
 
     // Check if target is lava (death)
     if (targetBlock.has(LethalComponent)) {
-      eventBus.emit('player:death', { cause: 'lava' });
+      const lethal = targetBlock.get(LethalComponent);
+      eventBus.emit('player:death', {
+        cause: 'lava',
+        shouldRegenerate: lethal.shouldRegenerate,
+      });
       this.state = PLAYER_STATE.IDLE;
       return;
     }
