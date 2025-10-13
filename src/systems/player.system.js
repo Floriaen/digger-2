@@ -130,8 +130,11 @@ export class PlayerSystem extends System {
       return;
     }
 
-    // Wait for down arrow to start
+    // Wait for down arrow to start, but still allow gravity to pull us down
     if (!this.hasStarted) {
+      if (this._beginFallIfUnsupported(terrain)) {
+        return;
+      }
       this.state = PLAYER_STATE.IDLE;
       return;
     }
@@ -546,6 +549,7 @@ export class PlayerSystem extends System {
     this.fallable.reset();
     this.currentDigTarget = null;
     this.digTimer = 0;
+    this.hasStarted = true;
     return true;
   }
 
