@@ -72,7 +72,10 @@ export class NPCSystem extends System {
     }
   }
 
-  destroy() {
+  /**
+   * Clear all NPCs (used when regenerating terrain)
+   */
+  clear() {
     const context = { game: this.game, list: this };
 
     for (let i = 0; i < this.npcs.length; i += 1) {
@@ -83,6 +86,10 @@ export class NPCSystem extends System {
     }
 
     this.npcs.length = 0;
+  }
+
+  destroy() {
+    this.clear();
   }
 
   _getVisibilityBounds() {

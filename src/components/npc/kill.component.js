@@ -11,6 +11,14 @@ const HITBOX_WIDTH = 16;
 const HITBOX_HEIGHT = 9;
 
 export class KillComponent extends Component {
+  /**
+   * @param {boolean} shouldRegenerate - If true, death triggers terrain regeneration (default: true)
+   */
+  constructor({ shouldRegenerate = true } = {}) {
+    super();
+    this.shouldRegenerate = shouldRegenerate;
+  }
+
   update(entity, _deltaTime, { game }) {
     if (!game) {
       return;
@@ -44,7 +52,10 @@ export class KillComponent extends Component {
       && npcBottom > playerTop;
 
     if (overlaps) {
-      eventBus.emit('player:death', { cause: 'npc' });
+      eventBus.emit('player:death', {
+        cause: 'npc',
+        shouldRegenerate: this.shouldRegenerate,
+      });
     }
   }
 }

@@ -161,7 +161,24 @@ function init() {
     game.handlePauseInput();
   });
 
-  eventBus.on('player:death', ({ cause } = {}) => {
+  eventBus.on('player:death', ({ cause, shouldRegenerate = false } = {}) => {
+    // Regenerate terrain if requested by the death source (lava, NPCs, etc.)
+    if (shouldRegenerate) {
+      const terrainSystem = game.components.find((c) => c.constructor.name === 'TerrainSystem');
+      const npcSystem = game.components.find((c) => c.constructor.name === 'NPCSystem');
+
+      if (terrainSystem) {
+        // Generate new random seed and regenerate terrain
+        const newSeed = Math.floor(Math.random() * 1000000);
+        terrainSystem.setSeed(newSeed);
+      }
+
+      // Clear all NPCs (they're tied to old terrain chunks)
+      if (npcSystem) {
+        npcSystem.clear();
+      }
+    }
+
     const message = getDeathMessage(cause);
     game.showOverlay('death', { message, delay: DEATH_OVERLAY_DELAY_MS });
   });
