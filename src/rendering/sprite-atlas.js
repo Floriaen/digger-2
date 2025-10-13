@@ -44,20 +44,6 @@ export const SPRITE_ATLAS = {
   // TODO: Map actual sprite coordinates in Milestone 0 after analyzing sprite.png
   // This will be filled when we integrate the sprite sheet
 
-  // Player / UI
-  player_ball: {
-    x: 0,
-    y: 0,
-    width: 16,
-    height: 16,
-  },
-  coin_icon: {
-    x: 0,
-    y: 0,
-    width: 16,
-    height: 16,
-  },
-
   // Blocks (fake-3D tiles: 16x25px with 16x9px cap)
   grass: {
     x: 0,
@@ -74,6 +60,24 @@ export const SPRITE_ATLAS = {
   rock: {
     x: 48,
     y: 0,
+    width: 16,
+    height: 25,
+  },
+  death: {
+    x: 64,
+    y: 50,
+    width: 16,
+    height: 25,
+  },
+  support: {
+    x: 80,
+    y: 50,
+    width: 16,
+    height: 25,
+  },
+  column: {
+    x: 80,
+    y: 50,
     width: 16,
     height: 25,
   },
@@ -119,21 +123,21 @@ export const SPRITE_ATLAS = {
   // Navigation markers (white arrows in row 3)
   triangle_left: {
     x: 0,
-    y: 48,
+    y: 50,
     width: 16,
-    height: 16,
+    height: 25,
   },
   triangle_down: {
     x: 16,
-    y: 48,
+    y: 50,
     width: 16,
-    height: 16,
+    height: 25,
   },
   triangle_right: {
     x: 32,
-    y: 48,
+    y: 50,
     width: 16,
-    height: 16,
+    height: 25,
   },
 };
 

@@ -469,33 +469,29 @@ export class PlayerSystem extends System {
           if (canEnterReplacement) {
             this.state = PLAYER_STATE.FALLING;
             this.fallable.reset(); // Reset for new fall
+          } else if (replacementBlock?.has(DiggableComponent)) {
+            this.state = PLAYER_STATE.DIGGING;
+            this.digDirection = { dx, dy };
+            this.currentDigTarget = null;
+            this._digInDirection(terrain, dx, dy);
           } else {
-            if (replacementBlock?.has(DiggableComponent)) {
-              this.state = PLAYER_STATE.DIGGING;
-              this.digDirection = { dx, dy };
-              this.currentDigTarget = null;
-              this._digInDirection(terrain, dx, dy);
-            } else {
-              this.state = PLAYER_STATE.IDLE;
-              this.digDirection = { dx: 0, dy: 1 };
-              this._beginFallIfUnsupported(terrain);
-            }
+            this.state = PLAYER_STATE.IDLE;
+            this.digDirection = { dx: 0, dy: 1 };
+            this._beginFallIfUnsupported(terrain);
           }
         } else if (dx !== 0) {
           // Lateral digging - move horizontally only
           if (canEnterReplacement) {
             this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
+          } else if (replacementBlock?.has(DiggableComponent)) {
+            this.state = PLAYER_STATE.DIGGING_LATERAL;
+            this.digDirection = { dx, dy };
+            this.currentDigTarget = null;
+            this._digInDirection(terrain, dx, dy);
           } else {
-            if (replacementBlock?.has(DiggableComponent)) {
-              this.state = PLAYER_STATE.DIGGING_LATERAL;
-              this.digDirection = { dx, dy };
-              this.currentDigTarget = null;
-              this._digInDirection(terrain, dx, dy);
-            } else {
-              this.state = PLAYER_STATE.IDLE;
-              this.digDirection = { dx: 0, dy: 1 }; // Reset to down
-              this._beginFallIfUnsupported(terrain);
-            }
+            this.state = PLAYER_STATE.IDLE;
+            this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+            this._beginFallIfUnsupported(terrain);
           }
         } else if (dx === 0 && dy === 0) {
           // Dug block at our position - just go idle, gravity will take over
@@ -632,9 +628,9 @@ export class PlayerSystem extends System {
       return false;
     }
 
-    const movement = this.movement;
+    const { movement } = this;
     movement.elapsed += deltaTime;
-    const duration = movement.duration;
+    const { duration } = movement;
     const progress = Math.min(1, movement.elapsed / duration);
 
     this.x = this._lerp(movement.startX, movement.targetX, progress);
