@@ -74,6 +74,14 @@ function resizeCanvas(canvas, game) {
   if (game && game.viewport) {
     game.viewport.updateDimensions(width, height);
   }
+
+  // Restore context state after resize (canvas resize resets context)
+  if (game && game.ctx) {
+    game.ctx.imageSmoothingEnabled = false;
+    game.ctx.mozImageSmoothingEnabled = false;
+    game.ctx.webkitImageSmoothingEnabled = false;
+    game.ctx.msImageSmoothingEnabled = false;
+  }
 }
 
 /**
