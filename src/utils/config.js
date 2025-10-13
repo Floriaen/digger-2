@@ -30,19 +30,19 @@ export const DIG_INTERVAL_MS = 40; // Time per HP point (200ms = 1 second for HP
 export const PLAYER_RADIUS = 5;
 
 // Terrain
-export const CHUNK_SIZE = 32; // 32x32 blocks per chunk
+export const CHUNK_SIZE = 9; // 32x32 blocks per chunk
 export const CHUNK_CACHE_LIMIT = 10; // Max cached chunks
 
 // World bounds (in chunks)
 export const WORLD_WIDTH_CHUNKS = 1;
-export const WORLD_HEIGHT_CHUNKS = 5;
+export const WORLD_HEIGHT_CHUNKS = 4;
 
 // World dimensions (pixels)
 export const WORLD_WIDTH_PX = WORLD_WIDTH_CHUNKS * CHUNK_SIZE * TILE_WIDTH;
 export const WORLD_HEIGHT_PX = WORLD_HEIGHT_CHUNKS * CHUNK_SIZE * TILE_HEIGHT;
 
 // Lava configuration (distance from bottom of the world in chunks)
-export const LAVA_SURFACE_OFFSET_CHUNKS = 4;
+export const LAVA_SURFACE_OFFSET_CHUNKS = 2;
 
 // Physics
 export const GRAVITY = 0.5;
