@@ -9,6 +9,7 @@ import { PhysicsComponent } from '../components/block/physics.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { eventBus } from '../utils/event-bus.js';
 import { LethalComponent } from '../components/block/lethal.component.js';
+import { CHUNK_SIZE } from '../utils/config.js';
 
 /**
  * GravitySystem
@@ -79,8 +80,8 @@ export class GravitySystem extends System {
           }
 
           const fallable = block.get(FallableComponent);
-          const worldX = chunk.chunkX * 32 + x; // 32 is CHUNK_SIZE
-          const worldY = chunk.chunkY * 32 + y;
+          const worldX = chunk.chunkX * CHUNK_SIZE + x;
+          const worldY = chunk.chunkY * CHUNK_SIZE + y;
 
           // Check if block should start falling
           if (!fallable.isFalling && !fallable.hasSupport(terrain, worldX, worldY)) {
