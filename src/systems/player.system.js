@@ -29,12 +29,16 @@ const PLAYER_STATE = {
   FALLING: 'falling',
   DIGGING_LATERAL: 'digging_lateral',
 };
+const TIMER_UPDATE_EVENT = 'timer:update';
+const MS_PER_SECOND = 1000;
 
 /**
  * PlayerSystem
  * Manages player position, state, and digging behavior
  */
 export class PlayerSystem extends System {
+  static INITIAL_TIMER_SECONDS = 60;
+
   init() {
     // Determine world width (tiles) to center player horizontally
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
@@ -71,6 +75,9 @@ export class PlayerSystem extends System {
     this.requestedDirection = null; // Pending direction change request
     this.hasStarted = false; // Requires down arrow to start
     this.dead = false;
+    this.timerMs = 0;
+    this.lastTimerBroadcastSeconds = null;
+    this._resetTimer();
 
     // Input subscription
     this.unsubscribeLeft = eventBus.on('input:move-left', () => this._requestDirection(-1, 0));
@@ -107,6 +114,12 @@ export class PlayerSystem extends System {
 
     // Wait for down arrow to start
     if (!this.hasStarted) {
+      this.state = PLAYER_STATE.IDLE;
+      return;
+    }
+
+    this._tickTimer(deltaTime);
+    if (this.dead) {
       this.state = PLAYER_STATE.IDLE;
       return;
     }
@@ -392,6 +405,9 @@ export class PlayerSystem extends System {
       this.currentDigTarget.hp = result.hp;
 
       if (result.destroyed) {
+        if (block.type === 'mud' && this.currentDigTarget) {
+          this._addTimerSeconds(1);//this.currentDigTarget.maxHp);
+        }
         if (block.has(PauseOnDestroyComponent)) {
           this.game.pause();
         }
@@ -454,6 +470,7 @@ export class PlayerSystem extends System {
     this.hasStarted = false;
     this.dead = false;
     this.fallable.reset();
+    this._resetTimer();
   }
 
   /**
@@ -501,5 +518,43 @@ export class PlayerSystem extends System {
     this.currentDigTarget = null;
     this.digTimer = 0;
     return true;
+  }
+
+  _resetTimer() {
+    this.timerMs = PlayerSystem.INITIAL_TIMER_SECONDS * MS_PER_SECOND;
+    this._broadcastTimerIfNeeded(true);
+  }
+
+  _tickTimer(deltaTime) {
+    if (this.timerMs <= 0) {
+      return;
+    }
+
+    this.timerMs = Math.max(0, this.timerMs - deltaTime);
+    this._broadcastTimerIfNeeded();
+
+    if (this.timerMs === 0 && !this.dead) {
+      eventBus.emit('player:death', { cause: 'time_expired' });
+    }
+  }
+
+  _addTimerSeconds(seconds) {
+    if (seconds <= 0 || this.dead) {
+      return;
+    }
+
+    const maxTimerMs = PlayerSystem.INITIAL_TIMER_SECONDS * MS_PER_SECOND;
+    this.timerMs = Math.min(maxTimerMs, this.timerMs + seconds * MS_PER_SECOND);
+    this._broadcastTimerIfNeeded();
+  }
+
+  _broadcastTimerIfNeeded(force = false) {
+    const seconds = Math.max(0, Math.floor(this.timerMs / MS_PER_SECOND));
+    if (!force && seconds === this.lastTimerBroadcastSeconds) {
+      return;
+    }
+
+    this.lastTimerBroadcastSeconds = seconds;
+    eventBus.emit(TIMER_UPDATE_EVENT, { seconds });
   }
 }

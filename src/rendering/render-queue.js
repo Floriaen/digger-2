@@ -45,6 +45,8 @@ export class RenderQueue {
       height: command.height ?? 0,
       destX: command.destX ?? 0,
       destY: command.destY ?? 0,
+      destWidth: command.destWidth ?? command.width ?? 0,
+      destHeight: command.destHeight ?? command.height ?? 0,
       alpha: command.alpha ?? 1.0,
       fillStyle: command.fillStyle ?? DEFAULT_FILL_STYLE,
     });
@@ -116,8 +118,8 @@ export class RenderQueue {
       command.height,
       command.destX,
       command.destY,
-      command.width,
-      command.height,
+      command.destWidth,
+      command.destHeight,
     );
 
     if (needsAlpha) {
