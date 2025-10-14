@@ -260,12 +260,25 @@ export class BlockFactory {
    */
   static createChest(loot = [{ type: 'coin', value: 10 }]) {
     const sprite = SPRITE_ATLAS.chest_base;
+    const timerIncrementSeconds = Array.isArray(loot)
+      ? loot.reduce((total, item) => {
+          if (!item || item.type !== 'coin') {
+            return total;
+          }
+          const value = Number(item.value);
+          if (!Number.isFinite(value) || value <= 0) {
+            return total;
+          }
+          return total + value;
+        }, 0)
+      : 0;
+
     const block = new Block([
       new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 15 }),
       new DiggableComponent(),
-      new LootableComponent({ loot }),
+      new LootableComponent({ loot, timerIncrementSeconds }),
       new FallableComponent(),
     ]);
     return BlockFactory.finalizeBlock(block, 'chest');

@@ -122,6 +122,19 @@ export class PlayerSystem extends System {
     this.unsubscribeRestart = eventBus.on('player:restart', () => {
       this.resetToSpawn();
     });
+    this.unsubscribeBlockLoot = eventBus.on('block:loot', ({ loot, timerIncrementSeconds } = {}) => {
+      if (this.dead) {
+        return;
+      }
+      const rewardSeconds = Number(timerIncrementSeconds);
+      if (!Number.isFinite(rewardSeconds) || rewardSeconds <= 0) {
+        return;
+      }
+      if (!Array.isArray(loot) || !loot.some((item) => item && item.type === 'coin')) {
+        return;
+      }
+      this._addTimerSeconds(rewardSeconds);
+    });
     this.unsubscribeTransitionComplete = eventBus.on(
       'level:transition:complete',
       () => {
@@ -306,6 +319,10 @@ export class PlayerSystem extends System {
     this.unsubscribeDeath();
     this.unsubscribeCrushed();
     this.unsubscribeRestart();
+    if (this.unsubscribeBlockLoot) {
+      this.unsubscribeBlockLoot();
+      this.unsubscribeBlockLoot = null;
+    }
     if (this.unsubscribeTransitionComplete) {
       this.unsubscribeTransitionComplete();
       this.unsubscribeTransitionComplete = null;
@@ -466,9 +483,6 @@ export class PlayerSystem extends System {
       this.currentDigTarget.hp = result.hp;
 
       if (result.destroyed) {
-        if (block.type === 'mud' && this.currentDigTarget) {
-          this._addTimerSeconds(this.currentDigTarget.maxHp);
-        }
         if (block.has(PauseOnDestroyComponent)) {
           this.game.pause();
         }
