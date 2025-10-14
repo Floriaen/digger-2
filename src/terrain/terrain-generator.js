@@ -287,6 +287,7 @@ export class TerrainGenerator {
 
   /**
    * Apply the door and supporting platform to the provided chunk if needed.
+   * Also ensures surrounding tiles are safe mud or empty spaces for navigation.
    * @param {TerrainChunk} chunk
    * @param {number} chunkX
    * @param {number} chunkY
@@ -302,6 +303,65 @@ export class TerrainGenerator {
     const doorChunkX = Math.floor(doorX / CHUNK_SIZE);
     const doorChunkY = Math.floor(doorY / CHUNK_SIZE);
 
+    const ensureMudNeighbor = (worldX, worldY, { preserveEmpty = false } = {}) => {
+      if (worldX < 0 || worldX >= this.worldWidthTiles || worldY < 0 || worldY >= this.worldHeightTiles) {
+        return;
+      }
+
+      const neighborChunkX = Math.floor(worldX / CHUNK_SIZE);
+      const neighborChunkY = Math.floor(worldY / CHUNK_SIZE);
+
+      if (neighborChunkX !== chunkX || neighborChunkY !== chunkY) {
+        return;
+      }
+
+      const localX = worldX - chunkX * CHUNK_SIZE;
+      const localY = worldY - chunkY * CHUNK_SIZE;
+
+      if (localX < 0 || localX >= CHUNK_SIZE || localY < 0 || localY >= CHUNK_SIZE) {
+        return;
+      }
+
+      const existingBlock = chunk.getBlock(localX, localY);
+      const isMud = BlockFactory.isMud(existingBlock);
+      const isEmpty = existingBlock?.type === BLOCK_TYPE.EMPTY;
+
+      if (isMud || (preserveEmpty && isEmpty)) {
+        return;
+      }
+
+      const mudType = this._getMudTypeByDepth(worldY);
+      chunk.setBlock(localX, localY, this._createBlock(mudType, worldY));
+    };
+
+    const ensureEmptyTile = (worldX, worldY) => {
+      if (worldX < 0 || worldX >= this.worldWidthTiles || worldY < 0 || worldY >= this.worldHeightTiles) {
+        return;
+      }
+
+      const neighborChunkX = Math.floor(worldX / CHUNK_SIZE);
+      const neighborChunkY = Math.floor(worldY / CHUNK_SIZE);
+
+      if (neighborChunkX !== chunkX || neighborChunkY !== chunkY) {
+        return;
+      }
+
+      const localX = worldX - chunkX * CHUNK_SIZE;
+      const localY = worldY - chunkY * CHUNK_SIZE;
+
+      if (localX < 0 || localX >= CHUNK_SIZE || localY < 0 || localY >= CHUNK_SIZE) {
+        return;
+      }
+
+      const existingBlock = chunk.getBlock(localX, localY);
+      if (existingBlock?.type === BLOCK_TYPE.EMPTY) {
+        return;
+      }
+
+      chunk.setBlock(localX, localY, BlockFactory.createEmpty());
+    };
+
+    // Place the door
     if (doorChunkX === chunkX && doorChunkY === chunkY) {
       const localDoorX = doorX - chunkX * CHUNK_SIZE;
       const localDoorY = doorY - chunkY * CHUNK_SIZE;
@@ -314,6 +374,16 @@ export class TerrainGenerator {
       }
     }
 
+    // Place mud blocks on left and right sides of the door
+    ensureMudNeighbor(doorX - 1, doorY);
+    ensureMudNeighbor(doorX + 1, doorY);
+
+    // Ensure top neighbors are mud or empty for smooth entry
+    ensureMudNeighbor(doorX - 1, doorY - 1, { preserveEmpty: true });
+    ensureMudNeighbor(doorX + 1, doorY - 1, { preserveEmpty: true });
+    ensureEmptyTile(doorX, doorY - 1);
+
+    // Place doorstep platform below
     const stepY = doorY + 1;
     const halfStep = Math.floor(DOOR_STEP_WIDTH / 2);
 

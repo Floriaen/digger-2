@@ -324,7 +324,7 @@ export class PlayerSystem extends System {
   }
 
   /**
-   * Try to change direction - succeeds if target block is diggable
+   * Try to change direction - succeeds if target block is diggable or is a door
    * @param {TerrainSystem} terrain
    * @returns {boolean} True if direction change allowed
    * @private
@@ -335,8 +335,9 @@ export class PlayerSystem extends System {
     const targetY = this.gridY + dy;
     const targetBlock = terrain.getBlock(targetX, targetY);
 
-    // Can change direction if target is diggable
-    return targetBlock.has(DiggableComponent);
+    // Can change direction if target is diggable or is a door
+    const canChange = targetBlock.has(DiggableComponent) || targetBlock.has(DoorComponent);
+    return canChange;
   }
 
   /**
@@ -358,6 +359,12 @@ export class PlayerSystem extends System {
         shouldRegenerate: lethalComponent.shouldRegenerate,
       });
       this.state = PLAYER_STATE.IDLE;
+      return;
+    }
+
+    // Check if target is a door (level transition)
+    if (targetBlock.has(DoorComponent)) {
+      this.enterDoor(targetBlock, targetX, targetY, 'player:movement');
       return;
     }
 
