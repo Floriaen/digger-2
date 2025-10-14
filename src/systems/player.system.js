@@ -119,27 +119,37 @@ export class PlayerSystem extends System {
         eventBus.emit('player:death', { cause, shouldRegenerate: false });
       }
     });
-    this.unsubscribeRestart = eventBus.on('player:restart', ({ preserveTimer = false } = {}) => {
-      const currentTimer = this.timerMs;
-      const shouldPreserve = preserveTimer && Number.isFinite(currentTimer) && currentTimer > 0;
-      this.resetToSpawn({
-        preserveTimer: shouldPreserve,
-        timerMs: shouldPreserve ? currentTimer : undefined,
-      });
-    });
-    this.unsubscribeBlockLoot = eventBus.on('block:loot', ({ loot, timerIncrementSeconds } = {}) => {
-      if (this.dead) {
-        return;
-      }
-      const rewardSeconds = Number(timerIncrementSeconds);
-      if (!Number.isFinite(rewardSeconds) || rewardSeconds <= 0) {
-        return;
-      }
-      if (!Array.isArray(loot) || !loot.some((item) => item && item.type === 'coin')) {
-        return;
-      }
-      this._addTimerSeconds(rewardSeconds);
-    });
+    this.unsubscribeRestart = eventBus.on(
+      'player:restart',
+      ({ preserveTimer = false } = {}) => {
+        const currentTimer = this.timerMs;
+        const shouldPreserve = preserveTimer
+          && Number.isFinite(currentTimer)
+          && currentTimer > 0;
+        this.resetToSpawn({
+          preserveTimer: shouldPreserve,
+          timerMs: shouldPreserve ? currentTimer : undefined,
+        });
+      },
+    );
+    this.unsubscribeBlockLoot = eventBus.on(
+      'block:loot',
+      ({ loot, timerIncrementSeconds } = {}) => {
+        if (this.dead) {
+          return;
+        }
+        const rewardSeconds = Number(timerIncrementSeconds);
+        if (!Number.isFinite(rewardSeconds) || rewardSeconds <= 0) {
+          return;
+        }
+        const hasCoinLoot = Array.isArray(loot)
+          && loot.some((item) => item && item.type === 'coin');
+        if (!hasCoinLoot) {
+          return;
+        }
+        this._addTimerSeconds(rewardSeconds);
+      },
+    );
     this.unsubscribeTransitionComplete = eventBus.on(
       'level:transition:complete',
       () => {

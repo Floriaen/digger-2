@@ -262,15 +262,15 @@ export class BlockFactory {
     const sprite = SPRITE_ATLAS.chest_base;
     const timerIncrementSeconds = Array.isArray(loot)
       ? loot.reduce((total, item) => {
-          if (!item || item.type !== 'coin') {
-            return total;
-          }
-          const value = Number(item.value);
-          if (!Number.isFinite(value) || value <= 0) {
-            return total;
-          }
-          return total + value;
-        }, 0)
+        if (!item || item.type !== 'coin') {
+          return total;
+        }
+        const value = Number(item.value);
+        if (!Number.isFinite(value) || value <= 0) {
+          return total;
+        }
+        return total + value;
+      }, 0)
       : 0;
 
     const block = new Block([
