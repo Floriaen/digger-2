@@ -26,3 +26,19 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Post PR test instruction
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '👋 Thanks for opening this pull request!',
+                '',
+                'CI will run `npm test` automatically for every new PR. Please make sure the Vitest suite passes locally before pushing updates.'
+              ].join('\n')
+            });
