@@ -8,9 +8,6 @@ import { vi } from 'vitest';
 
 import { PlayerSystem } from '../../systems/player.system.js';
 import { eventBus } from '../../utils/event-bus.js';
-import { PhysicsComponent } from '../../components/block/physics.component.js';
-import { DiggableComponent } from '../../components/block/diggable.component.js';
-import { DoorComponent } from '../../components/block/door.component.js';
 import {
   createMockGame,
   createMockTerrain,
@@ -77,7 +74,7 @@ describe('PlayerSystem', () => {
 
       // gridX = 50, gridY = 2
       expect(playerSystem.x).toBe(50 * 16 + 8); // 808
-      expect(playerSystem.y).toBe(2 * 16 + 8);  // 40
+      expect(playerSystem.y).toBe(2 * 16 + 8); // 40
     });
 
     it('should store spawn reference', () => {
@@ -174,7 +171,13 @@ describe('PlayerSystem', () => {
 
     it('should expose state property (string)', () => {
       expect(typeof playerSystem.state).toBe('string');
-      expect(['idle', 'digging', 'falling', 'moving', 'digging_lateral']).toContain(playerSystem.state);
+      expect([
+        'idle',
+        'digging',
+        'falling',
+        'moving',
+        'digging_lateral',
+      ]).toContain(playerSystem.state);
     });
 
     it('should expose dead property (boolean)', () => {
@@ -303,7 +306,12 @@ describe('PlayerSystem', () => {
       playerSystem.dead = true;
       playerSystem.hasStarted = true;
       playerSystem.digTimer = 100;
-      playerSystem.currentDigTarget = { x: 31, y: 10, hp: 2, maxHp: 3 };
+      playerSystem.currentDigTarget = {
+        x: 31,
+        y: 10,
+        hp: 2,
+        maxHp: 3,
+      };
       playerSystem.digDirection = { dx: 1, dy: 0 };
       playerSystem.requestedDirection = { dx: -1, dy: 0 };
       playerSystem.timerMs = 15000;
@@ -567,7 +575,7 @@ describe('PlayerSystem', () => {
 
         // Target = gridX * 16 + 8
         expect(playerSystem.movement.targetX).toBe(51 * 16 + 8); // 824
-        expect(playerSystem.movement.targetY).toBe(2 * 16 + 8);  // 40
+        expect(playerSystem.movement.targetY).toBe(2 * 16 + 8); // 40
       });
 
       it('should set state to MOVING', () => {

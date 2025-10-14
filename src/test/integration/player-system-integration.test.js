@@ -12,11 +12,8 @@ import {
   createMockTerrain,
   createMockBlock,
   createMockPhysicsComponent,
-  createMockDiggableComponent,
-  createMockHealthComponent,
   createMockLethalComponent,
   createMockDoorComponent,
-  createMockLootableComponent,
   createMockEventBus,
 } from '../helpers/mocks.js';
 

@@ -59,7 +59,7 @@ describe('Player Behavior (E2E)', () => {
 
     it('should calculate pixel position correctly', () => {
       expect(playerSystem.x).toBe(50 * 16 + 8); // 808
-      expect(playerSystem.y).toBe(2 * 16 + 8);  // 40
+      expect(playerSystem.y).toBe(2 * 16 + 8); // 40
     });
 
     it('should wait for down arrow (hasStarted = false)', () => {
@@ -210,8 +210,8 @@ describe('Player Behavior (E2E)', () => {
 
     it('should transition IDLE → DIGGING_LATERAL when digging sideways', () => {
       // Mock diggable block to the right
-      mockTerrain.getBlock.mockImplementation((x, y) => {
-        if (x === 51 && y === 2) {
+      mockTerrain.getBlock.mockImplementation((x, _y) => {
+        if (x === 51 && _y === 2) {
           return createMockBlock({
             DiggableComponent: createMockDiggableComponent(),
             PhysicsComponent: createMockPhysicsComponent(true),
@@ -478,7 +478,7 @@ describe('Player Behavior (E2E)', () => {
       playerSystem.requestedDirection = { dx: 1, dy: 0 };
 
       // Mock diggable block to the right
-      mockTerrain.getBlock.mockImplementation((x, y) => {
+      mockTerrain.getBlock.mockImplementation((x, _y) => {
         if (x === 51) {
           return createMockBlock({
             DiggableComponent: createMockDiggableComponent(),

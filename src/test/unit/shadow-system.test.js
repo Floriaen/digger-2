@@ -3,10 +3,7 @@
  * @description Unit tests for ShadowSystem
  */
 
-import { vi } from 'vitest';
-
 import { ShadowSystem } from '../../systems/shadow.system.js';
-import { PhysicsComponent } from '../../components/block/physics.component.js';
 import {
   createMockGame,
   createMockTerrain,
@@ -27,7 +24,7 @@ describe('ShadowSystem', () => {
     mockPlayer = {
       constructor: { name: 'PlayerSystem' },
       x: 808, // gridX = 50
-      y: 40,  // gridY = 2
+      y: 40, // gridY = 2
       gridX: 50,
       gridY: 2,
     };
@@ -139,9 +136,15 @@ describe('ShadowSystem', () => {
       it('should search for first solid block below player', () => {
         // Create blocks: empty, empty, solid
         mockTerrain.getBlock
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(false) })) // gridY + 1
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(false) })) // gridY + 2
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(true) })); // gridY + 3
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(false),
+          })) // gridY + 1
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(false),
+          })) // gridY + 2
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(true),
+          })); // gridY + 3
 
         shadowSystem.render(mockCtx);
 
@@ -154,9 +157,15 @@ describe('ShadowSystem', () => {
       it('should stop at first collidable block', () => {
         // Create blocks: empty, solid, (shouldn't reach third)
         mockTerrain.getBlock
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(false) }))
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(true) }))
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(true) }));
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(false),
+          }))
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(true),
+          }))
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(true),
+          }));
 
         shadowSystem.render(mockCtx);
 
@@ -167,9 +176,15 @@ describe('ShadowSystem', () => {
       it('should calculate shadow Y position at block top', () => {
         // Solid block at gridY = 5
         mockTerrain.getBlock
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(false) }))
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(false) }))
-          .mockReturnValueOnce(createMockBlock({ PhysicsComponent: createMockPhysicsComponent(true) }));
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(false),
+          }))
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(false),
+          }))
+          .mockReturnValueOnce(createMockBlock({
+            PhysicsComponent: createMockPhysicsComponent(true),
+          }));
 
         shadowSystem.render(mockCtx);
 
@@ -177,8 +192,8 @@ describe('ShadowSystem', () => {
         // Ellipse Y = shadowY + PLAYER_RADIUS - 10
         // PLAYER_RADIUS = 5, so Y = 80 + 5 - 10 = 75
         expect(mockCtx.ellipse).toHaveBeenCalledWith(
-          808,  // player.x
-          75,   // shadowY + PLAYER_RADIUS - 10
+          808, // player.x
+          75, // shadowY + PLAYER_RADIUS - 10
           expect.any(Number), // radius X
           expect.any(Number), // radius Y
           0,
