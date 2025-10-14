@@ -43,10 +43,39 @@
         "src/test/**/*.js"
       ],
       "env": {
-        "jest": true
+        "jest": true,
+        "node": true
       },
       "rules": {
-        "no-plusplus": "off"
+        "no-plusplus": "off",
+        "no-underscore-dangle": "off",
+        "import/no-extraneous-dependencies": [
+          "error",
+          {
+            "devDependencies": true
+          }
+        ],
+        "no-use-before-define": [
+          "error",
+          {
+            "functions": false,
+            "classes": true,
+            "variables": true
+          }
+        ],
+        "object-curly-newline": "off"
+      }
+    },
+    {
+      "files": [
+        "vitest.config.js"
+      ],
+      "env": {
+        "node": true
+      },
+      "rules": {
+        "import/extensions": "off",
+        "import/no-unresolved": "off"
       }
     }
   ]
