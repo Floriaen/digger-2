@@ -72,6 +72,9 @@ export class NPCSystem extends System {
     }
   }
 
+  /**
+   * Clear all NPCs (used when regenerating terrain)
+   */
   clear() {
     const context = { game: this.game, list: this };
 

@@ -191,10 +191,10 @@ export class GravitySystem extends System {
 
       // Check if we fell into lava
       if (blockAtNewPos.has(LethalComponent)) {
-        const lethalComponent = blockAtNewPos.get(LethalComponent);
+        const lethal = blockAtNewPos.get(LethalComponent);
         eventBus.emit('player:death', {
           cause: 'lava',
-          shouldRegenerate: lethalComponent.shouldRegenerate,
+          shouldRegenerate: lethal.shouldRegenerate,
         });
         player.state = 'idle';
         player.fallable.land();
