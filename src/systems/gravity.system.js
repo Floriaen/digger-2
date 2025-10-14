@@ -213,6 +213,12 @@ export class GravitySystem extends System {
         player.gridX = newGridX;
         player.fallable.gridY = newGridY;
         player.fallable.gridX = newGridX;
+
+        if (typeof player.enterDoor === 'function'
+          && player.enterDoor(blockAtNewPos, newGridX, newGridY, 'gravity')) {
+          player.fallable.land();
+          player.fallable.reset();
+        }
       }
     }
   }

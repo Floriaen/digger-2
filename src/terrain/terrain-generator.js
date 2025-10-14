@@ -8,6 +8,10 @@ import {
   WORLD_WIDTH_CHUNKS,
   WORLD_HEIGHT_CHUNKS,
   LAVA_SURFACE_OFFSET_CHUNKS,
+  DOOR_DEPTH_RATIO,
+  DOOR_MIN_DEPTH_TILES,
+  DOOR_LAVA_CLEARANCE_TILES,
+  DOOR_STEP_WIDTH,
 } from '../utils/config.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { TerrainChunk } from './terrain-chunk.js';
@@ -56,6 +60,7 @@ export class TerrainGenerator {
       0,
       (this.worldHeightChunks - clampedOffsetChunks) * CHUNK_SIZE,
     ); // Configurable lava start depth
+    this.doorPosition = null;
   }
 
   /**
@@ -143,6 +148,7 @@ export class TerrainGenerator {
 
     // Apply queued special placements (blocks + halos)
     this._applySpecialPlacements(chunk, chunkX, chunkY, specialPlacements);
+    this._applyDoorPlacement(chunk, chunkX, chunkY);
 
     // Cache the chunk
     this.chunkCache.set(key, chunk);
@@ -216,6 +222,131 @@ export class TerrainGenerator {
         return BlockFactory.createGrass();
       default:
         return BlockFactory.createEmpty();
+    }
+  }
+
+  /**
+   * Compute or return the cached door position for the current seed.
+   * @returns {{x: number, y: number}|null}
+   * @private
+   */
+  _ensureDoorPlacement() {
+    if (this.doorPosition) {
+      return this.doorPosition;
+    }
+
+    if (!Number.isFinite(this.worldWidthTiles) || !Number.isFinite(this.worldHeightTiles)) {
+      return null;
+    }
+
+    const halfStep = Math.floor(DOOR_STEP_WIDTH / 2);
+    const minCenterX = halfStep;
+    const maxCenterX = this.worldWidthTiles - 1 - halfStep;
+
+    if (maxCenterX < minCenterX) {
+      return null;
+    }
+
+    const targetDepth = Math.floor(this.worldHeightTiles * DOOR_DEPTH_RATIO);
+    const safeMinDepth = Math.max(DOOR_MIN_DEPTH_TILES, 1);
+    let safeMaxDepth = this.worldHeightTiles - 2;
+
+    if (this.lavaDepth > 0) {
+      safeMaxDepth = Math.min(safeMaxDepth, this.lavaDepth - DOOR_LAVA_CLEARANCE_TILES - 1);
+    }
+
+    if (!Number.isFinite(safeMaxDepth)) {
+      safeMaxDepth = this.worldHeightTiles - 2;
+    }
+
+    if (safeMaxDepth < 0) {
+      safeMaxDepth = 0;
+    }
+
+    let depth = targetDepth;
+    depth = Math.max(depth, safeMinDepth);
+    depth = Math.min(depth, safeMaxDepth);
+
+    if (safeMaxDepth < safeMinDepth) {
+      depth = safeMaxDepth;
+    }
+
+    depth = Math.max(0, Math.min(depth, this.worldHeightTiles - 2));
+
+    const randomValue = this._random(depth + 157, this.seed + 733);
+    const centerRange = maxCenterX - minCenterX + 1;
+    const centerX = minCenterX + Math.floor(randomValue * centerRange);
+
+    this.doorPosition = {
+      x: Math.max(minCenterX, Math.min(centerX, maxCenterX)),
+      y: depth,
+    };
+
+    return this.doorPosition;
+  }
+
+  /**
+   * Apply the door and supporting platform to the provided chunk if needed.
+   * @param {TerrainChunk} chunk
+   * @param {number} chunkX
+   * @param {number} chunkY
+   * @private
+   */
+  _applyDoorPlacement(chunk, chunkX, chunkY) {
+    const doorPlacement = this._ensureDoorPlacement();
+    if (!doorPlacement) {
+      return;
+    }
+
+    const { x: doorX, y: doorY } = doorPlacement;
+    const doorChunkX = Math.floor(doorX / CHUNK_SIZE);
+    const doorChunkY = Math.floor(doorY / CHUNK_SIZE);
+
+    if (doorChunkX === chunkX && doorChunkY === chunkY) {
+      const localDoorX = doorX - chunkX * CHUNK_SIZE;
+      const localDoorY = doorY - chunkY * CHUNK_SIZE;
+      const doorInBounds = localDoorX >= 0
+        && localDoorX < CHUNK_SIZE
+        && localDoorY >= 0
+        && localDoorY < CHUNK_SIZE;
+      if (doorInBounds) {
+        chunk.setBlock(localDoorX, localDoorY, BlockFactory.createDoor());
+      }
+    }
+
+    const stepY = doorY + 1;
+    const halfStep = Math.floor(DOOR_STEP_WIDTH / 2);
+
+    for (let offset = -halfStep; offset <= halfStep; offset += 1) {
+      const stepX = doorX + offset;
+
+      if (stepX < 0 || stepX >= this.worldWidthTiles) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      if (stepY < 0 || stepY >= this.worldHeightTiles) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      const stepChunkX = Math.floor(stepX / CHUNK_SIZE);
+      const stepChunkY = Math.floor(stepY / CHUNK_SIZE);
+
+      if (stepChunkX !== chunkX || stepChunkY !== chunkY) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      const localStepX = stepX - chunkX * CHUNK_SIZE;
+      const localStepY = stepY - chunkY * CHUNK_SIZE;
+
+      if (
+        localStepX >= 0 && localStepX < CHUNK_SIZE
+        && localStepY >= 0 && localStepY < CHUNK_SIZE
+      ) {
+        chunk.setBlock(localStepX, localStepY, BlockFactory.createDoorstep());
+      }
     }
   }
 

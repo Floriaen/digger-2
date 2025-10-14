@@ -200,6 +200,10 @@ export class Game {
       return;
     }
 
+    if (this.overlay?.type === 'transition') {
+      return;
+    }
+
     if (this.overlay?.type === 'pause') {
       this.hideOverlay();
       return;
@@ -223,6 +227,11 @@ export class Game {
         title: 'PAUSED',
         message: '',
         instruction: 'SPACE to resume',
+      },
+      transition: {
+        title: 'LEVEL COMPLETE',
+        message: 'Generating new cavern...',
+        instruction: '',
       },
       death: {
         title: 'YOU DIED',

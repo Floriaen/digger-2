@@ -9,6 +9,7 @@ import { DarknessComponent } from '../components/block/darkness.component.js';
 import { LootableComponent } from '../components/block/lootable.component.js';
 import { LethalComponent } from '../components/block/lethal.component.js';
 import { PauseOnDestroyComponent } from '../components/block/pause-on-destroy.component.js';
+import { DoorComponent } from '../components/block/door.component.js';
 
 function spriteToComponentProps(sprite) {
   if (!sprite) {
@@ -184,6 +185,33 @@ export class BlockFactory {
       new DiggableComponent(),
     ]);
     return BlockFactory.finalizeBlock(block, 'red_frame');
+  }
+
+  /**
+   * Create a door block (non-collidable trigger for level transition)
+   * @returns {Block}
+   */
+  static createDoor() {
+    const sprite = SPRITE_ATLAS.door;
+    const block = new Block([
+      new RenderComponent(spriteToComponentProps(sprite)),
+      new PhysicsComponent({ collidable: false }),
+      new DoorComponent(),
+    ]);
+    return BlockFactory.finalizeBlock(block, 'door');
+  }
+
+  /**
+   * Create an indestructible doorstep block (supports the door platform)
+   * @returns {Block}
+   */
+  static createDoorstep() {
+    const sprite = SPRITE_ATLAS.doorstep;
+    const block = new Block([
+      new RenderComponent(spriteToComponentProps(sprite)),
+      new PhysicsComponent({ collidable: true }),
+    ]);
+    return BlockFactory.finalizeBlock(block, 'doorstep');
   }
 
   /**
