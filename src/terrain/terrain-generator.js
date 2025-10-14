@@ -304,7 +304,11 @@ export class TerrainGenerator {
     const doorChunkY = Math.floor(doorY / CHUNK_SIZE);
 
     const ensureMudNeighbor = (worldX, worldY, { preserveEmpty = false } = {}) => {
-      if (worldX < 0 || worldX >= this.worldWidthTiles || worldY < 0 || worldY >= this.worldHeightTiles) {
+      const outOfBounds = worldX < 0
+        || worldX >= this.worldWidthTiles
+        || worldY < 0
+        || worldY >= this.worldHeightTiles;
+      if (outOfBounds) {
         return;
       }
 
@@ -335,7 +339,11 @@ export class TerrainGenerator {
     };
 
     const ensureEmptyTile = (worldX, worldY) => {
-      if (worldX < 0 || worldX >= this.worldWidthTiles || worldY < 0 || worldY >= this.worldHeightTiles) {
+      const outOfBounds = worldX < 0
+        || worldX >= this.worldWidthTiles
+        || worldY < 0
+        || worldY >= this.worldHeightTiles;
+      if (outOfBounds) {
         return;
       }
 
