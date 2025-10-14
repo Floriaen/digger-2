@@ -50,7 +50,7 @@ export const DOOR_DEPTH_RATIO = 0.75; // Percentage of world height where the do
 export const DOOR_MIN_DEPTH_TILES = 12; // Ensure the door is placed below the early game layers
 export const DOOR_LAVA_CLEARANCE_TILES = 6; // Keep the door platform safely above lava
 export const DOOR_STEP_WIDTH = 3;
-export const RESET_TIMER_ON_LEVEL = true;
+export const RESET_TIMER_ON_LEVEL = false;
 
 // Physics
 export const GRAVITY = 0.5;

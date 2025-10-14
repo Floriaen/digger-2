@@ -119,8 +119,13 @@ export class PlayerSystem extends System {
         eventBus.emit('player:death', { cause, shouldRegenerate: false });
       }
     });
-    this.unsubscribeRestart = eventBus.on('player:restart', () => {
-      this.resetToSpawn();
+    this.unsubscribeRestart = eventBus.on('player:restart', ({ preserveTimer = false } = {}) => {
+      const currentTimer = this.timerMs;
+      const shouldPreserve = preserveTimer && Number.isFinite(currentTimer) && currentTimer > 0;
+      this.resetToSpawn({
+        preserveTimer: shouldPreserve,
+        timerMs: shouldPreserve ? currentTimer : undefined,
+      });
     });
     this.unsubscribeBlockLoot = eventBus.on('block:loot', ({ loot, timerIncrementSeconds } = {}) => {
       if (this.dead) {
@@ -553,7 +558,7 @@ export class PlayerSystem extends System {
   /**
    * Restore player to spawn point without affecting terrain state
    */
-  resetToSpawn() {
+  resetToSpawn({ preserveTimer = false, timerMs } = {}) {
     this.gridX = this.spawnGridX;
     this.gridY = this.spawnGridY;
     this.x = this.spawnX;
@@ -566,7 +571,14 @@ export class PlayerSystem extends System {
     this.hasStarted = false;
     this.dead = false;
     this.fallable.reset();
-    this._resetTimer();
+    if (preserveTimer) {
+      if (Number.isFinite(timerMs)) {
+        this.timerMs = Math.max(0, timerMs);
+      }
+      this._broadcastTimerIfNeeded(true);
+    } else {
+      this._resetTimer();
+    }
     this.movement.active = false;
     this.movement.elapsed = 0;
     this.movement.targetGridX = this.gridX;
@@ -762,11 +774,13 @@ export class PlayerSystem extends System {
   }
 
   _handleLevelTransitionComplete() {
-    this.resetToSpawn();
-    if (!RESET_TIMER_ON_LEVEL && Number.isFinite(this.timerBeforeTransition)) {
-      this.timerMs = this.timerBeforeTransition;
-      this._broadcastTimerIfNeeded(true);
-    }
+    const shouldPreserveTimer = !RESET_TIMER_ON_LEVEL
+      && Number.isFinite(this.timerBeforeTransition)
+      && this.timerBeforeTransition > 0;
+    this.resetToSpawn({
+      preserveTimer: shouldPreserveTimer,
+      timerMs: shouldPreserveTimer ? this.timerBeforeTransition : undefined,
+    });
     this.timerBeforeTransition = null;
     this.hasStarted = true;
     this.state = PLAYER_STATE.IDLE;
