@@ -11,6 +11,7 @@ import {
   WORLD_WIDTH_CHUNKS,
   TILE_WIDTH,
   TILE_HEIGHT,
+  RESET_TIMER_ON_LEVEL,
 } from '../utils/config.js';
 import { eventBus } from '../utils/event-bus.js';
 import { PhysicsComponent } from '../components/block/physics.component.js';
@@ -20,6 +21,7 @@ import { LethalComponent } from '../components/block/lethal.component.js';
 import { FallableComponent } from '../components/block/fallable.component.js';
 import { LootableComponent } from '../components/block/lootable.component.js';
 import { PauseOnDestroyComponent } from '../components/block/pause-on-destroy.component.js';
+import { DoorComponent } from '../components/block/door.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 
 /**
@@ -93,6 +95,8 @@ export class PlayerSystem extends System {
       targetGridX: this.gridX,
       targetGridY: this.gridY,
     };
+    this.transitioning = false;
+    this.timerBeforeTransition = null;
 
     // Input subscription
     this.unsubscribeLeft = eventBus.on('input:move-left', () => this._requestDirection(-1, 0));
@@ -112,17 +116,28 @@ export class PlayerSystem extends System {
     });
     this.unsubscribeCrushed = eventBus.on('block:crushed-player', ({ cause }) => {
       if (!this.dead) {
-        eventBus.emit('player:death', { cause });
+        eventBus.emit('player:death', { cause, shouldRegenerate: false });
       }
     });
     this.unsubscribeRestart = eventBus.on('player:restart', () => {
       this.resetToSpawn();
     });
+    this.unsubscribeTransitionComplete = eventBus.on(
+      'level:transition:complete',
+      () => {
+        this._handleLevelTransitionComplete();
+      },
+    );
   }
 
   update(deltaTime) {
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
     if (!terrain) return;
+
+    if (this.transitioning) {
+      this.state = PLAYER_STATE.IDLE;
+      return;
+    }
 
     // Stop updating if dead
     if (this.dead) {
@@ -163,6 +178,9 @@ export class PlayerSystem extends System {
 
     // Check block at current position (in case we fell into it)
     const blockAtPosition = terrain.getBlock(this.gridX, this.gridY);
+    if (this.enterDoor(blockAtPosition, this.gridX, this.gridY, 'player:update')) {
+      return;
+    }
     const physics = blockAtPosition.get(PhysicsComponent);
     const stuckInBlock = physics
       && physics.isCollidable()
@@ -288,6 +306,10 @@ export class PlayerSystem extends System {
     this.unsubscribeDeath();
     this.unsubscribeCrushed();
     this.unsubscribeRestart();
+    if (this.unsubscribeTransitionComplete) {
+      this.unsubscribeTransitionComplete();
+      this.unsubscribeTransitionComplete = null;
+    }
   }
 
   /**
@@ -302,7 +324,7 @@ export class PlayerSystem extends System {
   }
 
   /**
-   * Try to change direction - succeeds if target block is diggable
+   * Try to change direction - succeeds if target block is diggable or is a door
    * @param {TerrainSystem} terrain
    * @returns {boolean} True if direction change allowed
    * @private
@@ -313,8 +335,9 @@ export class PlayerSystem extends System {
     const targetY = this.gridY + dy;
     const targetBlock = terrain.getBlock(targetX, targetY);
 
-    // Can change direction if target is diggable
-    return targetBlock.has(DiggableComponent);
+    // Can change direction if target is diggable or is a door
+    const canChange = targetBlock.has(DiggableComponent) || targetBlock.has(DoorComponent);
+    return canChange;
   }
 
   /**
@@ -336,6 +359,12 @@ export class PlayerSystem extends System {
         shouldRegenerate: lethal.shouldRegenerate,
       });
       this.state = PLAYER_STATE.IDLE;
+      return;
+    }
+
+    // Check if target is a door (level transition)
+    if (targetBlock.has(DoorComponent)) {
+      this.enterDoor(targetBlock, targetX, targetY, 'player:movement');
       return;
     }
 
@@ -597,7 +626,7 @@ export class PlayerSystem extends System {
     this._broadcastTimerIfNeeded();
 
     if (this.timerMs === 0 && !this.dead) {
-      eventBus.emit('player:death', { cause: 'time_expired' });
+      eventBus.emit('player:death', { cause: 'time_expired', shouldRegenerate: false });
     }
   }
 
@@ -650,12 +679,84 @@ export class PlayerSystem extends System {
 
       const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
       if (terrain) {
+        const block = terrain.getBlock(this.gridX, this.gridY);
+        if (this.enterDoor(block, this.gridX, this.gridY, 'player:movement')) {
+          return false;
+        }
         this._beginFallIfUnsupported(terrain);
       }
       return false;
     }
 
     return true;
+  }
+
+  enterDoor(block, gridX, gridY, source = 'player') {
+    if (!block || this.transitioning) {
+      return false;
+    }
+
+    if (!block.has(DoorComponent)) {
+      return false;
+    }
+
+    const door = block.get(DoorComponent);
+    if (door && typeof door.isActive === 'function' && !door.isActive()) {
+      return false;
+    }
+
+    const started = this._beginLevelTransition();
+    if (!started) {
+      return false;
+    }
+
+    if (door && typeof door.deactivate === 'function') {
+      door.deactivate();
+    }
+
+    const triggerId = performance.now?.() ?? Date.now();
+    eventBus.emit('level:transition', {
+      door: { gridX, gridY },
+      source,
+      triggerId,
+    });
+    return true;
+  }
+
+  _beginLevelTransition() {
+    if (this.transitioning) {
+      return false;
+    }
+
+    this.transitioning = true;
+    this.timerBeforeTransition = this.timerMs;
+    this.state = PLAYER_STATE.IDLE;
+    this.currentDigTarget = null;
+    this.digTimer = 0;
+    this.digDirection = { dx: 0, dy: 1 };
+    this.requestedDirection = null;
+    this.hasStarted = false;
+    if (this.movement) {
+      this.movement.active = false;
+      this.movement.elapsed = 0;
+    }
+    if (this.fallable) {
+      this.fallable.land();
+      this.fallable.reset();
+    }
+    return true;
+  }
+
+  _handleLevelTransitionComplete() {
+    this.resetToSpawn();
+    if (!RESET_TIMER_ON_LEVEL && Number.isFinite(this.timerBeforeTransition)) {
+      this.timerMs = this.timerBeforeTransition;
+      this._broadcastTimerIfNeeded(true);
+    }
+    this.timerBeforeTransition = null;
+    this.hasStarted = true;
+    this.state = PLAYER_STATE.IDLE;
+    this.transitioning = false;
   }
 
   _lerp(start, end, t) {

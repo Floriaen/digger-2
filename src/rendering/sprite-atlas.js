@@ -69,6 +69,18 @@ export const SPRITE_ATLAS = {
     width: 16,
     height: 25,
   },
+  door: {
+    x: 64,
+    y: 75,
+    width: 16,
+    height: 25,
+  },
+  doorstep: {
+    x: 48,
+    y: 0,
+    width: 16,
+    height: 25,
+  },
   support: {
     x: 80,
     y: 50,

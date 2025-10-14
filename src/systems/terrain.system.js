@@ -17,6 +17,7 @@ import { LethalComponent } from '../components/block/lethal.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { RenderLayer } from '../rendering/render-layer.js';
 import { createMaggot } from '../npc/maggot.js';
+import { eventBus } from '../utils/event-bus.js';
 
 const BASE_DARKEN_EPSILON = 0.0001;
 const DARKNESS_EPSILON = 0.0002;
@@ -33,11 +34,16 @@ const STATIC_DARKEN_FACTORS = {
  */
 export class TerrainSystem extends System {
   async init() {
-    this.seed = 12345; // Default seed, controllable via dat.GUI
+    this.seed = Math.floor(Math.random() * 1000000); // Random seed for terrain generation
     this.generator = new TerrainGenerator(this.seed);
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded
     this.npcList = null;
+    this.transitioning = false;
+    this.unsubscribeLevelTransition = eventBus.on(
+      'level:transition',
+      (payload) => this._handleLevelTransition(payload),
+    );
     this._syncWorldDimensions();
 
     // Load sprite sheet
@@ -110,6 +116,10 @@ export class TerrainSystem extends System {
   }
 
   destroy() {
+    if (this.unsubscribeLevelTransition) {
+      this.unsubscribeLevelTransition();
+      this.unsubscribeLevelTransition = null;
+    }
     this.cache.clear();
   }
 
@@ -214,7 +224,8 @@ export class TerrainSystem extends System {
 
         if (!render) continue;
         const isLava = block.has(LethalComponent);
-        if (physics && !physics.isCollidable() && !isLava) continue;
+        const isDoor = block.type === 'door';
+        if (physics && !physics.isCollidable() && !isLava && !isDoor) continue;
 
         const baseLayer = render.getBaseLayer();
         if (!baseLayer) continue;
@@ -378,6 +389,66 @@ export class TerrainSystem extends System {
     this.worldHeightChunks = this.generator?.worldHeightChunks ?? Number.POSITIVE_INFINITY;
     this.worldWidthTiles = this.generator?.worldWidthTiles ?? Number.POSITIVE_INFINITY;
     this.worldHeightTiles = this.generator?.worldHeightTiles ?? Number.POSITIVE_INFINITY;
+  }
+
+  _handleLevelTransition(payload = {}) {
+    if (this.transitioning) {
+      return;
+    }
+
+    this.transitioning = true;
+
+    if (this.game?.showOverlay) {
+      this.game.showOverlay('transition');
+    }
+
+    const newSeed = typeof payload.seed === 'number'
+      ? payload.seed
+      : this._generateRandomSeed();
+
+    try {
+      this.setSeed(newSeed);
+      this._purgeNPCs();
+
+      const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+      if (player) {
+        const preloadX = Number.isFinite(player.spawnGridX) ? player.spawnGridX : player.gridX;
+        const preloadY = Number.isFinite(player.spawnGridY) ? player.spawnGridY : player.gridY;
+        this._ensureChunksLoaded(preloadX, preloadY);
+      }
+
+      eventBus.emit('level:transition:complete', { seed: newSeed });
+    } finally {
+      if (this.game?.hideOverlay && this.game.overlay?.type === 'transition') {
+        this.game.hideOverlay();
+      }
+
+      this.transitioning = false;
+    }
+  }
+
+  _generateRandomSeed() {
+    const max = 0x7fffffff;
+    let candidate = Math.floor(Math.random() * max);
+    if (!Number.isFinite(candidate)) {
+      candidate = Date.now() % max;
+    }
+    if (candidate === this.seed) {
+      candidate = (candidate + 1) % max;
+    }
+    return candidate;
+  }
+
+  _purgeNPCs() {
+    const npcList = this._getNPCList();
+    if (!npcList || !Array.isArray(npcList.npcs) || !npcList.npcs.length) {
+      return;
+    }
+
+    for (let i = npcList.npcs.length - 1; i >= 0; i -= 1) {
+      const npc = npcList.npcs[i];
+      npcList.remove(npc);
+    }
   }
 
   isWithinWorld(gridX, gridY) {
