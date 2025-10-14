@@ -34,7 +34,7 @@ const STATIC_DARKEN_FACTORS = {
  */
 export class TerrainSystem extends System {
   async init() {
-    this.seed = 12345; // Default seed, controllable via dat.GUI
+    this.seed = Math.floor(Math.random() * 1000000); // Random seed for terrain generation
     this.generator = new TerrainGenerator(this.seed);
     this.cache = new ChunkCache(this.generator);
     this.spriteSheet = null; // Will be loaded

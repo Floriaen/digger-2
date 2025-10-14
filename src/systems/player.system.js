@@ -116,7 +116,7 @@ export class PlayerSystem extends System {
     });
     this.unsubscribeCrushed = eventBus.on('block:crushed-player', ({ cause }) => {
       if (!this.dead) {
-        eventBus.emit('player:death', { cause });
+        eventBus.emit('player:death', { cause, shouldRegenerate: false });
       }
     });
     this.unsubscribeRestart = eventBus.on('player:restart', () => {
@@ -352,7 +352,11 @@ export class PlayerSystem extends System {
 
     // Check if target is lava (death)
     if (targetBlock.has(LethalComponent)) {
-      eventBus.emit('player:death', { cause: 'lava' });
+      const lethalComponent = targetBlock.get(LethalComponent);
+      eventBus.emit('player:death', {
+        cause: 'lava',
+        shouldRegenerate: lethalComponent.shouldRegenerate,
+      });
       this.state = PLAYER_STATE.IDLE;
       return;
     }
@@ -615,7 +619,7 @@ export class PlayerSystem extends System {
     this._broadcastTimerIfNeeded();
 
     if (this.timerMs === 0 && !this.dead) {
-      eventBus.emit('player:death', { cause: 'time_expired' });
+      eventBus.emit('player:death', { cause: 'time_expired', shouldRegenerate: false });
     }
   }
 

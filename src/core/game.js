@@ -31,6 +31,22 @@ export class Game {
     this.deltaTime = 0;
     this.frameInterval = 1000 / TARGET_FPS;
 
+    // Death delay timer
+    this.deathTimer = null; // Tracks remaining delay time
+    this.pendingDeathOverlay = null; // Stores death overlay details during delay
+
+    // Fade overlay for transitions (death, etc.)
+    this.fadeOverlay = {
+      active: false,
+      alpha: 0, // Current opacity (0 = transparent, 1 = black)
+      targetAlpha: 0, // Target opacity
+      speed: 0, // Alpha change per millisecond
+      onComplete: null, // Callback when fade finishes
+    };
+
+    // Terrain regeneration flag (set on death, executed on restart)
+    this.pendingTerrainRegeneration = false;
+
     // Performance monitoring
     this.performanceMonitor = new PerformanceMonitor();
     this.memoryUpdateCounter = 0; // Update memory every 60 frames
@@ -94,6 +110,48 @@ export class Game {
 
     // Performance: Start update timing
     this.performanceMonitor.startMark('update');
+
+    // Update fade overlay (always active, even when paused)
+    if (this.fadeOverlay.active) {
+      const deltaAlpha = this.fadeOverlay.speed * this.deltaTime;
+
+      if (this.fadeOverlay.alpha < this.fadeOverlay.targetAlpha) {
+        // Fading IN (to black)
+        this.fadeOverlay.alpha = Math.min(
+          this.fadeOverlay.targetAlpha,
+          this.fadeOverlay.alpha + deltaAlpha,
+        );
+      } else if (this.fadeOverlay.alpha > this.fadeOverlay.targetAlpha) {
+        // Fading OUT (from black)
+        this.fadeOverlay.alpha = Math.max(
+          this.fadeOverlay.targetAlpha,
+          this.fadeOverlay.alpha - deltaAlpha,
+        );
+      }
+
+      // Check if fade complete
+      if (this.fadeOverlay.alpha === this.fadeOverlay.targetAlpha) {
+        if (this.fadeOverlay.onComplete) {
+          const callback = this.fadeOverlay.onComplete;
+          this.fadeOverlay.onComplete = null;
+          callback();
+        }
+      }
+    }
+
+    // Tick death timer if active
+    if (this.deathTimer !== null) {
+      this.deathTimer -= this.deltaTime;
+      if (this.deathTimer <= 0) {
+        // Delay expired - show the overlay now
+        this.deathTimer = null;
+        if (this.pendingDeathOverlay) {
+          const { overrides } = this.pendingDeathOverlay;
+          this.pendingDeathOverlay = null;
+          this.showOverlay('death', overrides);
+        }
+      }
+    }
 
     // Update all components (skip if paused)
     if (!this.paused) {
@@ -200,10 +258,6 @@ export class Game {
       return;
     }
 
-    if (this.overlay?.type === 'transition') {
-      return;
-    }
-
     if (this.overlay?.type === 'pause') {
       this.hideOverlay();
       return;
@@ -219,19 +273,23 @@ export class Game {
   /**
    * Show modal overlay and pause the game
    * @param {'pause'|'death'} type
-   * @param {{title?: string, message?: string, instruction?: string}} overrides
+   * @param {{title?: string, message?: string, instruction?: string, delay?: number}} overrides
    */
   showOverlay(type, overrides = {}) {
+    const { delay, ...overlayOverrides } = overrides;
+
+    // If delay is specified, defer showing the overlay
+    if (delay !== undefined && delay > 0) {
+      this.deathTimer = delay;
+      this.pendingDeathOverlay = { type, overrides: overlayOverrides };
+      return;
+    }
+
     const presets = {
       pause: {
         title: 'PAUSED',
         message: '',
         instruction: 'SPACE to resume',
-      },
-      transition: {
-        title: 'LEVEL COMPLETE',
-        message: 'Generating new cavern...',
-        instruction: '',
       },
       death: {
         title: 'YOU DIED',
@@ -243,7 +301,7 @@ export class Game {
     this.overlay = {
       type,
       ...presets[type],
-      ...overrides,
+      ...overlayOverrides,
     };
     this.paused = true;
   }
@@ -257,12 +315,52 @@ export class Game {
   }
 
   /**
+   * Start fade transition
+   * @param {number} targetAlpha - Target opacity (0 = transparent, 1 = black)
+   * @param {number} durationMs - Fade duration in milliseconds
+   * @param {Function} onComplete - Callback when fade finishes
+   */
+  startFade(targetAlpha, durationMs, onComplete = null) {
+    this.fadeOverlay.active = true;
+    this.fadeOverlay.targetAlpha = Math.max(0, Math.min(1, targetAlpha));
+    this.fadeOverlay.speed = Math.abs(targetAlpha - this.fadeOverlay.alpha) / durationMs;
+    this.fadeOverlay.onComplete = onComplete;
+  }
+
+  /**
    * Restart the player while preserving terrain state
    * @private
    */
   _restartAfterDeath() {
-    eventBus.emit('player:restart');
+    // Hide text overlay
     this.hideOverlay();
+
+    // Regenerate terrain if pending (happens while screen is black)
+    if (this.pendingTerrainRegeneration) {
+      const terrainSystem = this.components.find(
+        (c) => c.constructor.name === 'TerrainSystem',
+      );
+      const npcSystem = this.components.find(
+        (c) => c.constructor.name === 'NPCSystem',
+      );
+
+      if (terrainSystem) {
+        const newSeed = Math.floor(Math.random() * 1000000);
+        terrainSystem.setSeed(newSeed);
+      }
+
+      if (npcSystem) {
+        npcSystem.clear();
+      }
+
+      this.pendingTerrainRegeneration = false;
+    }
+
+    // Reset player position
+    eventBus.emit('player:restart');
+
+    // Fade from black to reveal terrain (400ms)
+    this.startFade(0.0, 400);
   }
 
   /**
@@ -273,33 +371,44 @@ export class Game {
     const { ctx } = this;
     const { width, height } = this.canvas;
 
-    // Semi-transparent dark overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, width, height);
-
-    const title = this.overlay?.title;
-    const message = this.overlay?.message;
-    const instruction = this.overlay?.instruction;
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    if (title) {
-      ctx.font = 'bold 48px Arial';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(title, width / 2, height / 2 - 60);
+    // Render fade overlay (for death transitions, etc.)
+    if (this.fadeOverlay.active && this.fadeOverlay.alpha > 0) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${this.fadeOverlay.alpha})`;
+      ctx.fillRect(0, 0, width, height);
     }
 
-    if (message) {
-      ctx.font = '24px Arial';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(message, width / 2, height / 2 - 10);
-    }
+    // Render text overlay on top if present
+    if (this.overlay) {
+      // Additional dark overlay for pause screen (not death)
+      if (this.overlay.type === 'pause') {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, width, height);
+      }
 
-    if (instruction) {
-      ctx.font = '20px Arial';
-      ctx.fillStyle = '#CCCCCC';
-      ctx.fillText(instruction, width / 2, height / 2 + 40);
+      const title = this.overlay?.title;
+      const message = this.overlay?.message;
+      const instruction = this.overlay?.instruction;
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (title) {
+        ctx.font = 'bold 48px Arial';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(title, width / 2, height / 2 - 60);
+      }
+
+      if (message) {
+        ctx.font = '24px Arial';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(message, width / 2, height / 2 - 10);
+      }
+
+      if (instruction) {
+        ctx.font = '20px Arial';
+        ctx.fillStyle = '#CCCCCC';
+        ctx.fillText(instruction, width / 2, height / 2 + 40);
+      }
     }
   }
 
