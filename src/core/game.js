@@ -335,6 +335,8 @@ export class Game {
     // Hide text overlay
     this.hideOverlay();
 
+    const shouldPreserveTimer = !this.pendingTerrainRegeneration;
+
     // Regenerate terrain if pending (happens while screen is black)
     if (this.pendingTerrainRegeneration) {
       const terrainSystem = this.components.find(
@@ -357,7 +359,7 @@ export class Game {
     }
 
     // Reset player position
-    eventBus.emit('player:restart');
+    eventBus.emit('player:restart', { preserveTimer: shouldPreserveTimer });
 
     // Fade from black to reveal terrain (400ms)
     this.startFade(0.0, 400);

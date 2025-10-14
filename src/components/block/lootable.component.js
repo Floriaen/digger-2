@@ -8,8 +8,14 @@ import { Component } from '../../core/component.js';
  * Used by chests, covered blocks, and other special blocks.
  */
 export class LootableComponent extends Component {
-  constructor({ loot = [], spawnEntity = null }) {
-    super({ loot, spawnEntity });
+  constructor({ loot = [], spawnEntity = null, timerIncrementSeconds = 0 }) {
+    const rewardSeconds = Number.isFinite(timerIncrementSeconds)
+      ? Math.max(0, timerIncrementSeconds)
+      : 0;
+
+    super({ loot, spawnEntity, timerIncrementSeconds: rewardSeconds });
+
+    this.timerIncrementSeconds = rewardSeconds;
   }
 
   /**
@@ -34,5 +40,15 @@ export class LootableComponent extends Component {
    */
   getLoot() {
     return this.loot || [];
+  }
+
+  /**
+   * Get the timer increment (seconds) awarded when loot is released.
+   * @returns {number}
+   */
+  getTimerIncrementSeconds() {
+    return Number.isFinite(this.timerIncrementSeconds)
+      ? this.timerIncrementSeconds
+      : 0;
   }
 }

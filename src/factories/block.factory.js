@@ -188,14 +188,14 @@ export class BlockFactory {
   }
 
   /**
-   * Create a door block (non-collidable trigger for level transition)
+   * Create a door block (collidable, triggers level transition on approach)
    * @returns {Block}
    */
   static createDoor() {
     const sprite = SPRITE_ATLAS.door;
     const block = new Block([
       new RenderComponent(spriteToComponentProps(sprite)),
-      new PhysicsComponent({ collidable: false }),
+      new PhysicsComponent({ collidable: true }),
       new DoorComponent(),
     ]);
     return BlockFactory.finalizeBlock(block, 'door');
@@ -260,12 +260,25 @@ export class BlockFactory {
    */
   static createChest(loot = [{ type: 'coin', value: 10 }]) {
     const sprite = SPRITE_ATLAS.chest_base;
+    const timerIncrementSeconds = Array.isArray(loot)
+      ? loot.reduce((total, item) => {
+        if (!item || item.type !== 'coin') {
+          return total;
+        }
+        const value = Number(item.value);
+        if (!Number.isFinite(value) || value <= 0) {
+          return total;
+        }
+        return total + value;
+      }, 0)
+      : 0;
+
     const block = new Block([
       new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 15 }),
       new DiggableComponent(),
-      new LootableComponent({ loot }),
+      new LootableComponent({ loot, timerIncrementSeconds }),
       new FallableComponent(),
     ]);
     return BlockFactory.finalizeBlock(block, 'chest');

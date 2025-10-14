@@ -41,7 +41,16 @@ export class DiggableComponent extends Component {
       // Block destroyed - check for loot
       const lootable = block.get(LootableComponent);
       if (lootable && lootable.loot) {
-        eventBus.emit('block:loot', { x: gridX, y: gridY, loot: lootable.loot });
+        const loot = typeof lootable.getLoot === 'function' ? lootable.getLoot() : lootable.loot;
+        const timerIncrementSeconds = typeof lootable.getTimerIncrementSeconds === 'function'
+          ? lootable.getTimerIncrementSeconds()
+          : 0;
+        eventBus.emit('block:loot', {
+          x: gridX,
+          y: gridY,
+          loot,
+          timerIncrementSeconds,
+        });
       }
 
       // Emit destruction event
