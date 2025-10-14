@@ -7,8 +7,9 @@
     "dev": "npx http-server -p 8080 -c-1",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "game",
@@ -18,11 +19,12 @@
   "author": "Floriaen",
   "license": "MIT",
   "devDependencies": {
+    "@vitest/ui": "^3.2.4",
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.1",
     "http-server": "^14.1.1",
-    "jest": "^30.2.0"
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "dat.gui": "^0.7.9"

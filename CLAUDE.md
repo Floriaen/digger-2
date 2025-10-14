@@ -83,9 +83,27 @@ When proposing new features:
 
 - Follow existing patterns (see [ARCHITECTURE.md](Docs/ARCHITECTURE.md))
 - Use ESLint (`npm run lint` must pass)
+- **Run tests** (`npm test` must pass) - **CRITICAL: Always run before committing!**
 - Prefer component-owned logic (Pattern 2)
 - Use factories for entity creation
 - Event bus for cross-system communication
+
+### Testing Requirements ⚠️
+
+**IMPORTANT**: This project has comprehensive test coverage (208+ tests). You MUST:
+
+1. **Run `npm test` before any commit** - All tests must pass
+2. **Ask before updating tests** when changing player behavior, shadow rendering, or game mechanics
+3. **Add tests** for new features (follow existing patterns in `src/test/`)
+4. **Check test output** - 208 passing, 5 skipped is expected
+
+Test suites:
+- `src/test/unit/player-system.test.js` - 100 tests for PlayerSystem
+- `src/test/unit/shadow-system.test.js` - 22 tests for shadow rendering
+- `src/test/integration/player-system-integration.test.js` - 35 integration tests
+- `src/test/e2e/player-behavior.test.js` - 36 end-to-end behavior tests
+
+**If tests fail**: Investigate why before proceeding. Tests document expected behavior.
 
 ---
 
