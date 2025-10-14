@@ -188,14 +188,14 @@ export class BlockFactory {
   }
 
   /**
-   * Create a door block (non-collidable trigger for level transition)
+   * Create a door block (collidable, triggers level transition on approach)
    * @returns {Block}
    */
   static createDoor() {
     const sprite = SPRITE_ATLAS.door;
     const block = new Block([
       new RenderComponent(spriteToComponentProps(sprite)),
-      new PhysicsComponent({ collidable: false }),
+      new PhysicsComponent({ collidable: true }),
       new DoorComponent(),
     ]);
     return BlockFactory.finalizeBlock(block, 'door');
