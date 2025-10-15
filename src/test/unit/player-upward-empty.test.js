@@ -69,6 +69,12 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     const solidBlockHere = createMockBlock({
       PhysicsComponent: createMockPhysicsComponent(true),
     });
+    const solidBlockLeft = createMockBlock({
+      PhysicsComponent: createMockPhysicsComponent(true),
+    });
+    const solidBlockRight = createMockBlock({
+      PhysicsComponent: createMockPhysicsComponent(true),
+    });
     const solidBlockBelow = createMockBlock({
       PhysicsComponent: createMockPhysicsComponent(true),
     });
@@ -76,14 +82,18 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     // Simulate that we just completed a dig and started a step up into the cleared tile
     playerSystem._beginMovement(playerSystem.gridX, playerSystem.gridY - 1, 120);
 
-    // On movement completion, PlayerSystem queries:
+    // On movement completion, PlayerSystem queries in order:
     // 1) current tile block
     // 2) above block
-    // 3) below block (via _beginFallIfUnsupported)
+    // 3) left block
+    // 4) right block
+    // 5) below block (via _beginFallIfUnsupported)
     mockTerrain.getBlock
-      .mockReturnValueOnce(solidBlockHere)    // current tile
-      .mockReturnValueOnce(emptyBlockAbove)   // above is empty -> should NOT chain
-      .mockReturnValueOnce(solidBlockBelow);  // below is solid -> no fall
+      .mockReturnValueOnce(solidBlockHere)   // current tile
+      .mockReturnValueOnce(emptyBlockAbove)  // above empty -> no up chain
+      .mockReturnValueOnce(solidBlockLeft)   // left is solid/non-diggable
+      .mockReturnValueOnce(solidBlockRight)  // right is solid/non-diggable
+      .mockReturnValueOnce(solidBlockBelow); // below solid -> no fall
 
     // Complete first movement (120ms)
     playerSystem._updateMovement(playerSystem.movement.duration);
@@ -103,6 +113,9 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     const solidBlockHere = createMockBlock({
       PhysicsComponent: createMockPhysicsComponent(true),
     });
+    const solidBlockBelow = createMockBlock({
+      PhysicsComponent: createMockPhysicsComponent(true),
+    });
 
     // Simulate first upward step already in progress
     playerSystem._beginMovement(playerSystem.gridX, playerSystem.gridY - 1, 120);
@@ -113,7 +126,8 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     // On movement completion:
     mockTerrain.getBlock
       .mockReturnValueOnce(solidBlockHere)   // current tile
-      .mockReturnValueOnce(emptyBlockAbove); // above is empty (and Up is released)
+      .mockReturnValueOnce(emptyBlockAbove)  // above is empty (and Up is released)
+      .mockReturnValueOnce(solidBlockBelow); // below is solid for fall check
 
     // Complete movement; should not chain another move
     playerSystem._updateMovement(playerSystem.movement.duration);

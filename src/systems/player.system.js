@@ -223,32 +223,39 @@ export class PlayerSystem extends System {
 
     // Handle direction change requests (unless stuck and digging in place)
     if (this.requestedDirection && !stuckInBlock) {
-      const canChange = this._tryChangeDirection(terrain);
+      const { dx: rdx, dy: rdy } = this.requestedDirection;
+      let canChange = false;
+
+      // While actively digging, only allow changing direction if the requested target is diggable
+      if (this.state === PLAYER_STATE.DIGGING || this.state === PLAYER_STATE.DIGGING_LATERAL) {
+        canChange = this._canDigDirection(terrain, rdx, rdy);
+      } else {
+        // Otherwise, use broader rule (diggable, door, or traversable) to allow aiming
+        canChange = this._tryChangeDirection(terrain);
+      }
+
       if (canChange) {
         this.digDirection = this.requestedDirection;
+        // Normalize state for new dig axis (skip MOVING/FALLING which are handled elsewhere)
+        if (this.state !== PLAYER_STATE.MOVING && this.state !== PLAYER_STATE.FALLING) {
+          this.state = (rdy === 0) ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;
+        }
       }
       this.requestedDirection = null; // Clear request after attempting
     }
 
     // Unified directional digging (unless stuck and digging in place)
     if (!stuckInBlock) {
-      // Hook precedence: if Up is held and the block above is diggable, don't trigger gravity; keep digging upward
-      const aboveForHook = terrain.getBlock(this.gridX, this.gridY - 1);
-      const hookActive = (this._isUpHeld && this._isUpHeld()) && aboveForHook?.has(DiggableComponent);
+      // Directional hook: keep eating in current digDirection while next tile is diggable (keyless)
+      const dir = this.digDirection || { dx: 0, dy: 1 };
+      const canHook = this._canDigDirection(terrain, dir.dx, dir.dy);
 
-      if (hookActive) {
-        // Ensure we are digging upward
-        this.digDirection = { dx: 0, dy: -1 };
+      if (canHook) {
         this._updateDirectionalDig(terrain);
-      } else if (!this._beginFallIfUnsupported(terrain)) {
-        // Gate continued upward digging on Up key being held
-        if (this.digDirection?.dy < 0 && !(this._isUpHeld && this._isUpHeld())) {
-          this.state = PLAYER_STATE.IDLE;
-          this.currentDigTarget = null;
-          this.digDirection = { dx: 0, dy: 1 }; // Reset to down
-          this._beginFallIfUnsupported(terrain);
-          return;
-        }
+        return;
+      }
+
+      if (!this._beginFallIfUnsupported(terrain)) {
         this._updateDirectionalDig(terrain);
       }
     }
@@ -588,17 +595,11 @@ export class PlayerSystem extends System {
             // Move up into empty space regardless of key hold; next action depends on input
             this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
           } else if (replacementBlock?.has(DiggableComponent)) {
-            // Continue upward only if Up is currently held
-            if (this._isUpHeld()) {
-              this.state = PLAYER_STATE.DIGGING;
-              this.digDirection = { dx, dy };
-              this.currentDigTarget = null;
-              this._digInDirection(terrain, dx, dy);
-            } else {
-              this.state = PLAYER_STATE.IDLE;
-              this.digDirection = { dx: 0, dy: 1 }; // Reset to down
-              this._beginFallIfUnsupported(terrain);
-            }
+            // Continue upward regardless of key hold while the next tile is diggable
+            this.state = PLAYER_STATE.DIGGING;
+            this.digDirection = { dx, dy };
+            this.currentDigTarget = null;
+            this._digInDirection(terrain, dx, dy);
           } else {
             this.state = PLAYER_STATE.IDLE;
             this.digDirection = { dx: 0, dy: 1 }; // Reset to down
@@ -729,6 +730,13 @@ export class PlayerSystem extends System {
     return !!this.game?.inputSystem?.isKeyPressed?.('ArrowUp');
   }
 
+  _canDigDirection(terrain, dx, dy) {
+    const tx = this.gridX + dx;
+    const ty = this.gridY + dy;
+    const block = terrain.getBlock(tx, ty);
+    return !!block?.has?.(DiggableComponent);
+  }
+
   _beginMovement(targetGridX, targetGridY, durationMs) {
     this.movement = {
       active: true,
@@ -772,17 +780,26 @@ export class PlayerSystem extends System {
         if (this.enterDoor(block, this.gridX, this.gridY, 'player:movement')) {
           return false;
         }
-        // If Up is held and the block above is diggable, continue the upward chain immediately (hook into next block)
-        if (this._isUpHeld && this._isUpHeld()) {
-          const aboveBlock = terrain.getBlock(this.gridX, this.gridY - 1);
-          if (aboveBlock?.has(DiggableComponent)) {
-            this.state = PLAYER_STATE.DIGGING;
-            this.digDirection = { dx: 0, dy: -1 };
-            this.currentDigTarget = null;
-            this._digInDirection(terrain, 0, -1);
-            return false;
-          }
+        // Prefer chaining into diggable neighbors before falling (prevents "jump then fall" when going up)
+        // 1) Honor a requested direction first if its target is diggable
+        if (this.requestedDirection && this._canDigDirection(terrain, this.requestedDirection.dx, this.requestedDirection.dy)) {
+          const { dx: rdx, dy: rdy } = this.requestedDirection;
+          this.digDirection = this.requestedDirection;
+          this.state = (rdy === 0) ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;
+          this.currentDigTarget = null;
+          this._digInDirection(terrain, rdx, rdy);
+          this.requestedDirection = null;
+          return false;
         }
+        // 2) Otherwise continue along current digDirection if possible (keyless chaining)
+        if (this._canDigDirection(terrain, this.digDirection.dx, this.digDirection.dy)) {
+          const { dx, dy } = this.digDirection;
+          this.state = (dy === 0) ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;
+          this.currentDigTarget = null;
+          this._digInDirection(terrain, dx, dy);
+          return false;
+        }
+        // 3) If no chain possible, then check support and fall if needed
         this._beginFallIfUnsupported(terrain);
       }
       return false;

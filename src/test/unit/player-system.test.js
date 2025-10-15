@@ -1135,6 +1135,8 @@ describe('PlayerSystem', () => {
         .mockReturnValueOnce(diggableBlock)
         .mockReturnValueOnce(emptyBlock)
         .mockReturnValueOnce(landingBlock)
+        // Additional call for neighbor check (above) after movement completes
+        .mockReturnValueOnce(emptyBlock)
         .mockReturnValueOnce(unsupportedBlock);
 
       playerSystem._digInDirection(mockTerrain, 0, -1);
