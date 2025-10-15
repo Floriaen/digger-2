@@ -43,6 +43,8 @@ export class InputSystem {
       eventBus.emit('input:move-right');
     } else if (event.code === 'ArrowDown') {
       eventBus.emit('input:move-down');
+    } else if (event.code === 'ArrowUp') {
+      eventBus.emit('input:move-up');
     } else if (event.code === 'Space' || event.code === 'Escape') {
       eventBus.emit('input:pause-toggle');
     }

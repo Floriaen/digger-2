@@ -151,6 +151,12 @@ export const SPRITE_ATLAS = {
     width: 16,
     height: 25,
   },
+  triangle_up: {
+    x: 0,
+    y: 75,
+    width: 16,
+    height: 25,
+  },
 };
 
 /**

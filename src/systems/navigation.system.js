@@ -12,13 +12,15 @@ const GUIDANCE_DELAY_MS = 400;
 /**
  * NavigationComponent
  * Displays white triangle markers after 400ms of player inactivity
- * to indicate valid dig directions (left, right, down)
+ * to indicate valid dig directions (left, right, up, down)
  */
 export class NavigationSystem extends System {
   init() {
     this.inactivityTimer = 0;
     this.showGuidance = false;
-    this.validDirections = { left: false, right: false, down: false };
+    this.validDirections = {
+      left: false, right: false, up: false, down: false,
+    };
     this.fallWarning = false; // Flash triangles if falling block above
     this.spriteSheet = null;
 
@@ -87,6 +89,13 @@ export class NavigationSystem extends System {
       this._drawArrow(ctx, x, y, 'right');
     }
 
+    // Up arrow - align with front face of block above
+    if (this.validDirections.up) {
+      const x = player.gridX * 16;
+      const y = (player.gridY - 1) * 16 - 7; // +9 for cap offset
+      this._drawArrow(ctx, x, y, 'up');
+    }
+
     // Down arrow - align with front face of block (9px down for cap)
     if (this.validDirections.down) {
       const x = player.gridX * 16;
@@ -107,10 +116,12 @@ export class NavigationSystem extends System {
   _updateValidDirections(player, terrain) {
     const leftBlock = terrain.getBlock(player.gridX - 1, player.gridY);
     const rightBlock = terrain.getBlock(player.gridX + 1, player.gridY);
+    const upBlock = terrain.getBlock(player.gridX, player.gridY - 1);
     const downBlock = terrain.getBlock(player.gridX, player.gridY + 1);
 
     this.validDirections.left = leftBlock.has(DiggableComponent);
     this.validDirections.right = rightBlock.has(DiggableComponent);
+    this.validDirections.up = upBlock.has(DiggableComponent);
     this.validDirections.down = downBlock.has(DiggableComponent);
 
     // Check for falling blocks component
@@ -134,7 +145,7 @@ export class NavigationSystem extends System {
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} x - Grid X position (world coords)
    * @param {number} y - Grid Y position (world coords)
-   * @param {string} direction - 'left', 'right', or 'down'
+   * @param {string} direction - 'left', 'right', 'up', or 'down'
    * @private
    */
   _drawArrow(ctx, x, y, direction) {
@@ -143,6 +154,8 @@ export class NavigationSystem extends System {
       sprite = SPRITE_ATLAS.triangle_left;
     } else if (direction === 'right') {
       sprite = SPRITE_ATLAS.triangle_right;
+    } else if (direction === 'up') {
+      sprite = SPRITE_ATLAS.triangle_up;
     } else if (direction === 'down') {
       sprite = SPRITE_ATLAS.triangle_down;
     }
