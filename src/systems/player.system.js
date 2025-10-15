@@ -426,6 +426,9 @@ export class PlayerSystem extends System {
         this.state = PLAYER_STATE.FALLING;
         this.fallable.reset(); // Reset fallable component for new fall
         this.currentDigTarget = null;
+      } else if (dy < 0) {
+        // Upward: step into empty space
+        this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
       } else {
         // Lateral: Stop at empty space
         this.state = PLAYER_STATE.IDLE;
@@ -754,7 +757,7 @@ export class PlayerSystem extends System {
         if (this.enterDoor(block, this.gridX, this.gridY, 'player:movement')) {
           return false;
         }
-        // If Up is held and the block above is diggable, continue the upward chain immediately
+        // If Up is held and the block above is diggable or empty, continue the upward chain immediately
         if (this._isUpHeld && this._isUpHeld()) {
           const aboveBlock = terrain.getBlock(this.gridX, this.gridY - 1);
           if (aboveBlock?.has(DiggableComponent)) {
@@ -762,6 +765,11 @@ export class PlayerSystem extends System {
             this.digDirection = { dx: 0, dy: -1 };
             this.currentDigTarget = null;
             this._digInDirection(terrain, 0, -1);
+            return false;
+          }
+          const abovePhysics = aboveBlock?.get(PhysicsComponent);
+          if (abovePhysics && !abovePhysics.isCollidable()) {
+            this._beginMovement(this.gridX, this.gridY - 1, HORIZONTAL_MOVE_DURATION_MS);
             return false;
           }
         }
