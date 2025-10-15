@@ -780,9 +780,17 @@ export class PlayerSystem extends System {
         if (this.enterDoor(block, this.gridX, this.gridY, 'player:movement')) {
           return false;
         }
-        // Prefer chaining into diggable neighbors before falling (prevents "jump then fall" when going up)
+        // Prefer chaining into diggable neighbors before falling
+        // This prevents "jump then fall" when going up
         // 1) Honor a requested direction first if its target is diggable
-        if (this.requestedDirection && this._canDigDirection(terrain, this.requestedDirection.dx, this.requestedDirection.dy)) {
+        if (
+          this.requestedDirection
+          && this._canDigDirection(
+            terrain,
+            this.requestedDirection.dx,
+            this.requestedDirection.dy,
+          )
+        ) {
           const { dx: rdx, dy: rdy } = this.requestedDirection;
           this.digDirection = this.requestedDirection;
           this.state = (rdy === 0) ? PLAYER_STATE.DIGGING_LATERAL : PLAYER_STATE.DIGGING;

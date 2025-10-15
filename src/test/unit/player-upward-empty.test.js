@@ -2,11 +2,7 @@
  * @file player-upward-empty.test.js
  * @description Unit tests for upward movement into empty space and chaining while holding Up
  */
-
-import { vi } from 'vitest';
-
 import { PlayerSystem } from '../../systems/player.system.js';
-import { DIG_INTERVAL_MS } from '../../utils/config.js';
 import {
   createMockGame,
   createMockTerrain,
@@ -36,7 +32,7 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     playerSystem.game.inputSystem = { isKeyPressed: (code) => code === 'ArrowUp' }; // Up held
   });
 
-  it('should not auto-climb into pre-existing empty above; remain idle (or fall based on support)', () => {
+  it('no auto-climb into pre-existing empty (idle/fall)', () => {
     const initialGridY = playerSystem.gridY;
 
     const emptyBlockAbove = createMockBlock({
@@ -60,7 +56,7 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     expect(playerSystem.gridY).toBe(initialGridY);
   });
 
-  it('should not chain upward step into empty after movement completes even when Up is held', () => {
+  it('no chain into empty after step (Up held)', () => {
     const initialGridY = playerSystem.gridY;
 
     const emptyBlockAbove = createMockBlock({
@@ -89,10 +85,10 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     // 4) right block
     // 5) below block (via _beginFallIfUnsupported)
     mockTerrain.getBlock
-      .mockReturnValueOnce(solidBlockHere)   // current tile
-      .mockReturnValueOnce(emptyBlockAbove)  // above empty -> no up chain
-      .mockReturnValueOnce(solidBlockLeft)   // left is solid/non-diggable
-      .mockReturnValueOnce(solidBlockRight)  // right is solid/non-diggable
+      .mockReturnValueOnce(solidBlockHere) // current tile
+      .mockReturnValueOnce(emptyBlockAbove) // above empty -> no up chain
+      .mockReturnValueOnce(solidBlockLeft) // left is solid/non-diggable
+      .mockReturnValueOnce(solidBlockRight) // right is solid/non-diggable
       .mockReturnValueOnce(solidBlockBelow); // below solid -> no fall
 
     // Complete first movement (120ms)
@@ -104,7 +100,7 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     expect(playerSystem.gridY).toBe(initialGridY - 1);
   });
 
-  it('should stop chaining into empty when Up is released after a step', () => {
+  it('no chain into empty after step (Up released)', () => {
     const initialGridY = playerSystem.gridY;
 
     const emptyBlockAbove = createMockBlock({
@@ -121,12 +117,12 @@ describe('PlayerSystem - Upward empty movement and chaining', () => {
     playerSystem._beginMovement(playerSystem.gridX, playerSystem.gridY - 1, 120);
 
     // Release Up before finishing the movement
-    playerSystem.game.inputSystem = { isKeyPressed: (code) => false };
+    playerSystem.game.inputSystem = { isKeyPressed: () => false };
 
     // On movement completion:
     mockTerrain.getBlock
-      .mockReturnValueOnce(solidBlockHere)   // current tile
-      .mockReturnValueOnce(emptyBlockAbove)  // above is empty (and Up is released)
+      .mockReturnValueOnce(solidBlockHere) // current tile
+      .mockReturnValueOnce(emptyBlockAbove) // above is empty (and Up is released)
       .mockReturnValueOnce(solidBlockBelow); // below is solid for fall check
 
     // Complete movement; should not chain another move
