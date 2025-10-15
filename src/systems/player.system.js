@@ -754,6 +754,17 @@ export class PlayerSystem extends System {
         if (this.enterDoor(block, this.gridX, this.gridY, 'player:movement')) {
           return false;
         }
+        // If Up is held and the block above is diggable, continue the upward chain immediately
+        if (this._isUpHeld && this._isUpHeld()) {
+          const aboveBlock = terrain.getBlock(this.gridX, this.gridY - 1);
+          if (aboveBlock?.has(DiggableComponent)) {
+            this.state = PLAYER_STATE.DIGGING;
+            this.digDirection = { dx: 0, dy: -1 };
+            this.currentDigTarget = null;
+            this._digInDirection(terrain, 0, -1);
+            return false;
+          }
+        }
         this._beginFallIfUnsupported(terrain);
       }
       return false;
