@@ -233,6 +233,14 @@ export class PlayerSystem extends System {
     // Unified directional digging (unless stuck and digging in place)
     if (!stuckInBlock) {
       if (!this._beginFallIfUnsupported(terrain)) {
+        // Gate continued upward digging on Up key being held
+        if (this.digDirection?.dy < 0 && !(this._isUpHeld && this._isUpHeld())) {
+          this.state = PLAYER_STATE.IDLE;
+          this.currentDigTarget = null;
+          this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+          this._beginFallIfUnsupported(terrain);
+          return;
+        }
         this._updateDirectionalDig(terrain);
       }
     }
@@ -559,12 +567,20 @@ export class PlayerSystem extends System {
         } else if (dy < 0) {
           // Digging upward - move vertically only
           if (canEnterReplacement) {
+            // Move up into empty space regardless of key hold; next action depends on input
             this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
           } else if (replacementBlock?.has(DiggableComponent)) {
-            this.state = PLAYER_STATE.DIGGING;
-            this.digDirection = { dx, dy };
-            this.currentDigTarget = null;
-            this._digInDirection(terrain, dx, dy);
+            // Continue upward only if Up is currently held
+            if (this._isUpHeld()) {
+              this.state = PLAYER_STATE.DIGGING;
+              this.digDirection = { dx, dy };
+              this.currentDigTarget = null;
+              this._digInDirection(terrain, dx, dy);
+            } else {
+              this.state = PLAYER_STATE.IDLE;
+              this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+              this._beginFallIfUnsupported(terrain);
+            }
           } else {
             this.state = PLAYER_STATE.IDLE;
             this.digDirection = { dx: 0, dy: 1 }; // Reset to down
@@ -689,6 +705,10 @@ export class PlayerSystem extends System {
     const maxTimerMs = PlayerSystem.INITIAL_TIMER_SECONDS * MS_PER_SECOND;
     this.timerMs = Math.min(maxTimerMs, this.timerMs + seconds * MS_PER_SECOND);
     this._broadcastTimerIfNeeded();
+  }
+
+  _isUpHeld() {
+    return !!this.game?.inputSystem?.isKeyPressed?.('ArrowUp');
   }
 
   _beginMovement(targetGridX, targetGridY, durationMs) {

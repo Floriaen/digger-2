@@ -1103,6 +1103,9 @@ describe('PlayerSystem', () => {
           .mockReturnValueOnce(spawnedBlock)
           .mockReturnValueOnce(spawnedBlock);
 
+        // Simulate UP being held during chaining
+        playerSystem.game.inputSystem = { isKeyPressed: (code) => code === 'ArrowUp' };
+
         playerSystem._digInDirection(mockTerrain, 0, -1);
 
         expect(playerSystem.state).toBe('digging');
