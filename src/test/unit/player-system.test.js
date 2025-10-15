@@ -8,6 +8,7 @@ import { vi } from 'vitest';
 
 import { PlayerSystem } from '../../systems/player.system.js';
 import { eventBus } from '../../utils/event-bus.js';
+import { DIG_INTERVAL_MS } from '../../utils/config.js';
 import {
   createMockGame,
   createMockTerrain,
@@ -232,6 +233,7 @@ describe('PlayerSystem', () => {
 
       expect(eventBus.on).toHaveBeenCalledWith('input:move-left', expect.any(Function));
       expect(eventBus.on).toHaveBeenCalledWith('input:move-right', expect.any(Function));
+      expect(eventBus.on).toHaveBeenCalledWith('input:move-up', expect.any(Function));
       expect(eventBus.on).toHaveBeenCalledWith('input:move-down', expect.any(Function));
     });
 
@@ -726,6 +728,9 @@ describe('PlayerSystem', () => {
 
       playerSystem._requestDirection(0, 1);
       expect(playerSystem.requestedDirection).toEqual({ dx: 0, dy: 1 });
+
+      playerSystem._requestDirection(0, -1);
+      expect(playerSystem.requestedDirection).toEqual({ dx: 0, dy: -1 });
     });
   });
 
@@ -1042,6 +1047,125 @@ describe('PlayerSystem', () => {
       playerSystem._beginFallIfUnsupported(mockTerrain);
 
       expect(playerSystem.hasStarted).toBe(true);
+    });
+  });
+
+  // ==========================================
+  // K. Upward Digging
+  // ==========================================
+  describe('Upward Digging', () => {
+    beforeEach(() => {
+      playerSystem.init();
+      mockTerrain.getBlock.mockReset();
+      mockTerrain.setBlock.mockReset();
+    });
+
+    it('should move upward into empty space after destroying block above', () => {
+      playerSystem.digTimer = DIG_INTERVAL_MS;
+
+      const diggableBlock = createMockBlock({
+        DiggableComponent: createMockDiggableComponent(),
+      });
+      const emptyBlock = createMockBlock({
+        PhysicsComponent: createMockPhysicsComponent(false),
+      });
+
+      mockTerrain.getBlock
+        .mockReturnValueOnce(diggableBlock)
+        .mockReturnValueOnce(diggableBlock)
+        .mockReturnValueOnce(emptyBlock);
+
+      playerSystem._digInDirection(mockTerrain, 0, -1);
+
+      expect(playerSystem.state).toBe('moving');
+      expect(playerSystem.movement.active).toBe(true);
+      expect(playerSystem.movement.targetGridX).toBe(playerSystem.gridX);
+      expect(playerSystem.movement.targetGridY).toBe(playerSystem.gridY - 1);
+    });
+
+    it('should continue digging upward when replacement block remains diggable', () => {
+      playerSystem.digTimer = DIG_INTERVAL_MS;
+
+      const firstBlock = createMockBlock({
+        DiggableComponent: createMockDiggableComponent(),
+      });
+      const spawnedBlock = createMockBlock({
+        PhysicsComponent: createMockPhysicsComponent(true),
+        DiggableComponent: createMockDiggableComponent(),
+      });
+
+      const digSpy = vi.spyOn(playerSystem, '_digInDirection');
+
+      try {
+        mockTerrain.getBlock
+          .mockReturnValueOnce(firstBlock)
+          .mockReturnValueOnce(firstBlock)
+          .mockReturnValueOnce(spawnedBlock)
+          .mockReturnValueOnce(spawnedBlock);
+
+        playerSystem._digInDirection(mockTerrain, 0, -1);
+
+        expect(playerSystem.state).toBe('digging');
+        expect(playerSystem.digDirection).toEqual({ dx: 0, dy: -1 });
+        expect(digSpy).toHaveBeenCalledTimes(2);
+      } finally {
+        digSpy.mockRestore();
+      }
+    });
+
+    it('should fall after upward movement completes when unsupported below', () => {
+      playerSystem.digTimer = DIG_INTERVAL_MS;
+
+      const diggableBlock = createMockBlock({
+        DiggableComponent: createMockDiggableComponent(),
+      });
+      const emptyBlock = createMockBlock({
+        PhysicsComponent: createMockPhysicsComponent(false),
+      });
+      const landingBlock = createMockBlock({});
+      const unsupportedBlock = createMockBlock({
+        PhysicsComponent: createMockPhysicsComponent(false),
+      });
+
+      mockTerrain.getBlock
+        .mockReturnValueOnce(diggableBlock)
+        .mockReturnValueOnce(diggableBlock)
+        .mockReturnValueOnce(emptyBlock)
+        .mockReturnValueOnce(landingBlock)
+        .mockReturnValueOnce(unsupportedBlock);
+
+      playerSystem._digInDirection(mockTerrain, 0, -1);
+
+      expect(playerSystem.movement.active).toBe(true);
+
+      playerSystem._updateMovement(playerSystem.movement.duration);
+
+      expect(playerSystem.state).toBe('falling');
+    });
+
+    it('should fall when upward dig reveals undiggable block', () => {
+      playerSystem.digTimer = DIG_INTERVAL_MS;
+
+      const diggableBlock = createMockBlock({
+        DiggableComponent: createMockDiggableComponent(),
+      });
+      const blockingBlock = createMockBlock({
+        PhysicsComponent: createMockPhysicsComponent(true),
+      });
+      const unsupportedBlock = createMockBlock({
+        PhysicsComponent: createMockPhysicsComponent(false),
+      });
+
+      mockTerrain.getBlock
+        .mockReturnValueOnce(diggableBlock)
+        .mockReturnValueOnce(diggableBlock)
+        .mockReturnValueOnce(blockingBlock)
+        .mockReturnValueOnce(unsupportedBlock);
+
+      playerSystem._digInDirection(mockTerrain, 0, -1);
+
+      expect(playerSystem.state).toBe('falling');
+      expect(playerSystem.digDirection).toEqual({ dx: 0, dy: 1 });
     });
   });
 });

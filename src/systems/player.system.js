@@ -101,6 +101,7 @@ export class PlayerSystem extends System {
     // Input subscription
     this.unsubscribeLeft = eventBus.on('input:move-left', () => this._requestDirection(-1, 0));
     this.unsubscribeRight = eventBus.on('input:move-right', () => this._requestDirection(1, 0));
+    this.unsubscribeUp = eventBus.on('input:move-up', () => this._requestDirection(0, -1));
     this.unsubscribeDown = eventBus.on('input:move-down', () => {
       if (!this.hasStarted) {
         this.hasStarted = true;
@@ -330,6 +331,7 @@ export class PlayerSystem extends System {
   destroy() {
     this.unsubscribeLeft();
     this.unsubscribeRight();
+    this.unsubscribeUp();
     this.unsubscribeDown();
     this.unsubscribeDeath();
     this.unsubscribeCrushed();
@@ -476,7 +478,6 @@ export class PlayerSystem extends System {
         hp,
         maxHp,
       };
-      this.digTimer = 0;
     }
 
     if (this.digTimer < DIG_INTERVAL_MS) {
@@ -547,6 +548,20 @@ export class PlayerSystem extends System {
             this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
           } else if (replacementBlock?.has(DiggableComponent)) {
             this.state = PLAYER_STATE.DIGGING_LATERAL;
+            this.digDirection = { dx, dy };
+            this.currentDigTarget = null;
+            this._digInDirection(terrain, dx, dy);
+          } else {
+            this.state = PLAYER_STATE.IDLE;
+            this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+            this._beginFallIfUnsupported(terrain);
+          }
+        } else if (dy < 0) {
+          // Digging upward - move vertically only
+          if (canEnterReplacement) {
+            this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
+          } else if (replacementBlock?.has(DiggableComponent)) {
+            this.state = PLAYER_STATE.DIGGING;
             this.digDirection = { dx, dy };
             this.currentDigTarget = null;
             this._digInDirection(terrain, dx, dy);
