@@ -232,7 +232,15 @@ export class PlayerSystem extends System {
 
     // Unified directional digging (unless stuck and digging in place)
     if (!stuckInBlock) {
-      if (!this._beginFallIfUnsupported(terrain)) {
+      // Hook precedence: if Up is held and the block above is diggable, don't trigger gravity; keep digging upward
+      const aboveForHook = terrain.getBlock(this.gridX, this.gridY - 1);
+      const hookActive = (this._isUpHeld && this._isUpHeld()) && aboveForHook?.has(DiggableComponent);
+
+      if (hookActive) {
+        // Ensure we are digging upward
+        this.digDirection = { dx: 0, dy: -1 };
+        this._updateDirectionalDig(terrain);
+      } else if (!this._beginFallIfUnsupported(terrain)) {
         // Gate continued upward digging on Up key being held
         if (this.digDirection?.dy < 0 && !(this._isUpHeld && this._isUpHeld())) {
           this.state = PLAYER_STATE.IDLE;
@@ -377,8 +385,12 @@ export class PlayerSystem extends System {
     const targetY = this.gridY + dy;
     const targetBlock = terrain.getBlock(targetX, targetY);
 
-    // Can change direction if target is diggable or is a door
-    const canChange = targetBlock.has(DiggableComponent) || targetBlock.has(DoorComponent);
+    // Can change direction if target is diggable, a door, or traversable (empty/falling)
+    const targetPhysics = targetBlock.get(PhysicsComponent);
+    const isTraversable = targetPhysics && !targetPhysics.isCollidable();
+    const canChange = targetBlock.has(DiggableComponent)
+      || targetBlock.has(DoorComponent)
+      || isTraversable;
     return canChange;
   }
 
@@ -427,8 +439,11 @@ export class PlayerSystem extends System {
         this.fallable.reset(); // Reset fallable component for new fall
         this.currentDigTarget = null;
       } else if (dy < 0) {
-        // Upward: step into empty space
-        this._beginMovement(targetX, targetY, HORIZONTAL_MOVE_DURATION_MS);
+        // Upward: do not auto-climb pre-existing empty. Let gravity/input decide.
+        this.state = PLAYER_STATE.IDLE;
+        this.currentDigTarget = null;
+        this.digDirection = { dx: 0, dy: 1 }; // Reset to down
+        this._beginFallIfUnsupported(terrain);
       } else {
         // Lateral: Stop at empty space
         this.state = PLAYER_STATE.IDLE;
@@ -757,7 +772,7 @@ export class PlayerSystem extends System {
         if (this.enterDoor(block, this.gridX, this.gridY, 'player:movement')) {
           return false;
         }
-        // If Up is held and the block above is diggable or empty, continue the upward chain immediately
+        // If Up is held and the block above is diggable, continue the upward chain immediately (hook into next block)
         if (this._isUpHeld && this._isUpHeld()) {
           const aboveBlock = terrain.getBlock(this.gridX, this.gridY - 1);
           if (aboveBlock?.has(DiggableComponent)) {
@@ -765,11 +780,6 @@ export class PlayerSystem extends System {
             this.digDirection = { dx: 0, dy: -1 };
             this.currentDigTarget = null;
             this._digInDirection(terrain, 0, -1);
-            return false;
-          }
-          const abovePhysics = aboveBlock?.get(PhysicsComponent);
-          if (abovePhysics && !abovePhysics.isCollidable()) {
-            this._beginMovement(this.gridX, this.gridY - 1, HORIZONTAL_MOVE_DURATION_MS);
             return false;
           }
         }
