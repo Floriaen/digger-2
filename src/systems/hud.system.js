@@ -6,12 +6,13 @@
 import { System } from '../core/system.js';
 import { eventBus } from '../utils/event-bus.js';
 import { RenderLayer } from '../rendering/render-layer.js';
+import { SPRITE_ATLAS } from '../rendering/sprite-atlas.js';
 
 const HUD_COIN_SPRITE = {
-  x: 48,
-  y: 50,
-  width: 16,
-  height: 16,
+  x: SPRITE_ATLAS.simple_coin.x,
+  y: SPRITE_ATLAS.simple_coin.y,
+  width: SPRITE_ATLAS.simple_coin.width,
+  height: SPRITE_ATLAS.simple_coin.height,
   destX: 12,
   destY: 12,
   destWidth: 32,

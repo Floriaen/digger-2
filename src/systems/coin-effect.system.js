@@ -4,14 +4,11 @@ import { RenderComponent } from '../components/block/render.component.js';
 import { LootEffectComponent } from '../components/block/loot-effect.component.js';
 import { CollectableComponent } from '../components/block/collectable.component.js';
 import { RenderLayer } from '../rendering/render-layer.js';
+import { SPRITE_ATLAS } from '../rendering/sprite-atlas.js';
 import { eventBus } from '../utils/event-bus.js';
 import { TILE_HEIGHT, TILE_WIDTH, SPRITE_HEIGHT } from '../utils/config.js';
 
-const COIN_SPRITE = {
-  x: 48,
-  y: 50,
-  size: 16,
-};
+const COIN_SPRITE = SPRITE_ATLAS.simple_coin;
 
 const DEFAULT_DURATION = 700;
 
@@ -123,13 +120,13 @@ export class CoinEffectSystem extends System {
     const tileLeft = gridX * TILE_WIDTH;
     const chestTop = gridY * TILE_HEIGHT - (SPRITE_HEIGHT - TILE_HEIGHT);
     const chestCenterY = chestTop + SPRITE_HEIGHT / 2;
-    const coinTop = chestCenterY - COIN_SPRITE.size / 2;
+    const coinTop = chestCenterY - COIN_SPRITE.height / 2;
 
     const renderComponent = new RenderComponent({
       spriteX: COIN_SPRITE.x,
       spriteY: COIN_SPRITE.y,
-      spriteWidth: COIN_SPRITE.size,
-      spriteHeight: COIN_SPRITE.size,
+      spriteWidth: COIN_SPRITE.width,
+      spriteHeight: COIN_SPRITE.height,
       layer: RenderLayer.EFFECTS,
     });
 

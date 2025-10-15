@@ -131,6 +131,12 @@ export const SPRITE_ATLAS = {
     width: 16,
     height: 25,
   },
+  simple_coin: {
+    x: 16,
+    y: 75,
+    width: 16,
+    height: 25,
+  },
 
   // Navigation markers (white arrows in row 3)
   triangle_left: {
