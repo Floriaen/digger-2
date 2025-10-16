@@ -33,7 +33,7 @@ export class NavigationSystem extends System {
   }
 
   update(deltaTime) {
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
     if (!player || !terrain) return;
@@ -65,7 +65,10 @@ export class NavigationSystem extends System {
   render(ctx) {
     if (!this.showGuidance || !this.spriteSheet) return;
 
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    // Support both old PlayerSystem and new PlayerManagerSystem
+    const player = this.game.components.find(
+      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
+    );
     if (!player) return;
 
     // Save context state

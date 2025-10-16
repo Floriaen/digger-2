@@ -1,8 +1,12 @@
 /**
- * @file shadow-system.test.js
- * @description Unit tests for ShadowSystem
+ * @file shadow-system-player-entity.test.js
+ * @description Unit tests for ShadowSystem with new PlayerManagerSystem (entity-based)
+ *
+ * This test suite verifies ShadowSystem works with the new player entity structure
+ * where the player is managed by PlayerManagerSystem and uses component-based architecture.
  */
 
+import { vi } from 'vitest';
 import { ShadowSystem } from '../../systems/shadow.system.js';
 import {
   createMockGame,
@@ -12,21 +16,20 @@ import {
   createMockCanvasContext,
 } from '../helpers/mocks.js';
 
-describe('ShadowSystem', () => {
+describe('ShadowSystem (Player Entity)', () => {
   let mockGame;
   let mockTerrain;
-  let mockPlayer;
+  let mockPlayerManager;
   let mockCtx;
   let shadowSystem;
 
   beforeEach(() => {
-    // Create mock player
-    mockPlayer = {
-      constructor: { name: 'PlayerSystem' },
-      x: 808, // gridX = 50
-      y: 40, // gridY = 2
-      gridX: 50,
-      gridY: 2,
+    // Create mock PlayerManagerSystem with the new entity structure
+    mockPlayerManager = {
+      constructor: { name: 'PlayerManagerSystem' },
+      // Public API methods required by ShadowSystem
+      getGridPosition: vi.fn(() => ({ gridX: 50, gridY: 2 })),
+      getPixelPosition: vi.fn(() => ({ x: 808, y: 40 })),
     };
 
     // Create mock terrain
@@ -34,7 +37,7 @@ describe('ShadowSystem', () => {
 
     // Create mock game
     mockGame = createMockGame({
-      components: [mockPlayer, mockTerrain],
+      components: [mockPlayerManager, mockTerrain],
     });
 
     // Create mock canvas context
@@ -94,7 +97,7 @@ describe('ShadowSystem', () => {
 
       it('should return early if no terrain', () => {
         const gameWithoutTerrain = createMockGame({
-          components: [mockPlayer],
+          components: [mockPlayerManager],
         });
         const system = new ShadowSystem(gameWithoutTerrain);
         system.init();
@@ -107,7 +110,7 @@ describe('ShadowSystem', () => {
         expect(mockCtx.ellipse).not.toHaveBeenCalled();
       });
 
-      it('should find PlayerSystem', () => {
+      it('should find PlayerManagerSystem', () => {
         // Mock terrain to return a block
         mockTerrain.getBlock.mockReturnValue(createMockBlock({
           PhysicsComponent: createMockPhysicsComponent(true),
@@ -129,6 +132,26 @@ describe('ShadowSystem', () => {
 
         // Should have successfully found terrain and rendered
         expect(mockCtx.ellipse).toHaveBeenCalled();
+      });
+
+      it('should call getGridPosition() on PlayerManagerSystem', () => {
+        mockTerrain.getBlock.mockReturnValue(createMockBlock({
+          PhysicsComponent: createMockPhysicsComponent(true),
+        }));
+
+        shadowSystem.render(mockCtx);
+
+        expect(mockPlayerManager.getGridPosition).toHaveBeenCalled();
+      });
+
+      it('should call getPixelPosition() on PlayerManagerSystem', () => {
+        mockTerrain.getBlock.mockReturnValue(createMockBlock({
+          PhysicsComponent: createMockPhysicsComponent(true),
+        }));
+
+        shadowSystem.render(mockCtx);
+
+        expect(mockPlayerManager.getPixelPosition).toHaveBeenCalled();
       });
     });
 
@@ -238,7 +261,8 @@ describe('ShadowSystem', () => {
       });
 
       it('should position shadow at player X coordinate', () => {
-        mockPlayer.x = 123;
+        // Update mock to return different position
+        mockPlayerManager.getPixelPosition.mockReturnValue({ x: 123, y: 40 });
 
         shadowSystem.render(mockCtx);
 
@@ -285,10 +309,8 @@ describe('ShadowSystem', () => {
 
     describe('Edge Cases', () => {
       it('should handle player at different positions', () => {
-        mockPlayer.x = 500;
-        mockPlayer.y = 200;
-        mockPlayer.gridX = 31;
-        mockPlayer.gridY = 12;
+        mockPlayerManager.getPixelPosition.mockReturnValue({ x: 500, y: 200 });
+        mockPlayerManager.getGridPosition.mockReturnValue({ gridX: 31, gridY: 12 });
 
         mockTerrain.getBlock.mockReturnValue(
           createMockBlock({ PhysicsComponent: createMockPhysicsComponent(true) }),
@@ -340,7 +362,7 @@ describe('ShadowSystem', () => {
         mockTerrain.getBlock.mockReturnValue(undefined);
 
         // This actually WILL throw because shadow system doesn't handle undefined
-        // The actual code at line 36 calls block.get() without checking if block exists
+        // The actual code at line 41 calls block.get() without checking if block exists
         // So this is a real bug in the shadow system!
         // For now, let's just expect it to throw
         expect(() => {

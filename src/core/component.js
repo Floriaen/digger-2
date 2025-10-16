@@ -8,4 +8,13 @@ export class Component {
   constructor(data = {}) {
     Object.assign(this, data);
   }
+
+  /**
+   * Attach owner entity to this component
+   * Override in subclasses if needed
+   * @param {Object} owner - Owner entity
+   */
+  attachOwner(owner) {
+    this.owner = owner;
+  }
 }

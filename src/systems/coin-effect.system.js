@@ -8,8 +8,6 @@ import { SPRITE_ATLAS } from '../rendering/sprite-atlas.js';
 import { eventBus } from '../utils/event-bus.js';
 import { TILE_HEIGHT, TILE_WIDTH, SPRITE_HEIGHT } from '../utils/config.js';
 
-const COIN_SPRITE = SPRITE_ATLAS.simple_coin;
-
 const DEFAULT_DURATION = 700;
 
 /**
@@ -102,7 +100,9 @@ export class CoinEffectSystem extends System {
     }
 
     for (let i = 0; i < coinLoot.length; i += 1) {
-      const coinEffect = this._createCoinEffect(x, y);
+      const item = coinLoot[i];
+      const spriteName = item.sprite || 'simple_coin';
+      const coinEffect = this._createCoinEffect(x, y, spriteName);
       if (!coinEffect) {
         continue;
       }
@@ -112,21 +112,23 @@ export class CoinEffectSystem extends System {
     }
   }
 
-  _createCoinEffect(gridX, gridY) {
+  _createCoinEffect(gridX, gridY, spriteName = 'simple_coin') {
     if (typeof gridX !== 'number' || typeof gridY !== 'number') {
       return null;
     }
 
+    const coinSprite = SPRITE_ATLAS[spriteName] || SPRITE_ATLAS.simple_coin;
+
     const tileLeft = gridX * TILE_WIDTH;
     const chestTop = gridY * TILE_HEIGHT - (SPRITE_HEIGHT - TILE_HEIGHT);
     const chestCenterY = chestTop + SPRITE_HEIGHT / 2;
-    const coinTop = chestCenterY - COIN_SPRITE.height / 2;
+    const coinTop = chestCenterY - coinSprite.height / 2;
 
     const renderComponent = new RenderComponent({
-      spriteX: COIN_SPRITE.x,
-      spriteY: COIN_SPRITE.y,
-      spriteWidth: COIN_SPRITE.width,
-      spriteHeight: COIN_SPRITE.height,
+      spriteX: coinSprite.x,
+      spriteY: coinSprite.y,
+      spriteWidth: coinSprite.width,
+      spriteHeight: coinSprite.height,
       layer: RenderLayer.EFFECTS,
     });
 

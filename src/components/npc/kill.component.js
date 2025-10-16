@@ -25,7 +25,7 @@ export class KillComponent extends Component {
     }
 
     const player = game.components.find(
-      (component) => component.constructor.name === 'PlayerSystem',
+      (component) => component.constructor.name === 'PlayerManagerSystem',
     );
     if (!player || player.dead) {
       return;
