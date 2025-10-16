@@ -22,34 +22,14 @@ export class ShadowSystem extends System {
   }
 
   render(ctx) {
-    // Support both old PlayerSystem and new PlayerManagerSystem
-    const player = this.game.components.find(
-      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
-    );
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
     if (!player || !terrain) return;
 
-    // Get player position (works with both PlayerSystem and PlayerManagerSystem)
-    // PlayerManagerSystem has getGridPosition/getPixelPosition methods
-    // PlayerSystem has direct properties
-    let gridX;
-    let gridY;
-    let x;
-    let y;
-    if (typeof player.getGridPosition === 'function') {
-      const gridPos = player.getGridPosition();
-      gridX = gridPos.gridX;
-      gridY = gridPos.gridY;
-      const pixelPos = player.getPixelPosition();
-      x = pixelPos.x;
-      y = pixelPos.y;
-    } else {
-      gridX = player.gridX;
-      gridY = player.gridY;
-      x = player.x;
-      y = player.y;
-    }
+    // Get player position
+    const { gridX, gridY } = player.getGridPosition();
+    const { x, y } = player.getPixelPosition();
 
     // Always find the first solid block below the player
     let shadowY = y; // Default: shadow at player position

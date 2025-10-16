@@ -137,6 +137,12 @@ export const SPRITE_ATLAS = {
     width: 16,
     height: 16,
   },
+  chest_coin: {
+    x: 48,
+    y: 50,
+    width: 16,
+    height: 25,
+  },
 
   // Navigation markers (white arrows in row 3)
   triangle_left: {

@@ -131,7 +131,10 @@ export class BlockFactory {
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp }),
       new DiggableComponent(),
-      new LootableComponent({ loot: [{ type: 'coin', value: 1 }], timerIncrementSeconds: 0 }),
+      new LootableComponent({
+        loot: [{ type: 'coin', value: 1, sprite: 'simple_coin' }],
+        timerIncrementSeconds: 0,
+      }),
     ];
 
     // Add DarknessComponent if variant creates darkening
@@ -260,7 +263,7 @@ export class BlockFactory {
    * @param {Array} loot - Array of loot items to drop
    * @returns {Block}
    */
-  static createChest(loot = [{ type: 'coin', value: 10 }]) {
+  static createChest(loot = [{ type: 'coin', value: 10, sprite: 'chest_coin' }]) {
     const sprite = SPRITE_ATLAS.chest_base;
     const timerIncrementSeconds = Array.isArray(loot)
       ? loot.reduce((total, item) => {
@@ -292,7 +295,7 @@ export class BlockFactory {
    * @param {Array} loot - Array of loot items for the chest underneath
    * @returns {Block}
    */
-  static createCoveredChest(loot = [{ type: 'coin', value: 10 }]) {
+  static createCoveredChest(loot = [{ type: 'coin', value: 10, sprite: 'chest_coin' }]) {
     const baseSprite = SPRITE_ATLAS.chest_base;
     const coverSprite = SPRITE_ATLAS.chest_cover;
     const block = new Block([
@@ -348,7 +351,10 @@ export class BlockFactory {
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
-      new LootableComponent({ loot: [{ type: 'coin', value: 1 }], timerIncrementSeconds: 0 }),
+      new LootableComponent({
+        loot: [{ type: 'coin', value: 1, sprite: 'simple_coin' }],
+        timerIncrementSeconds: 0,
+      }),
       new DarknessComponent({ alpha: darknessAlpha }),
     ]);
     return BlockFactory.finalizeBlock(block, 'mud', { variant: normalizedVariant });

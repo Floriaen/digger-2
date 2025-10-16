@@ -58,10 +58,7 @@ export class TerrainSystem extends System {
 
   update(_deltaTime) {
     // Stream chunks based on camera/player position
-    // Support both old PlayerSystem and new PlayerManagerSystem
-    const player = this.game.components.find(
-      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
-    );
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
     if (player) {
       this._ensureChunksLoaded(player.gridX, player.gridY);
     }
@@ -78,10 +75,7 @@ export class TerrainSystem extends System {
       return;
     }
 
-    // Support both old PlayerSystem and new PlayerManagerSystem
-    const player = this.game.components.find(
-      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
-    );
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
     const digTarget = player ? player.currentDigTarget : null;
 
     // Calculate visible chunk range

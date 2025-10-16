@@ -26,10 +26,7 @@ export class DigIndicatorSystem extends System {
    */
   render(ctx) {
     // Get player's current dig target
-    // Support both old PlayerSystem and new PlayerManagerSystem
-    const player = this.game.components.find(
-      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
-    );
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
     if (!player || !player.currentDigTarget) return;
 
     const digTarget = player.currentDigTarget;

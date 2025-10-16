@@ -33,10 +33,7 @@ export class NavigationSystem extends System {
   }
 
   update(deltaTime) {
-    // Support both old PlayerSystem and new PlayerManagerSystem
-    const player = this.game.components.find(
-      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
-    );
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
 
     if (!player || !terrain) return;
