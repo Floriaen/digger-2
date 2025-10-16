@@ -3,7 +3,7 @@
  * @description Verify mud drops a coin loot on destroy and emits proper events.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { BlockFactory } from '../../factories/block.factory.js';
 import { DiggableComponent } from '../../components/block/diggable.component.js';
 import { eventBus } from '../../utils/event-bus.js';

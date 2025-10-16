@@ -36,7 +36,7 @@ export const CHUNK_CACHE_LIMIT = 10; // Max cached chunks
 
 // World bounds (in chunks)
 export const WORLD_WIDTH_CHUNKS = 2;
-export const WORLD_HEIGHT_CHUNKS = 4;
+export const WORLD_HEIGHT_CHUNKS = 8;
 
 // World dimensions (pixels)
 export const WORLD_WIDTH_PX = WORLD_WIDTH_CHUNKS * CHUNK_SIZE * TILE_WIDTH;

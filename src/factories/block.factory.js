@@ -152,6 +152,8 @@ export class BlockFactory {
     const block = new Block([
       new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
+      new HealthComponent({ hp: 30 }),
+      new DiggableComponent(),
       new FallableComponent(),
     ]);
     return BlockFactory.finalizeBlock(block, 'rock');

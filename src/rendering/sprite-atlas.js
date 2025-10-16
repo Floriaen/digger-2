@@ -76,8 +76,8 @@ export const SPRITE_ATLAS = {
     height: 25,
   },
   doorstep: {
-    x: 48,
-    y: 0,
+    x: 64,
+    y: 75,
     width: 16,
     height: 25,
   },
@@ -135,7 +135,7 @@ export const SPRITE_ATLAS = {
     x: 16,
     y: 75,
     width: 16,
-    height: 25,
+    height: 16,
   },
 
   // Navigation markers (white arrows in row 3)
