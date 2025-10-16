@@ -131,6 +131,7 @@ export class BlockFactory {
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp }),
       new DiggableComponent(),
+      new LootableComponent({ loot: [{ type: 'coin', value: 1 }], timerIncrementSeconds: 0 }),
     ];
 
     // Add DarknessComponent if variant creates darkening
@@ -151,6 +152,8 @@ export class BlockFactory {
     const block = new Block([
       new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
+      new HealthComponent({ hp: 30 }),
+      new DiggableComponent(),
       new FallableComponent(),
     ]);
     return BlockFactory.finalizeBlock(block, 'rock');
@@ -346,6 +349,7 @@ export class BlockFactory {
       new PhysicsComponent({ collidable: true }),
       new HealthComponent({ hp: 5 }),
       new DiggableComponent(),
+      new LootableComponent({ loot: [{ type: 'coin', value: 1 }], timerIncrementSeconds: 0 }),
       new DarknessComponent({ alpha: darknessAlpha }),
     ]);
     return BlockFactory.finalizeBlock(block, 'mud', { variant: normalizedVariant });

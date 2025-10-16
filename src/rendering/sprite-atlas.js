@@ -76,8 +76,8 @@ export const SPRITE_ATLAS = {
     height: 25,
   },
   doorstep: {
-    x: 48,
-    y: 0,
+    x: 64,
+    y: 75,
     width: 16,
     height: 25,
   },
@@ -130,6 +130,12 @@ export const SPRITE_ATLAS = {
     y: 0,
     width: 16,
     height: 25,
+  },
+  simple_coin: {
+    x: 16,
+    y: 75,
+    width: 16,
+    height: 16,
   },
 
   // Navigation markers (white arrows in row 3)
