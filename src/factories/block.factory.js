@@ -160,7 +160,7 @@ export class BlockFactory {
   }
 
   /**
-   * Create a pause crystal block (pauses game when destroyed)
+   * Create a pause crystal block (pauses game on contact in any direction)
    * @returns {Block}
    */
   static createPauseCrystal() {
@@ -168,9 +168,8 @@ export class BlockFactory {
     const block = new Block([
       new RenderComponent(spriteToComponentProps(sprite)),
       new PhysicsComponent({ collidable: true }),
-      new HealthComponent({ hp: 5 }),
-      new DiggableComponent(),
-      new PauseOnDestroyComponent(),
+      new DiggableComponent(), // Must be diggable so player can dig down through it
+      new PauseOnDestroyComponent(), // Triggers pause on contact (checked before digging)
     ]);
     return BlockFactory.finalizeBlock(block, 'pause_crystal');
   }

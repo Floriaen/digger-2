@@ -392,6 +392,21 @@ export class PlayerSystem extends System {
     const targetY = this.gridY + dy;
     const targetBlock = terrain.getBlock(targetX, targetY);
 
+    // Check if target block should pause game on contact
+    if (targetBlock.has(PauseOnDestroyComponent)) {
+      console.log('[PlayerSystem._tryChangeDirection] Pause crystal detected! Triggering pause...');
+
+      // Reset player state to prevent re-triggering after unpause
+      this.state = PLAYER_STATE.IDLE;
+      this.digDirection = { dx: 0, dy: 1 }; // Reset to default down
+      this.currentDigTarget = null;
+      this.digTimer = 0;
+      this.requestedDirection = null; // Clear pending input
+
+      this.game.pause();
+      return false; // Don't allow direction change, just pause
+    }
+
     // Can change direction if target is diggable, a door, or traversable (empty/falling)
     const targetPhysics = targetBlock.get(PhysicsComponent);
     const isTraversable = targetPhysics && !targetPhysics.isCollidable();
@@ -498,6 +513,22 @@ export class PlayerSystem extends System {
       if (!diggable) {
         // Not diggable, shouldn't reach here
         return;
+      }
+
+      // Check if block should pause on contact (before digging starts)
+      if (block.has(PauseOnDestroyComponent)) {
+        console.log('[PlayerSystem] Pause crystal detected! Triggering pause...');
+        console.log('[PlayerSystem] Game object:', this.game);
+
+        // Reset player state to prevent re-triggering after unpause
+        this.state = PLAYER_STATE.IDLE;
+        this.digDirection = { dx: 0, dy: 1 }; // Reset to default down
+        this.currentDigTarget = null;
+        this.digTimer = 0;
+        this.requestedDirection = null; // Clear pending input
+
+        this.game.pause();
+        return; // Don't start digging, just pause
       }
 
       // Initialize dig target with current HP
@@ -734,6 +765,23 @@ export class PlayerSystem extends System {
     const tx = this.gridX + dx;
     const ty = this.gridY + dy;
     const block = terrain.getBlock(tx, ty);
+
+    // Check if block should pause game on contact (before allowing dig)
+    if (block?.has?.(PauseOnDestroyComponent)) {
+      console.log('[PlayerSystem._canDigDirection] Pause crystal detected!');
+      console.log('[PlayerSystem._canDigDirection] Triggering pause...');
+
+      // Reset player state to prevent re-triggering after unpause
+      this.state = PLAYER_STATE.IDLE;
+      this.digDirection = { dx: 0, dy: 1 }; // Reset to default down
+      this.currentDigTarget = null;
+      this.digTimer = 0;
+      this.requestedDirection = null; // Clear pending input
+
+      this.game.pause();
+      return false; // Don't allow digging, just pause
+    }
+
     return !!block?.has?.(DiggableComponent);
   }
 

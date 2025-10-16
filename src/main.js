@@ -12,7 +12,7 @@ import {
 } from './utils/config.js';
 import { BackgroundSystem } from './systems/background.system.js';
 import { TerrainSystem } from './systems/terrain.system.js';
-import { PlayerSystem } from './systems/player.system.js';
+import { PlayerManagerSystem } from './systems/player-manager.system.js';
 import { ShadowSystem } from './systems/shadow.system.js';
 import { NavigationSystem } from './systems/navigation.system.js';
 import { DigIndicatorSystem } from './systems/dig-indicator.system.js';
@@ -137,7 +137,7 @@ function init() {
   game.addComponent(new DigIndicatorSystem(game)); // Dig outline on top of terrain
   game.addComponent(new ShadowSystem(game)); // Shadow renders before player
   game.addComponent(new NavigationSystem(game));
-  game.addComponent(new PlayerSystem(game));
+  game.addComponent(new PlayerManagerSystem(game));
   game.addComponent(new CoinEffectSystem(game));
   // Start camera positioned to show mountains and sun (Y=110 is sun center)
   game.addComponent(new CameraSystem(game, 256, 110, 3.0));
@@ -150,7 +150,7 @@ function init() {
 
   // Set up camera to follow player after initialization
   const camera = game.components.find((c) => c.constructor.name === 'CameraSystem');
-  const player = game.components.find((c) => c.constructor.name === 'PlayerSystem');
+  const player = game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
   if (camera && player) {
     camera.follow(player);
   }

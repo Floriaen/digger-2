@@ -58,7 +58,10 @@ export class TerrainSystem extends System {
 
   update(_deltaTime) {
     // Stream chunks based on camera/player position
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    // Support both old PlayerSystem and new PlayerManagerSystem
+    const player = this.game.components.find(
+      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
+    );
     if (player) {
       this._ensureChunksLoaded(player.gridX, player.gridY);
     }
@@ -75,7 +78,10 @@ export class TerrainSystem extends System {
       return;
     }
 
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    // Support both old PlayerSystem and new PlayerManagerSystem
+    const player = this.game.components.find(
+      (c) => c.constructor.name === 'PlayerManagerSystem' || c.constructor.name === 'PlayerSystem',
+    );
     const digTarget = player ? player.currentDigTarget : null;
 
     // Calculate visible chunk range
@@ -410,10 +416,16 @@ export class TerrainSystem extends System {
       this.setSeed(newSeed);
       this._purgeNPCs();
 
-      const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+      // Support both old PlayerSystem and new PlayerManagerSystem
+      const player = this.game.components.find(
+        (c) => c.constructor.name === 'PlayerManagerSystem'
+          || c.constructor.name === 'PlayerSystem',
+      );
       if (player) {
-        const preloadX = Number.isFinite(player.spawnGridX) ? player.spawnGridX : player.gridX;
-        const preloadY = Number.isFinite(player.spawnGridY) ? player.spawnGridY : player.gridY;
+        const preloadX = Number.isFinite(player.spawnGridX)
+          ? player.spawnGridX : player.gridX;
+        const preloadY = Number.isFinite(player.spawnGridY)
+          ? player.spawnGridY : player.gridY;
         this._ensureChunksLoaded(preloadX, preloadY);
       }
 

@@ -9,6 +9,7 @@ import { PhysicsComponent } from '../components/block/physics.component.js';
 import { BlockFactory } from '../factories/block.factory.js';
 import { eventBus } from '../utils/event-bus.js';
 import { LethalComponent } from '../components/block/lethal.component.js';
+import { DiggingComponent } from '../components/player/digging.component.js';
 import { CHUNK_SIZE } from '../utils/config.js';
 
 /**
@@ -24,7 +25,7 @@ export class GravitySystem extends System {
 
   update(deltaTime) {
     const terrain = this.game.components.find((c) => c.constructor.name === 'TerrainSystem');
-    const player = this.game.components.find((c) => c.constructor.name === 'PlayerSystem');
+    const player = this.game.components.find((c) => c.constructor.name === 'PlayerManagerSystem');
 
     if (!terrain || !player) return;
 
@@ -38,7 +39,7 @@ export class GravitySystem extends System {
   /**
    * Update all falling blocks in terrain
    * @param {TerrainSystem} terrain
-   * @param {PlayerSystem} player
+   * @param {PlayerManagerSystem} player
    * @param {number} deltaTime
    * @private
    */
@@ -161,7 +162,7 @@ export class GravitySystem extends System {
   /**
    * Update player falling (if player has FallableComponent)
    * @param {TerrainSystem} terrain
-   * @param {PlayerSystem} player
+   * @param {PlayerManagerSystem} player
    * @param {number} deltaTime
    * @private
    */
@@ -196,7 +197,6 @@ export class GravitySystem extends System {
           cause: 'lava',
           shouldRegenerate: lethal.shouldRegenerate,
         });
-        player.state = 'idle';
         player.fallable.land();
         player.fallable.reset();
         return;
@@ -219,10 +219,13 @@ export class GravitySystem extends System {
         player.fallable.gridY = newGridY;
         player.fallable.gridX = newGridX;
 
-        if (typeof player.enterDoor === 'function'
-          && player.enterDoor(blockAtNewPos, newGridX, newGridY, 'gravity')) {
-          player.fallable.land();
-          player.fallable.reset();
+        // Check for door entry via DiggingComponent
+        const digging = player.player.get(DiggingComponent);
+        if (digging && digging.enterDoor) {
+          if (digging.enterDoor(player.player, blockAtNewPos, newGridX, newGridY, 'gravity')) {
+            player.fallable.land();
+            player.fallable.reset();
+          }
         }
       }
     }
@@ -231,7 +234,7 @@ export class GravitySystem extends System {
   /**
    * Check if falling block collides with player
    * @param {FallableComponent} fallable
-   * @param {PlayerSystem} player
+   * @param {PlayerManagerSystem} player
    * @returns {boolean}
    * @private
    */
@@ -240,8 +243,7 @@ export class GravitySystem extends System {
     const blockPixelX = fallable.gridX * 16;
 
     // Check if block overlaps with player position
-    const playerCenterX = player.x;
-    const playerCenterY = player.y;
+    const { x: playerCenterX, y: playerCenterY } = player.getPixelPosition();
 
     // Simple AABB collision (16x16 block vs player radius)
     const blockLeft = blockPixelX;
