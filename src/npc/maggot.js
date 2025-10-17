@@ -4,7 +4,7 @@
  */
 
 import { NPC } from '../entities/npc.entity.js';
-import { PositionComponent } from '../components/npc/position.component.js';
+import { PositionComponent } from '../components/shared/position.component.js';
 import { StateComponent } from '../components/npc/state.component.js';
 import { EaterComponent } from '../components/npc/eater.component.js';
 import { WalkerComponent } from '../components/npc/walker.component.js';
@@ -39,7 +39,12 @@ export function createMaggot(spawn) {
 
   const npc = new NPC([
     new SpawnComponent({ spawn }),
-    new PositionComponent({ gridX, gridY, spawn }),
+    new PositionComponent({
+      gridX,
+      gridY,
+      spawn,
+      autoUpdateGridOnTranslate: true,
+    }),
     new StateComponent({ direction, spawn }),
     new EaterComponent({ spawn }),
     new FallComponent(),

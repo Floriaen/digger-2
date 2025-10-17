@@ -5,7 +5,7 @@
 
 import { Component } from '../../core/component.js';
 import { eventBus } from '../../utils/event-bus.js';
-import { PositionComponent } from './position.component.js';
+import { PositionComponent } from '../shared/position.component.js';
 
 const HITBOX_WIDTH = 16;
 const HITBOX_HEIGHT = 9;

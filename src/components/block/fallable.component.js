@@ -201,7 +201,7 @@ export class FallableComponent extends Component {
 
     try {
       // eslint-disable-next-line global-require
-      const { PositionComponent } = require('../npc/position.component.js');
+      const { PositionComponent } = require('../shared/position.component.js');
       return this.owner.get(PositionComponent) || null;
     } catch (error) {
       return null;

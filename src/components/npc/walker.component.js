@@ -6,7 +6,7 @@
 import { Component } from '../../core/component.js';
 import { TILE_WIDTH } from '../../utils/config.js';
 import { PhysicsComponent } from '../block/physics.component.js';
-import { PositionComponent } from './position.component.js';
+import { PositionComponent } from '../shared/position.component.js';
 import { StateComponent } from './state.component.js';
 import { EaterComponent } from './eater.component.js';
 import { FallComponent } from './fall.component.js';

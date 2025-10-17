@@ -10,7 +10,7 @@
 
 import { System } from '../core/system.js';
 import { Player } from '../entities/player.entity.js';
-import { PositionComponent } from '../components/player/position.component.js';
+import { PositionComponent } from '../components/shared/position.component.js';
 import { SpawnComponent } from '../components/player/spawn.component.js';
 import { StateComponent } from '../components/player/state.component.js';
 import { TimerComponent } from '../components/player/timer.component.js';
@@ -38,7 +38,7 @@ export class PlayerManagerSystem extends System {
 
     // Create player entity with all components
     this.player = new Player([
-      new PositionComponent({ gridX, gridY }),
+      new PositionComponent({ gridX, gridY, align: 'center' }),
       new SpawnComponent({
         spawnGridX: gridX,
         spawnGridY: gridY,

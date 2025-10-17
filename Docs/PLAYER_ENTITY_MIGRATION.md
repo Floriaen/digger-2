@@ -49,7 +49,7 @@ This document outlines the migration of `PlayerSystem` from a monolithic System 
 ```
 PlayerManagerSystem (extends System)
   └─── player: Player (entity - src/entities/player.entity.js)
-       ├─── PositionComponent      (gridX, gridY, x, y, spawn points)
+      ├─── PositionComponent      (gridX, gridY, x, y, alignment/spawn sync)
        ├─── StateComponent         (state machine, direction, dead, hasStarted, transitioning)
        ├─── TimerComponent         (timerMs, countdown, broadcast, add/reset logic)
        ├─── DiggingComponent       (digTimer, currentDigTarget, dig execution)
@@ -162,21 +162,19 @@ All components follow **Pattern 2: Component-Owned Logic** (like NPC components)
 
 #### 2.1 PositionComponent
 
-**File**: `src/components/player/position.component.js`
+**File**: `src/components/shared/position.component.js`
 
 **Responsibilities**:
-- Grid position (gridX, gridY)
-- World position (x, y) in pixels
-- Spawn points (spawnGridX, spawnGridY, spawnX, spawnY)
-- Position sync helpers
+- Grid position (`gridX`, `gridY`)
+- World position (`x`, `y`) in pixels with configurable alignment
+- Optional spawn synchronization
 
-**Migrated from PlayerSystem lines**: 48-70, 621-625
+**Migrated from PlayerSystem lines**: 48-70 (player), 600-645 (spawn sync)
 
 **Key methods**:
-- `init(entity, context)` - Set initial position centered in world
-- `resetToSpawn()` - Restore to spawn position
-- `setPosition(gridX, gridY)` - Update grid + world position
-- `translate(dx, dy)` - Move by pixel delta
+- `setGrid(gridX, gridY)` - Update grid + world position
+- `setPixel(x, y)` - Move by absolute pixel coordinates
+- `translate(dx, dy)` - Move by pixel delta with optional grid resync
 
 ---
 
@@ -321,7 +319,7 @@ export class PlayerManagerSystem extends System {
   init() {
     // Create player entity with all components
     this.player = new Player([
-      new PositionComponent({ worldWidthTiles: this._getWorldWidth() }),
+      new PositionComponent({ gridX: this._getWorldWidth() / 2, gridY: 2, align: 'center' }),
       new StateComponent(),
       new TimerComponent(),
       new DiggingComponent(),
@@ -527,7 +525,7 @@ These tests will improve coverage by testing components in isolation.
 | File | Lines | Purpose |
 |------|-------|---------|
 | `src/entities/player.entity.js` | ~60 | Player entity container (ECS) |
-| `src/components/player/position.component.js` | ~80 | Position data + spawn points |
+| `src/components/shared/position.component.js` | ~80 | Shared position data (player + NPC) |
 | `src/components/player/state.component.js` | ~100 | State machine + direction tracking |
 | `src/components/player/timer.component.js` | ~80 | Timer countdown + broadcast |
 | `src/components/player/digging.component.js` | ~350 | Dig logic + directional digging |
@@ -743,7 +741,7 @@ After successful migration:
 - **Current Implementation**: [src/systems/player.system.js](src/systems/player.system.js)
 - **NPC Pattern (reference)**: [src/systems/npc.system.js](src/systems/npc.system.js), [src/entities/npc.entity.js](src/entities/npc.entity.js)
 - **Block Pattern (reference)**: [src/entities/block.entity.js](src/entities/block.entity.js)
-- **Component Examples**: [src/components/npc/walker.component.js](src/components/npc/walker.component.js), [src/components/npc/position.component.js](src/components/npc/position.component.js)
+- **Component Examples**: [src/components/npc/walker.component.js](src/components/npc/walker.component.js), [src/components/shared/position.component.js](src/components/shared/position.component.js)
 
 ### Test References
 - **Current Tests**: [src/test/unit/player-system.test.js](src/test/unit/player-system.test.js) (116 tests)

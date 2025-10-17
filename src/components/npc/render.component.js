@@ -6,7 +6,7 @@
 import { Component } from '../../core/component.js';
 import { loadSpriteSheet } from '../../rendering/sprite-atlas.js';
 import { TILE_HEIGHT } from '../../utils/config.js';
-import { PositionComponent } from './position.component.js';
+import { PositionComponent } from '../shared/position.component.js';
 import { StateComponent } from './state.component.js';
 
 const SPRITE = {
